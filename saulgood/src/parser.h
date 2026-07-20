@@ -9,6 +9,20 @@
 typedef vec(bstr) InputFiles;
 
 
+typedef enum {
+  TOK_BLOCK, // full C code block is considered a single token
+  TOK_STR, // for test descriptions.
+  TOK_ID,
+  TOK_LPAREN,
+  TOK_RPAREN,
+  TOK_COLON,
+} TokenType;
+
+typedef struct {
+  TokenType type;
+  Span span;
+} Token;
+
 typedef struct {
   Span group;
   Span name;
@@ -16,10 +30,28 @@ typedef struct {
   Span body;
 } Test;
 
+typedef enum {
+  CG_TEST,
+  CG_CBLOCK,
+} CGenNodeType;
+
 typedef struct {
-  vec(Test) tests;
-  ostr source;
-  Span c_code;
+  union {
+    Test test;
+    Span c_code;
+  };
+  CGenNodeType type;
+} CodegenNode;
+
+typedef struct {
+  size_t row, col, id, len;
+} Position;
+
+typedef struct {
+  vec(CodegenNode) nodes;
+  bstr name;
+  bstr source;
+  Position pos;
 } TestFile;
 
 typedef struct {
@@ -28,7 +60,7 @@ typedef struct {
 } ParserState;
 
 
-void parse_file(ParserState* state, bstr filename);
+void parse_files(ParserState* state, InputFiles files);
 
 
 #endif

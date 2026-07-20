@@ -1,6 +1,7 @@
 add_executable(
   saulgood
   src/main.c
+  src/parser.c
 )
 
 target_include_directories(

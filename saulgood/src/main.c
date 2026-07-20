@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "stringdef.h"
 #include "vec.h"
+#include "vmem_arena.h"
 #include <assert.h>
 
 void parse_args(bstr* outfile, InputFiles* files) {
@@ -31,7 +32,12 @@ int main(int argc, char** argv) {
   ce_addopt("directoy", 'd', 's', "Walks a directory and amalgamates all tests together");
   ce_addopt("help", 'h', 0, "Print help message");
 
-  InputFiles files;
+  InputFiles files = {};
   bstr outfile = NULL;
   parse_args(&outfile, &files);
+
+  VMEMArena* arena = vmarena_new(128 * 1024);
+  ParserState state = {};
+  state.arena = arena;
+  parse_files(&state, files);
 }

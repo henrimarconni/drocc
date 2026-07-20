@@ -1,9 +1,9 @@
 #ifndef STRING_H
 #define STRING_H
 
-// borrowed
+// borrowed (dont free this)
 typedef char* bstr;
-// owned
+// owned (needed to be freed)
 typedef char* ostr;
 
 
