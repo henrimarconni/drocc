@@ -30,6 +30,13 @@ int peekch(TestFile* file) {
   return ch == '\0' ? EOF : ch;
 }
 
+int peeknextch(TestFile* file) {
+  if (file->pos.id + 1 >= file->pos.len)
+    return EOF;
+  int ch = file->source[file->pos.id + 1];
+  return ch == '\0' ? EOF : ch;
+}
+
 void skip_comment(TestFile* file) {
   if (peekch(file) == '#') {
     while (peekch(file) != '\n' && peekch(file) != EOF) {
@@ -39,9 +46,8 @@ void skip_comment(TestFile* file) {
 }
 
 void skip_space(TestFile* file) {
-  while (isspace(peekch(file)) || peekch(file) == '\n') {
+  while (isspace(peekch(file)))
     nextch(file);
-  }
 }
 
 void skip_unwanted(TestFile* file) {
@@ -53,14 +59,48 @@ void skip_unwanted(TestFile* file) {
   } while (file->pos.id != last_id && peekch(file) != EOF);
 }
 
+void skip_c_comments(TestFile* file, Span* span) {
+  while (peekch(file) == '/') {
+    if (peeknextch(file) == '/') {
+      char ch;
+      while ((ch = peekch(file)) != '\n') {
+        ch = nextch(file);
+        assert(ch != EOF);
+        span->len++;
+      }
+    } else if (peeknextch(file) == '*') {
+      nextch(file); // skip /
+      span->len++;
+      nextch(file); // skip *
+      span->len++;
+      char ch = peekch(file);
+      while (peekch(file) != '*' || peeknextch(file) != '/') {
+        nextch(file);
+        assert(ch != EOF);
+        span->len++;
+      }
+      nextch(file); // skip *
+      span->len++;
+      nextch(file); // skip /
+      span->len++;
+    } else
+      break;
+  }
+}
+
 Token tok_block(TestFile* file, Span span) {
   nextch(file); // skip {
   span.str++;
 
   int depth = 1;
-
+  bool is_str = false;
   while (depth > 0) {
     int ch = nextch(file);
+    skip_c_comments(file, &span);
+    if (ch == '"' && !is_str)
+      is_str = true;
+    if (ch == '"' && is_str)
+      is_str = false;
     assert(ch != EOF);
     span.len++;
     if (ch == '{')
@@ -176,6 +216,18 @@ void parse_keyw(TestFile* file, Token keyw) {
     assert(false);
 }
 
+void print_codegen_node(CodegenNode node) {
+  printf("Node(%d): ", node.type);
+  if (node.type == CG_CBLOCK)
+    printf("\n$c {\n%.*s}\n", (int)node.c_code.len, node.c_code.str);
+  else if (node.type == CG_TEST) {
+    printf("$test \"%.*s\" : %.*s(%.*s)\n", (int)node.test.desc.len, node.test.desc.str,
+           (int)node.test.group.len, node.test.group.str, (int)node.test.name.len,
+           node.test.name.str);
+    printf("\n{\n%.*s}\n", (int)node.test.body.len, node.test.body.str);
+  }
+}
+
 void parse_file(ParserState* state, TestFile* file) {
   while (true) {
     skip_unwanted(file);
@@ -183,19 +235,6 @@ void parse_file(ParserState* state, TestFile* file) {
       break;
     Token token = get_tok(file);
     parse_keyw(file, token);
-  }
-
-  for (size_t i = 0; i < file->nodes.n; i++) {
-    CodegenNode node = file->nodes.get[i];
-    printf("Node(%d): ", node.type);
-    if (node.type == CG_CBLOCK)
-      printf("\n$c {\n%.*s}\n", (int)node.c_code.len, node.c_code.str);
-    if (node.type == CG_TEST) {
-      printf("$test \"%.*s\" : %.*s(%.*s)\n", (int)node.test.desc.len, node.test.desc.str,
-             (int)node.test.group.len, node.test.group.str, (int)node.test.name.len,
-             node.test.name.str);
-      printf("\n{\n%.*s}\n", (int)node.test.body.len, node.test.body.str);
-    }
   }
 }
 
@@ -206,5 +245,6 @@ void parse_files(ParserState* state, InputFiles files) {
     file.source = read_file(state->arena, file.name);
     file.pos.len = strlen(file.source);
     parse_file(state, &file);
+    vec_push(state->files, file);
   }
 }

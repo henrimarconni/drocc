@@ -8,18 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void append_span(StringBuilder* b, Span span) {
-  while (span.len--) {
-    vec_push(*b, *(span.str++));
-  }
-}
-
-void append_str(StringBuilder* b, bstr str) {
-  while (*str != '\0') {
-    vec_push(*b, *(str++));
-  }
-}
-
 void appendf(StringBuilder* b, bstr fstr, ...) {
   va_list args;
   va_start(args, fstr);
@@ -56,8 +44,6 @@ void appendf(StringBuilder* b, bstr fstr, ...) {
   }
   va_end(args);
 }
-
-void append_ch(StringBuilder* b, char ch) { vec_push(*b, ch); }
 
 #define iface_name cmd->iface->name
 #define impl_name cmd->impl->name

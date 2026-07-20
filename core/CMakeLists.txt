@@ -6,7 +6,7 @@ add_library(
   src/span.c
   src/vmem_arena.c
   src/utils.c
-  src/parser_utils.c
+  src/stringbuilder.c
 )
 
 target_include_directories(

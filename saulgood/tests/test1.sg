@@ -1,11 +1,16 @@
 $c {
-  #include <stdio.h>
-  #include <assert.h>
+#include <stdio.h>
+#include <assert.h>
 }
 
 $test "A test to check printf" : stdio_suite(printf_test) {
   int res = printf("420");
   assert(res == 3);
+  // comment {
+  /*
+    Multiline comment {
+
+  */
 }
 
 $test "A test to check addition" : math_suite(add_test) {

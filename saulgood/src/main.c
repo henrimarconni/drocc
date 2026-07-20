@@ -1,4 +1,5 @@
 #include "ce_getopt.h"
+#include "codegen.h"
 #include "parser.h"
 #include "stringdef.h"
 #include "vec.h"
@@ -40,4 +41,8 @@ int main(int argc, char** argv) {
   ParserState state = {};
   state.arena = arena;
   parse_files(&state, files);
+
+  Codegen c = {};
+  generate_code(&c, &state);
+  codegen_destroy(&c);
 }
