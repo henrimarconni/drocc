@@ -7,6 +7,7 @@ add_library(
   src/vmem_arena.c
   src/utils.c
   src/stringbuilder.c
+  src/scanner.c
 )
 
 target_include_directories(

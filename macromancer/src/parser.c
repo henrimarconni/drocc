@@ -1,6 +1,8 @@
 #include "diagnostics.h"
 #include "parser.h"
+#include "scanner.h"
 #include "span.h"
+#include "utils.h"
 #include "vec.h"
 #include "vmem_arena.h"
 #include <assert.h>
@@ -20,75 +22,50 @@
   X("$interface", parse_interface)                                                                 \
   X("$export", parse_export)
 
-int nextch(Parser* p) {
-  if (p->source[p->pos.id] == '\0')
-    return EOF;
-  char ch = p->source[p->pos.id++];
-  if (ch == '\n') {
-    p->pos.row++;
-    p->pos.col = 0;
-  } else {
-    p->pos.col++;
-  }
-  return ch;
-}
-
-int peekch(Parser* p) {
-  if (p->source[p->pos.id] == '\0')
-    return EOF;
-  return p->source[p->pos.id];
-}
-
-void skip_comment(Parser* p) {
-  if (peekch(p) == '#') {
-    while (peekch(p) != '\n' && peekch(p) != EOF) {
-      nextch(p);
+void skip_comment(SourceFile* file) {
+  if (peekch(file) == '#') {
+    while (peekch(file) != '\n' && peekch(file) != EOF) {
+      nextch(file);
     }
   }
 }
 
-void skip_space(Parser* p) {
-  while (isspace(peekch(p))) {
-    nextch(p);
-  }
-}
-
-void skip_unwanted(Parser* p) {
+void skip_unwanted(SourceFile* file) {
   int last_id;
   do {
-    last_id = p->pos.id;
-    skip_comment(p);
-    skip_space(p);
-  } while (p->pos.id != last_id && peekch(p) != EOF);
+    last_id = file->pos.id;
+    skip_comment(file);
+    skip_space(file);
+  } while (file->pos.id != last_id && peekch(file) != EOF);
 }
 
 Span get_tok(Parser* p) {
-  skip_unwanted(p);
+  skip_unwanted(&p->file);
 
-  Span span = {p->pos.row, p->pos.col, 0, &p->source[p->pos.id]};
-  int ch = peekch(p);
+  Span span = {p->file.pos.row, p->file.pos.col, 0, &p->file.contents[p->file.pos.id]};
+  int ch = peekch(&p->file);
   if (ch == EOF) {
     span.len = 0;
     return span;
   }
 
   if (ch == '{' || ch == '}' || ch == '=') {
-    nextch(p);
+    nextch(&p->file);
     span.len = 1;
-    skip_unwanted(p);
+    skip_unwanted(&p->file);
     return span;
   }
 
   int len = 0;
   while (ch != EOF && !isspace(ch) && ch != '{' && ch != '}' && ch != '=') {
-    nextch(p);
-    ch = peekch(p);
+    nextch(&p->file);
+    ch = peekch(&p->file);
     len++;
   }
 
   assert(len != 0);
   span.len = len;
-  skip_unwanted(p);
+  skip_unwanted(&p->file);
   return span;
 }
 
@@ -142,13 +119,13 @@ void parse_interface(Parser* p) {
    (ch) == '_')
 
 Span expect_str(Parser* p) {
-  skip_unwanted(p);
-  Span span = {p->pos.row, p->pos.col, 1, &p->source[p->pos.id]};
-  char ch = nextch(p);
+  skip_unwanted(&p->file);
+  Span span = {p->file.pos.row, p->file.pos.col, 1, &p->file.contents[p->file.pos.id]};
+  char ch = nextch(&p->file);
   if (ch != '"')
     throw_error(p, span, ERR_INVALID_STRING, span);
   while (ch != '"' && ch != EOF) {
-    ch = nextch(p);
+    ch = nextch(&p->file);
     span.len++;
   }
   if (ch != '"')
@@ -236,9 +213,9 @@ void parse_impl(Parser* p) {
   memset(impl.pairs.get, 0, sizeof(ImplKVPair) * iface->functions.n);
 
   while (true) {
-    skip_unwanted(p);
-    if (peekch(p) == '}') {
-      nextch(p);
+    skip_unwanted(&p->file);
+    if (peekch(&p->file) == '}') {
+      nextch(&p->file);
       break;
     }
     ImplKVPair pair;
@@ -331,7 +308,7 @@ void parse_keyw(Parser* p, Span keyw) {
 
 void parse_conf(Parser* p) {
   while (true) {
-    if (peekch(p) == EOF)
+    if (peekch(&p->file) == EOF)
       break;
     Span keyw = get_tok(p);
     if (keyw.len == 0)
@@ -340,30 +317,13 @@ void parse_conf(Parser* p) {
   }
 }
 
-void read_into(Parser* p, bstr confpath) {
-  FILE* file = fopen(confpath, "r");
-  if (!file)
-    throw_error(p, NULL_SPAN, ERR_CANT_OPEN_FILE, confpath);
-
-  fseek(file, 0, SEEK_END);
-  long file_size = ftell(file);
-  rewind(file);
-
-  p->source = vmarena_alloc(p->arena, file_size + 1);
-  size_t n = fread(p->source, 1, file_size, file);
-  assert(n == (size_t)file_size);
-  p->source[file_size] = '\0';
-
-  fclose(file);
-}
-
 void read_conf(Parser* p, bstr confpath, ExportOverrideVec* export_override, VMEMArena* arena,
                jmp_buf* onerror) {
   *p = (Parser){0};
-  p->pos.row = 1;
   p->arena = arena;
   p->onerror = onerror;
-  read_into(p, confpath);
+  p->file.name = confpath;
+  p->file.contents = read_file(arena, confpath);
   parse_conf(p);
 
   for (size_t i = 0; i < export_override->n; i++) {

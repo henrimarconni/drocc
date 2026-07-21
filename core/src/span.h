@@ -1,9 +1,16 @@
 #ifndef SPAN_H
 #define SPAN_H
 
+#include "scanner.h"
 #include "stringdef.h"
 #include <stddef.h>
 #include <stdbool.h>
+
+#define NULL_SPAN (Span){0}
+#define ANSI_RED "\x1b[31m"
+#define ANSI_YELLOW "\x1b[33m"
+#define ANSI_BLUE "\x1b[34m"
+#define ANSI_RESET "\x1b[0m"
 
 
 typedef struct {
@@ -12,6 +19,7 @@ typedef struct {
 } Span;
 
 
+void highlight_span(SourceFile* file, Span span);
 bool span_cmp(Span span1, Span span2);
 Span str_to_span(bstr str);
 bool span_str_cmp(Span span, bstr str);

@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "scanner.h"
 #include "span.h"
 #include "vec.h"
 #include "vmem_arena.h"
@@ -44,14 +45,8 @@ typedef struct {
 } CodegenNode;
 
 typedef struct {
-  size_t row, col, id, len;
-} Position;
-
-typedef struct {
   vec(CodegenNode) nodes;
-  bstr name;
-  bstr source;
-  Position pos;
+  SourceFile source;
 } TestFile;
 
 typedef struct {

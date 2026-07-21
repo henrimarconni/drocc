@@ -1,13 +1,13 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "scanner.h"
 #include "stringdef.h"
 #include "vec.h"
 #include "vmem_arena.h"
 #include "span.h"
 #include <setjmp.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 
 typedef struct {
@@ -44,14 +44,9 @@ typedef struct {
 } ExportCmd;
 
 typedef struct {
-  size_t row, col, id, len;
-} Position;
-
-typedef struct {
   vec(Interface*) interfaces;
   vec(ExportCmd) exports;
-  ostr source;
-  Position pos;
+  SourceFile file;
   jmp_buf* onerror;
   VMEMArena* arena;
 } Parser;

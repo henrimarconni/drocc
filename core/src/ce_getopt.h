@@ -26,6 +26,7 @@ typedef union {
 
 // ch is the shorthand name of the option
 void ce_initopt(int argc, char** argv);
+void ce_add_meta(bstr _name, bstr _desc, bstr _usage);
 void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc);
 bool ce_getopt(char* ch, ParsedOpt* popt);
 void ce_printhelp();

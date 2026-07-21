@@ -19,6 +19,8 @@
 void parse_arg(int argc, char** argv, bstr* output_path, bstr* confpath,
                ExportOverrideVec* overrides) {
   ce_initopt(argc, argv);
+  ce_add_meta("macromancer", "A code generator that adds compile-time and runtime interfaces to C",
+              "./macromancer file.mm -o output.h --export Interface=Implementation");
   ce_addopt("output", 'o', 's', "Output file.h location");
   ce_addopt("help", 'h', 0, "Print help message");
   ce_addopt("export", 'e', 's',

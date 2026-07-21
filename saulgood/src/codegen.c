@@ -6,12 +6,30 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+void appendf(StringBuilder* b, bstr fstr, ...) {
+  va_list args;
+  va_start(args, fstr);
+  while (*fstr != '\0') {
+    if (*fstr != '%')
+      vec_push(*b, *(fstr++));
+    else {
+      switch (*++fstr) {
+      case 's':
+        append_span(b, va_arg(args, Span));
+        break;
+      default:
+        printf("Invalid specifier: %c\n", *fstr);
+        fflush(stdout);
+        assert(false && "Invalid format specifier");
+      }
+      fstr++;
+    }
+  }
+  va_end(args);
+}
+
 void gen_from_test(Codegen* c, Test* test) {
-  append_str(&c->output, "void ");
-  append_span(&c->output, test->name);
-  append_str(&c->output, "() {");
-  append_span(&c->output, test->body);
-  append_str(&c->output, "}\n");
+  appendf(&c->output, "void %s() {%s}\n", test->name, test->body);
 }
 
 void gen_from_node(Codegen* c, CodegenNode* node) {

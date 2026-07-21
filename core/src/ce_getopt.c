@@ -11,13 +11,22 @@
 #define FORMAT_SPACES 20
 
 Opt opts[MAX_OPTS] = {};
-int _argc = 0;
+int argc = 0;
 int curr = 1;
-char** _argv = NULL;
+char** argv = NULL;
+bstr desc = NULL;
+bstr name = NULL;
+bstr usage = NULL;
 
-void ce_initopt(int argc, char** argv) {
-  _argv = argv;
-  _argc = argc;
+void ce_add_meta(bstr _name, bstr _desc, bstr _usage) {
+  desc = _desc;
+  name = _name;
+  usage = _usage;
+}
+
+void ce_initopt(int _argc, char** _argv) {
+  argv = _argv;
+  argc = _argc;
 }
 
 bool is_opt_empty(const Opt* opt) { return memcmp(opt, &opts['\0'], sizeof(Opt)) == 0; }
@@ -36,6 +45,11 @@ void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc) {
 }
 
 void ce_printhelp() {
+  if (name && desc)
+    printf("%s: %s\n", name, desc);
+  if (usage)
+    printf("Usage: %s\n", usage);
+
   int format_spaces = FORMAT_SPACES;
   for (size_t i = 0; i < MAX_OPTS; i++) {
     if (!is_opt_empty(&opts[i])) {
@@ -49,7 +63,7 @@ void ce_printhelp() {
 }
 
 float parse_float(const Opt opt) {
-  bstr str = _argv[curr++];
+  bstr str = argv[curr++];
   float f = 0;
   bool floated = false;
   float divisor = 1;
@@ -57,14 +71,14 @@ float parse_float(const Opt opt) {
   while ((ch = *str++) != '\0') {
     if (ch == '.') {
       if (floated) {
-        printf("Bad float: %s\n", _argv[curr - 1]);
+        printf("Bad float: %s\n", argv[curr - 1]);
         exit(-1);
       }
       floated = true;
       continue;
     }
     if (!isdigit(ch)) {
-      printf("Error: Expected float in --%s, found: %s\n", opt.longhand, _argv[curr - 1]);
+      printf("Error: Expected float in --%s, found: %s\n", opt.longhand, argv[curr - 1]);
       exit(-1);
     }
     if (!floated) {
@@ -78,12 +92,12 @@ float parse_float(const Opt opt) {
 }
 
 int parse_int(const Opt opt) {
-  bstr str = _argv[curr++];
+  bstr str = argv[curr++];
   char ch;
   int num = 0;
   while ((ch = *str++) != '\0') {
     if (!isdigit(ch)) {
-      printf("Error: Expected integer in --%s, found: %s\n", opt.longhand, _argv[curr - 1]);
+      printf("Error: Expected integer in --%s, found: %s\n", opt.longhand, argv[curr - 1]);
       exit(-1);
     }
     num *= 10;
@@ -98,7 +112,7 @@ void parse_opt(const Opt opt, ParsedOpt* popt) {
     return;
   }
 
-  if (curr == _argc) {
+  if (curr == argc) {
     printf("Error: Expected value of type %c, found nothing in option --%s\n", opt.val_format,
            opt.longhand);
     exit(-1);
@@ -106,7 +120,7 @@ void parse_opt(const Opt opt, ParsedOpt* popt) {
 
   switch (opt.val_format) {
   case 's': {
-    popt->s = _argv[curr++];
+    popt->s = argv[curr++];
     break;
   }
   case 'd': {
@@ -126,14 +140,14 @@ void parse_opt(const Opt opt, ParsedOpt* popt) {
 
 bool ce_getopt(char* ch, ParsedOpt* popt) {
   *popt = (ParsedOpt){};
-  if (!_argv || !_argc) {
+  if (!argv || !argc) {
     printf("Error: use ce_initopt before ce_getopt\n");
     abort();
   }
-  if (curr == _argc)
+  if (curr == argc)
     return false;
 
-  bstr str = _argv[curr++];
+  bstr str = argv[curr++];
   if (str[0] != '-') {
     *ch = CE_PLAIN_VALUE;
     popt->s = str;

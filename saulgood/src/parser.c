@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "scanner.h"
 #include "span.h"
 #include "utils.h"
 #include <assert.h>
@@ -7,37 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define EOF (-1)
-
-int nextch(TestFile* file) {
-  int ch = file->source[file->pos.id++];
-  if (ch == '\n') {
-    file->pos.row++;
-    file->pos.col = 0;
-  } else if (ch == '\0') {
-    file->pos.id--;
-    return EOF;
-  } else
-    file->pos.col++;
-
-  return ch;
-}
-
-int peekch(TestFile* file) {
-  if (file->pos.id >= file->pos.len)
-    return EOF;
-  int ch = file->source[file->pos.id];
-  return ch == '\0' ? EOF : ch;
-}
-
-int peeknextch(TestFile* file) {
-  if (file->pos.id + 1 >= file->pos.len)
-    return EOF;
-  int ch = file->source[file->pos.id + 1];
-  return ch == '\0' ? EOF : ch;
-}
-
-void skip_comment(TestFile* file) {
+void skip_comment(SourceFile* file) {
   if (peekch(file) == '#') {
     while (peekch(file) != '\n' && peekch(file) != EOF) {
       nextch(file);
@@ -45,12 +16,7 @@ void skip_comment(TestFile* file) {
   }
 }
 
-void skip_space(TestFile* file) {
-  while (isspace(peekch(file)))
-    nextch(file);
-}
-
-void skip_unwanted(TestFile* file) {
+void skip_unwanted(SourceFile* file) {
   int last_id;
   do {
     last_id = file->pos.id;
@@ -59,7 +25,7 @@ void skip_unwanted(TestFile* file) {
   } while (file->pos.id != last_id && peekch(file) != EOF);
 }
 
-void skip_c_comments(TestFile* file, Span* span) {
+void skip_c_comments(SourceFile* file, Span* span) {
   while (peekch(file) == '/') {
     if (peeknextch(file) == '/') {
       char ch;
@@ -89,14 +55,14 @@ void skip_c_comments(TestFile* file, Span* span) {
 }
 
 Token tok_block(TestFile* file, Span span) {
-  nextch(file); // skip {
+  nextch(&file->source); // skip {
   span.str++;
 
   int depth = 1;
   bool is_str = false;
   while (depth > 0) {
-    int ch = nextch(file);
-    skip_c_comments(file, &span);
+    int ch = nextch(&file->source);
+    skip_c_comments(&file->source, &span);
     if (ch == '"' && !is_str)
       is_str = true;
     if (ch == '"' && is_str)
@@ -117,27 +83,27 @@ Token tok_block(TestFile* file, Span span) {
 
 Token tok_id(TestFile* file, Span span) {
   span.len = 1;
-  nextch(file); // first character is already included
-  int ch = peekch(file);
+  nextch(&file->source); // first character is already included
+  int ch = peekch(&file->source);
   while (is_id_body(ch)) {
-    nextch(file);
-    ch = peekch(file);
+    nextch(&file->source);
+    ch = peekch(&file->source);
     span.len++;
   }
   return (Token){TOK_ID, span};
 }
 
 Token tok_str(TestFile* file, Span span) {
-  nextch(file);
+  nextch(&file->source);
   span.str++; // skip "
-  int ch = peekch(file);
+  int ch = peekch(&file->source);
   while (ch != '"') {
     assert(ch != EOF);
-    nextch(file);
-    ch = peekch(file);
+    nextch(&file->source);
+    ch = peekch(&file->source);
     span.len++;
   }
-  nextch(file); // skip ending "
+  nextch(&file->source); // skip ending "
   return (Token){TOK_STR, span};
 }
 
@@ -150,9 +116,10 @@ Token tok_simple(TokenType type, int ch, Span span) {
 //       ^ (after skip_unwanted)
 //        ^ (after nextch)
 Token get_tok(TestFile* file) {
-  skip_unwanted(file);
-  Span span = {file->pos.row, file->pos.col, 0, &file->source[file->pos.id]};
-  int ch = peekch(file);
+  skip_unwanted(&file->source);
+  Span span = {file->source.pos.row, file->source.pos.col, 0,
+               &file->source.contents[file->source.pos.id]};
+  int ch = peekch(&file->source);
 
   switch (ch) {
   case '{':
@@ -160,11 +127,11 @@ Token get_tok(TestFile* file) {
   case '"':
     return tok_str(file, span);
   case ':':
-    return tok_simple(TOK_COLON, nextch(file), span);
+    return tok_simple(TOK_COLON, nextch(&file->source), span);
   case '(':
-    return tok_simple(TOK_LPAREN, nextch(file), span);
+    return tok_simple(TOK_LPAREN, nextch(&file->source), span);
   case ')':
-    return tok_simple(TOK_RPAREN, nextch(file), span);
+    return tok_simple(TOK_RPAREN, nextch(&file->source), span);
   }
   if (is_id_start(ch))
     return tok_id(file, span);
@@ -230,8 +197,8 @@ void print_codegen_node(CodegenNode node) {
 
 void parse_file(ParserState* state, TestFile* file) {
   while (true) {
-    skip_unwanted(file);
-    if (peekch(file) == EOF)
+    skip_unwanted(&file->source);
+    if (peekch(&file->source) == EOF)
       break;
     Token token = get_tok(file);
     parse_keyw(file, token);
@@ -241,9 +208,9 @@ void parse_file(ParserState* state, TestFile* file) {
 void parse_files(ParserState* state, InputFiles files) {
   for (size_t i = 0; i < files.n; i++) {
     TestFile file = {};
-    file.name = files.get[i];
-    file.source = read_file(state->arena, file.name);
-    file.pos.len = strlen(file.source);
+    file.source.name = files.get[i];
+    file.source.contents = read_file(state->arena, file.source.name);
+    file.source.pos.len = strlen(file.source.contents);
     parse_file(state, &file);
     vec_push(state->files, file);
   }
