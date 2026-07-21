@@ -321,9 +321,11 @@ void parse_conf(Parser* p) {
 void read_conf(Parser* p, bstr confpath, ExportOverrideVec* export_override, VMEMArena* arena,
                jmp_buf* onerror) {
   *p = (Parser){0};
-  p->arena = arena;
-  p->file = read_file(arena, confpath);
   p->engine = new_engine(mm_diaginfos, __mm_diagtype_len, onerror);
+  p->arena = arena;
+  ScannerRes res = read_file(&p->file, arena, confpath);
+  if (res != SE_OK)
+    throw_diag(&p->engine, NULL_SPAN, ERR_CANT_OPEN_FILE, confpath);
   parse_conf(p);
 
   for (size_t i = 0; i < export_override->n; i++) {

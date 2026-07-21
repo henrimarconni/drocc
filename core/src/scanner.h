@@ -16,10 +16,16 @@ typedef struct {
   Position pos;
 } SourceFile;
 
+typedef enum {
+  SE_OK,
+  SE_ERR_CANT_OPEN_FILE,
+  SE_ERR_IO,
+} ScannerRes;
+
 int nextch(SourceFile* file);
 int peekch(SourceFile* file);
 int peeknextch(SourceFile* file);
 void skip_space(SourceFile* file);
-SourceFile read_file(VMEMArena* arena, bstr confpath);
+ScannerRes read_file(SourceFile* sf, VMEMArena* arena, bstr confpath);
 
 #endif

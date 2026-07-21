@@ -14,6 +14,8 @@ bool span_cmp(Span span1, Span span2) {
 Span str_to_span(bstr str) { return (Span){0, 0, strlen(str), str, NULL}; }
 
 bool span_str_cmp(Span span, bstr str) {
+  if (span.len != strlen(str))
+    return false;
   while (*str && span.len > 0) {
     if (*span.str != *str)
       return false;

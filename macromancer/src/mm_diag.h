@@ -30,6 +30,6 @@ typedef enum {
 __mm_diagtype_len
 } MMDiagType;
 
-extern DiagInfo mm_diaginfos[__mm_diagtype_len];
+extern const DiagInfo mm_diaginfos[__mm_diagtype_len];
 
 #endif

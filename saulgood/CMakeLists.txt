@@ -3,6 +3,7 @@ add_executable(
   src/main.c
   src/parser.c
   src/codegen.c
+  src/sg_diag.c
 )
 
 target_include_directories(

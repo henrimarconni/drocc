@@ -1,11 +1,13 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "diagnostics.h"
 #include "scanner.h"
 #include "span.h"
 #include "vec.h"
 #include "vmem_arena.h"
 #include "stringdef.h"
+#include <setjmp.h>
 
 typedef vec(bstr) InputFiles;
 
@@ -51,11 +53,12 @@ typedef struct {
 
 typedef struct {
   vec(TestFile) files;
+  DiagEngine engine;
   VMEMArena* arena;
 } ParserState;
 
 
-void parse_files(ParserState* state, InputFiles files);
+void parse_files(ParserState* state, InputFiles files, jmp_buf* onerror);
 
 
 #endif

@@ -57,7 +57,7 @@ void print_diag_intro(DiagLevel level) {
   }
 }
 
-DiagEngine new_engine(DiagInfo* infos, size_t info_len, jmp_buf* onerror) {
+DiagEngine new_engine(const DiagInfo* infos, size_t info_len, jmp_buf* onerror) {
   return (DiagEngine){infos, {}, info_len, onerror};
 }
 

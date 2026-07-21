@@ -29,7 +29,8 @@ void appendf(StringBuilder* b, bstr fstr, ...) {
 }
 
 void gen_from_test(Codegen* c, Test* test) {
-  appendf(&c->output, "void %s() {%s}\n", test->name, test->body);
+  appendf(&c->output, "\n// %s : %s\nvoid %s() {%s}\n", test->desc, test->group, test->name,
+          test->body);
 }
 
 void gen_from_node(Codegen* c, CodegenNode* node) {

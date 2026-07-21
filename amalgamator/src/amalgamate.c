@@ -5,6 +5,7 @@
 #include "stringbuilder.h"
 #include "utils.h"
 #include "vmem_arena.h"
+#include <assert.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -78,7 +79,8 @@ void preprocessor_cmd(Amalgamator* a) {
 
 StringBuilder amalgamate(VMEMArena* arena, IncludeDirVec idirs, bstr output, bstr input) {
   Amalgamator a = {};
-  a.file = read_file(arena, input);
+  ScannerRes res = read_file(&a.file, arena, input);
+  assert(res == SE_OK);
   a.arena = arena;
   a.include_dirs = idirs;
   preprocessor_cmd(&a);

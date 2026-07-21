@@ -5,6 +5,7 @@
 #include "vec.h"
 #include "vmem_arena.h"
 #include <assert.h>
+#include <setjmp.h>
 
 void parse_args(bstr* outfile, InputFiles* files) {
   char ch;
@@ -40,7 +41,9 @@ int main(int argc, char** argv) {
   VMEMArena* arena = vmarena_new(128 * 1024);
   ParserState state = {};
   state.arena = arena;
-  parse_files(&state, files);
+  jmp_buf onerror;
+  if (setjmp(onerror) == 0)
+    parse_files(&state, files, &onerror);
 
   Codegen c = {};
   generate_code(&c, &state);

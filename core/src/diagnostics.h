@@ -30,7 +30,7 @@ typedef struct {
 typedef struct Diag Diag;
 
 typedef struct {
-  DiagInfo* infos;
+  const DiagInfo* infos;
   vec(Diag) diags;
   size_t info_len;
   jmp_buf* onerror;
@@ -40,7 +40,7 @@ typedef struct {
 void _throw_diag(DiagEngine* eng, Span span, int diag_type, ...);
 
 void _print_diag(DiagEngine* eng, Span span, int diag_type, ...);
-DiagEngine new_engine(DiagInfo* infos, size_t info_len, jmp_buf* onerror);
+DiagEngine new_engine(const DiagInfo* infos, size_t info_len, jmp_buf* onerror);
 
 #define throw_diag(eng, span, type, ...)\
 do {\
