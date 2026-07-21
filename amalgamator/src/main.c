@@ -45,6 +45,7 @@ int main(int argc, char** argv) {
   bstr output_file = NULL;
   bstr input_file = NULL;
   IncludeDirVec include_dirs = {};
+  vec_push(include_dirs, "."); // add current directory to search list
   ce_initopt(argc, argv);
   parse_args(&output_file, &input_file, &include_dirs);
 

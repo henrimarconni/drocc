@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "diagnostics.h"
 #include "scanner.h"
 #include "stringdef.h"
 #include "vec.h"
@@ -46,8 +47,8 @@ typedef struct {
 typedef struct {
   vec(Interface*) interfaces;
   vec(ExportCmd) exports;
+  DiagEngine engine;
   SourceFile file;
-  jmp_buf* onerror;
   VMEMArena* arena;
 } Parser;
 

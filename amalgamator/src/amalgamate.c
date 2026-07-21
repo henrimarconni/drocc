@@ -5,9 +5,12 @@
 #include "stringbuilder.h"
 #include "utils.h"
 #include "vmem_arena.h"
+#include <stddef.h>
+#include <string.h>
 
 typedef struct {
   StringBuilder output;
+  IncludeDirVec include_dirs;
   SourceFile file;
   VMEMArena* arena;
 } Amalgamator;
@@ -33,7 +36,26 @@ void process_file(Amalgamator* a) {
   }
 }
 
-void process_include(Amalgamator* a) { Span include_file = parse_cstr(&a->file); }
+void process_include(Amalgamator* a) {
+  Span include_file = parse_cstr(&a->file);
+  VMEMArenaMark mark = vmarena_mark(a->arena);
+  for (size_t i = 0; i < a->include_dirs.n; i++) {
+    bstr included_dir = a->include_dirs.get[i];
+    size_t included_dir_len = strlen(included_dir);
+    // path = included_dir + '/' + include_file + '\0'
+    size_t pathlen = included_dir_len + 1 + include_file.len + 1;
+    bstr path = vmarena_alloc(a->arena, pathlen);
+
+    memcpy(path, included_dir, included_dir_len);
+    path[included_dir_len] = '/';
+    memcpy(path + included_dir_len + 1, include_file.str, include_file.len);
+    path[pathlen - 1] = '\0';
+
+    if (file_exists(path)) {
+    } else
+      vmarena_mark_reset(a->arena, mark);
+  }
+}
 
 void preprocessor_cmd(Amalgamator* a) {
   skip_unwanted(&a->file);
@@ -58,6 +80,7 @@ StringBuilder amalgamate(VMEMArena* arena, IncludeDirVec idirs, bstr output, bst
   Amalgamator a = {};
   a.file = read_file(arena, input);
   a.arena = arena;
-
+  a.include_dirs = idirs;
+  preprocessor_cmd(&a);
   return a.output;
 }

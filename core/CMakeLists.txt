@@ -9,6 +9,7 @@ add_library(
   src/stringbuilder.c
   src/scanner.c
   src/cparser_utils.c
+  src/diagnostics.c
 )
 
 target_include_directories(

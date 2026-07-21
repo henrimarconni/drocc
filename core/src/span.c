@@ -11,7 +11,7 @@ bool span_cmp(Span span1, Span span2) {
          (span1.str == span2.str || memcmp(span1.str, span2.str, span1.len) == 0);
 }
 
-Span str_to_span(bstr str) { return (Span){0, 0, strlen(str), str}; }
+Span str_to_span(bstr str) { return (Span){0, 0, strlen(str), str, NULL}; }
 
 bool span_str_cmp(Span span, bstr str) {
   while (*str && span.len > 0) {
@@ -25,7 +25,7 @@ bool span_str_cmp(Span span, bstr str) {
 }
 
 Span span_from_file(SourceFile* file) {
-  return (Span){file->pos.row, file->pos.col, 0, &file->contents[file->pos.id]};
+  return (Span){file->pos.row, file->pos.col, 0, &file->contents[file->pos.id], file};
 }
 
 // Gives null terminated duplicate
@@ -52,7 +52,7 @@ void print_line_start(int offset1) {
   print_n_spaces(offset1);
   printf("| ");
 }
-void highlight_span(SourceFile* file, Span span) {
+void highlight_span(Span span) {
   char line_no[32];
   int offset1 = snprintf(line_no, sizeof(line_no), "%zu ", span.row);
 
@@ -60,7 +60,7 @@ void highlight_span(SourceFile* file, Span span) {
   putchar('\n');
 
   const char* line_start = span.str;
-  while (line_start > file->contents && line_start[-1] != '\n')
+  while (line_start > span.file->contents && line_start[-1] != '\n')
     --line_start;
 
   const char* line_end = span.str;
