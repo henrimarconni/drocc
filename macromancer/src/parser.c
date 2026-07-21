@@ -2,7 +2,6 @@
 #include "parser.h"
 #include "scanner.h"
 #include "span.h"
-#include "utils.h"
 #include "vec.h"
 #include "vmem_arena.h"
 #include <assert.h>
@@ -42,7 +41,7 @@ void skip_unwanted(SourceFile* file) {
 Span get_tok(Parser* p) {
   skip_unwanted(&p->file);
 
-  Span span = {p->file.pos.row, p->file.pos.col, 0, &p->file.contents[p->file.pos.id]};
+  Span span = span_from_file(&p->file);
   int ch = peekch(&p->file);
   if (ch == EOF) {
     span.len = 0;
@@ -120,7 +119,7 @@ void parse_interface(Parser* p) {
 
 Span expect_str(Parser* p) {
   skip_unwanted(&p->file);
-  Span span = {p->file.pos.row, p->file.pos.col, 1, &p->file.contents[p->file.pos.id]};
+  Span span = span_from_file(&p->file);
   char ch = nextch(&p->file);
   if (ch != '"')
     throw_error(p, span, ERR_INVALID_STRING, span);
@@ -322,8 +321,7 @@ void read_conf(Parser* p, bstr confpath, ExportOverrideVec* export_override, VME
   *p = (Parser){0};
   p->arena = arena;
   p->onerror = onerror;
-  p->file.name = confpath;
-  p->file.contents = read_file(arena, confpath);
+  p->file = read_file(arena, confpath);
   parse_conf(p);
 
   for (size_t i = 0; i < export_override->n; i++) {

@@ -24,6 +24,10 @@ bool span_str_cmp(Span span, bstr str) {
   return true;
 }
 
+Span span_from_file(SourceFile* file) {
+  return (Span){file->pos.row, file->pos.col, 0, &file->contents[file->pos.id]};
+}
+
 // Gives null terminated duplicate
 bstr dup_span_buf(Span span, bstr buf) {
   memcpy(buf, span.str, span.len);

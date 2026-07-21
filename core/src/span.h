@@ -20,6 +20,7 @@ typedef struct {
 
 
 void highlight_span(SourceFile* file, Span span);
+Span span_from_file(SourceFile* file);
 bool span_cmp(Span span1, Span span2);
 Span str_to_span(bstr str);
 bool span_str_cmp(Span span, bstr str);

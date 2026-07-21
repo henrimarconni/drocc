@@ -1,7 +1,7 @@
+#include "cparser_utils.h"
 #include "parser.h"
 #include "scanner.h"
 #include "span.h"
-#include "utils.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stddef.h>
@@ -23,35 +23,6 @@ void skip_unwanted(SourceFile* file) {
     skip_comment(file);
     skip_space(file);
   } while (file->pos.id != last_id && peekch(file) != EOF);
-}
-
-void skip_c_comments(SourceFile* file, Span* span) {
-  while (peekch(file) == '/') {
-    if (peeknextch(file) == '/') {
-      char ch;
-      while ((ch = peekch(file)) != '\n') {
-        ch = nextch(file);
-        assert(ch != EOF);
-        span->len++;
-      }
-    } else if (peeknextch(file) == '*') {
-      nextch(file); // skip /
-      span->len++;
-      nextch(file); // skip *
-      span->len++;
-      char ch = peekch(file);
-      while (peekch(file) != '*' || peeknextch(file) != '/') {
-        nextch(file);
-        assert(ch != EOF);
-        span->len++;
-      }
-      nextch(file); // skip *
-      span->len++;
-      nextch(file); // skip /
-      span->len++;
-    } else
-      break;
-  }
 }
 
 Token tok_block(TestFile* file, Span span) {
@@ -93,19 +64,7 @@ Token tok_id(TestFile* file, Span span) {
   return (Token){TOK_ID, span};
 }
 
-Token tok_str(TestFile* file, Span span) {
-  nextch(&file->source);
-  span.str++; // skip "
-  int ch = peekch(&file->source);
-  while (ch != '"') {
-    assert(ch != EOF);
-    nextch(&file->source);
-    ch = peekch(&file->source);
-    span.len++;
-  }
-  nextch(&file->source); // skip ending "
-  return (Token){TOK_STR, span};
-}
+Token tok_str(TestFile* file, Span span) { return (Token){TOK_STR, span}; }
 
 Token tok_simple(TokenType type, int ch, Span span) {
   span.len = 1;
@@ -117,8 +76,7 @@ Token tok_simple(TokenType type, int ch, Span span) {
 //        ^ (after nextch)
 Token get_tok(TestFile* file) {
   skip_unwanted(&file->source);
-  Span span = {file->source.pos.row, file->source.pos.col, 0,
-               &file->source.contents[file->source.pos.id]};
+  Span span = span_from_file(&file->source);
   int ch = peekch(&file->source);
 
   switch (ch) {
@@ -208,9 +166,7 @@ void parse_file(ParserState* state, TestFile* file) {
 void parse_files(ParserState* state, InputFiles files) {
   for (size_t i = 0; i < files.n; i++) {
     TestFile file = {};
-    file.source.name = files.get[i];
-    file.source.contents = read_file(state->arena, file.source.name);
-    file.source.pos.len = strlen(file.source.contents);
+    file.source = read_file(state->arena, files.get[i]);
     parse_file(state, &file);
     vec_push(state->files, file);
   }

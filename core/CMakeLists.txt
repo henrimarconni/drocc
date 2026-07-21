@@ -8,6 +8,7 @@ add_library(
   src/utils.c
   src/stringbuilder.c
   src/scanner.c
+  src/cparser_utils.c
 )
 
 target_include_directories(
