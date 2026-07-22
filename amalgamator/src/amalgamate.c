@@ -1,5 +1,5 @@
 #include "amalgamate.h"
-#include "cparser_utils.h"
+#include "clexer_utils.h"
 #include "scanner.h"
 #include "span.h"
 #include "stringbuilder.h"
@@ -7,6 +7,7 @@
 #include "vmem_arena.h"
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 typedef struct {
@@ -22,8 +23,7 @@ void skip_unwanted(SourceFile* file) {
   int last_id;
   do {
     last_id = file->pos.id;
-    Span _span = {};
-    skip_c_comments(file, &_span);
+    skip_c_comments(file);
     skip_space(file);
   } while (file->pos.id != last_id && peekch(file) != EOF);
 }
@@ -38,7 +38,9 @@ void process_file(Amalgamator* a) {
 }
 
 void process_include(Amalgamator* a) {
-  Span include_file = parse_cstr(&a->file);
+  Span include_file = span_begin(&a->file);
+  assert(lex_cstr(&a->file) == CLEX_OK);
+  span_end(&include_file);
   VMEMArenaMark mark = vmarena_mark(a->arena);
   for (size_t i = 0; i < a->include_dirs.n; i++) {
     bstr included_dir = a->include_dirs.get[i];
@@ -60,7 +62,7 @@ void process_include(Amalgamator* a) {
 
 void preprocessor_cmd(Amalgamator* a) {
   skip_unwanted(&a->file);
-  Span span = span_from_file(&a->file);
+  Span span = span_begin(&a->file);
   char ch;
   while ((ch = peekch(&a->file)) != EOF) {
     if (span.len > strlen("include"))
@@ -72,9 +74,9 @@ void preprocessor_cmd(Amalgamator* a) {
       else
         break;
     }
-    span.len++;
     nextch(&a->file);
   }
+  span_end(&span);
 }
 
 StringBuilder amalgamate(VMEMArena* arena, IncludeDirVec idirs, bstr output, bstr input) {

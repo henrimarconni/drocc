@@ -1,4 +1,4 @@
-#include "cparser_utils.h"
+#include "clexer_utils.h"
 #include "diagnostics.h"
 #include "parser.h"
 #include "scanner.h"
@@ -29,47 +29,55 @@ void skip_unwanted(SourceFile* file) {
   } while (file->pos.id != last_id && peekch(file) != EOF);
 }
 
-Token tok_block(DiagEngine* engine, TestFile* file, Span span) {
+Token tok_block(DiagEngine* engine, TestFile* file) {
   nextch(&file->source); // skip {
-  span.str++;
+  Span span = span_begin(&file->source);
 
   int depth = 1;
-  bool is_str = false;
   while (depth > 0) {
+    if (skip_c_comments(&file->source) != CLEX_OK)
+      throw_diag(engine, span, ERR_UNEXPECTED_EOF);
+    else if (peekch(&file->source) == '"') {
+      if (lex_cstr(&file->source) != CLEX_OK)
+        throw_diag(engine, span, ERR_UNEXPECTED_EOF);
+    }
+
     int ch = nextch(&file->source);
-    skip_c_comments(&file->source, &span);
-    if (ch == '"' && !is_str)
-      is_str = true;
-    if (ch == '"' && is_str)
-      is_str = false;
+
     if (ch == EOF)
       throw_diag(engine, span, ERR_UNEXPECTED_EOF);
-    span.len++;
-    if (ch == '{')
+    else if (ch == '{')
       depth++;
     else if (ch == '}')
       depth--;
   }
-  span.len--; // dont include final }
+  span_end(&span);
+  shrink_span(&span); // remove that trailing }
   return (Token){TOK_BLOCK, span};
 }
 
 #define is_id_start(ch) (isalpha((ch)) || (ch) == '_' || (ch) == '$')
 #define is_id_body(ch) (isalnum((ch)) || (ch) == '_')
 
-Token tok_id(TestFile* file, Span span) {
-  span.len = 1;
-  nextch(&file->source); // first character is already included
+Token tok_id(TestFile* file) {
+  Span span = span_begin(&file->source);
+  nextch(&file->source); // first character
   int ch = peekch(&file->source);
   while (is_id_body(ch)) {
     nextch(&file->source);
     ch = peekch(&file->source);
-    span.len++;
   }
+  span_end(&span);
   return (Token){TOK_ID, span};
 }
 
-Token tok_str(TestFile* file, Span span) { return (Token){TOK_STR, parse_cstr(&file->source)}; }
+Token tok_str(DiagEngine* engine, TestFile* file) {
+  Span span = span_begin(&file->source);
+  if (lex_cstr(&file->source) != CLEX_OK)
+    throw_diag(engine, span, ERR_UNEXPECTED_EOF);
+  span_end(&span);
+  return (Token){TOK_STR, span};
+}
 
 Token tok_simple(TokenType type, int ch, Span span) {
   span.len = 1;
@@ -81,24 +89,26 @@ Token tok_simple(TokenType type, int ch, Span span) {
 //        ^ (after nextch)
 Token get_tok(DiagEngine* engine, TestFile* file) {
   skip_unwanted(&file->source);
-  Span span = span_from_file(&file->source);
+  Span span = span_begin(&file->source);
   int ch = peekch(&file->source);
 
   switch (ch) {
   case '{':
-    return tok_block(engine, file, span);
+    return tok_block(engine, file);
   case '"':
-    return tok_str(file, span);
+    return tok_str(engine, file);
   case ':':
     return tok_simple(TOK_COLON, nextch(&file->source), span);
   case '(':
     return tok_simple(TOK_LPAREN, nextch(&file->source), span);
   case ')':
     return tok_simple(TOK_RPAREN, nextch(&file->source), span);
+  default:
+    if (is_id_start(ch))
+      return tok_id(file);
+    span_end(&span);
+    throw_diag(engine, span, ERR_UNEXPECTED_CHAR, span);
   }
-  if (is_id_start(ch))
-    return tok_id(file, span);
-  throw_diag(engine, span, ERR_UNEXPECTED_CHAR, span);
 }
 
 Token expect_tok(DiagEngine* engine, TestFile* file, TokenType type) {
@@ -110,7 +120,7 @@ Token expect_tok(DiagEngine* engine, TestFile* file, TokenType type) {
 
 void parse_cblock(DiagEngine* engine, TestFile* file) {
   CodegenNode node = {};
-  Token block = get_tok(engine, file);
+  Token block = expect_tok(engine, file, TOK_BLOCK);
   node.c_code = block.span;
   node.type = CG_CBLOCK;
   vec_push(file->nodes, node);

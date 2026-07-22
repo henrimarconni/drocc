@@ -1,5 +1,6 @@
 #include "scanner.h"
 #include "span.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -26,10 +27,6 @@ bool span_str_cmp(Span span, bstr str) {
   return true;
 }
 
-Span span_from_file(SourceFile* file) {
-  return (Span){file->pos.row, file->pos.col, 0, &file->contents[file->pos.id], file};
-}
-
 // Gives null terminated duplicate
 bstr dup_span_buf(Span span, bstr buf) {
   memcpy(buf, span.str, span.len);
@@ -37,13 +34,27 @@ bstr dup_span_buf(Span span, bstr buf) {
   return buf;
 }
 
-Span advance_span(Span span) {
-  if (span.len > 0) {
-    span.str++;
-    span.len--;
+void advance_span(Span* span) {
+  if (span->len > 0) {
+    span->str++;
+    span->len--;
   }
-  return span;
 }
+
+void shrink_span(Span* span) {
+  assert(span->len > 0);
+  span->len--;
+}
+
+Span span_begin(SourceFile* file) {
+  return (Span){.str = &file->contents[file->pos.id],
+                .len = 0,
+                .row = file->pos.row,
+                .col = file->pos.col,
+                .file = file};
+}
+
+void span_end(Span* span) { span->len = &span->file->contents[span->file->pos.id] - span->str; }
 
 void print_n_spaces(int n) {
   while (n--)
@@ -54,6 +65,7 @@ void print_line_start(int offset1) {
   print_n_spaces(offset1);
   printf("| ");
 }
+
 void highlight_span(Span span) {
   char line_no[32];
   int offset1 = snprintf(line_no, sizeof(line_no), "%zu ", span.row);

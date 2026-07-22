@@ -42,29 +42,23 @@ void skip_unwanted(SourceFile* file) {
 Span get_tok(Parser* p) {
   skip_unwanted(&p->file);
 
-  Span span = span_from_file(&p->file);
+  Span span = span_begin(&p->file);
   int ch = peekch(&p->file);
-  if (ch == EOF) {
-    span.len = 0;
-    return span;
-  }
+  if (ch == EOF)
+    throw_diag(&p->engine, span, MM_ERR_UNEXPECTED_EOF, span);
 
   if (ch == '{' || ch == '}' || ch == '=') {
     nextch(&p->file);
-    span.len = 1;
+    span_end(&span);
     skip_unwanted(&p->file);
     return span;
   }
 
-  int len = 0;
   while (ch != EOF && !isspace(ch) && ch != '{' && ch != '}' && ch != '=') {
     nextch(&p->file);
     ch = peekch(&p->file);
-    len++;
   }
-
-  assert(len != 0);
-  span.len = len;
+  span_end(&span);
   skip_unwanted(&p->file);
   return span;
 }
@@ -72,13 +66,13 @@ Span get_tok(Parser* p) {
 void expect(Parser* p, bstr str) {
   Span span = get_tok(p);
   if (!span_str_cmp(span, str))
-    throw_diag(&p->engine, span, ERR_UNEXPECTED_TOK, str, span);
+    throw_diag(&p->engine, span, MM_ERR_UNEXPECTED_TOK, str, span);
 }
 
 void add_interface(Parser* p, Interface interface) {
   for (size_t i = 0; i < p->interfaces.n; i++) {
     if (span_cmp(interface.name, p->interfaces.get[i]->name))
-      throw_diag(&p->engine, interface.name, ERR_INTERFACE_ALREADY_EXISTS, interface.name);
+      throw_diag(&p->engine, interface.name, MM_ERR_INTERFACE_ALREADY_EXISTS, interface.name);
   }
   Interface* mem = vmarena_alloc(p->arena, sizeof(Interface));
   *mem = interface;
@@ -96,7 +90,7 @@ void parse_interface(Parser* p) {
   else if (span_str_cmp(type, "Static"))
     is_dynamic = false;
   else
-    throw_diag(&p->engine, type, ERR_UNEXPECTED_TOK, "`Dynamic` or `Static`", type);
+    throw_diag(&p->engine, type, MM_ERR_UNEXPECTED_TOK, "`Dynamic` or `Static`", type);
 
   expect(p, "{");
 
@@ -120,16 +114,15 @@ void parse_interface(Parser* p) {
 
 Span expect_str(Parser* p) {
   skip_unwanted(&p->file);
-  Span span = span_from_file(&p->file);
+  Span span = span_begin(&p->file);
   char ch = nextch(&p->file);
   if (ch != '"')
-    throw_diag(&p->engine, span, ERR_INVALID_STRING, span);
-  while (ch != '"' && ch != EOF) {
+    throw_diag(&p->engine, span, MM_ERR_INVALID_STRING, span);
+  while (ch != '"' && ch != EOF)
     ch = nextch(&p->file);
-    span.len++;
-  }
   if (ch != '"')
-    throw_diag(&p->engine, span, ERR_INVALID_STRING, span);
+    throw_diag(&p->engine, span, MM_ERR_INVALID_STRING, span);
+  span_end(&span);
   return span;
 }
 
@@ -173,7 +166,7 @@ void add_impl(Parser* p, Impl impl, size_t iface_idx) {
   Interface* iface = p->interfaces.get[iface_idx];
   for (size_t i = 0; i < iface->impls.n; i++) {
     if (span_cmp(impl.name, iface->impls.get[i]->name))
-      throw_diag(&p->engine, iface->name, ERR_IMPL_ALREADY_EXISTS, impl.name, iface->name);
+      throw_diag(&p->engine, iface->name, MM_ERR_IMPL_ALREADY_EXISTS, impl.name, iface->name);
   }
   Impl* mem = vmarena_alloc(p->arena, sizeof(Impl));
   *mem = impl;
@@ -187,7 +180,7 @@ void parse_impl(Parser* p) {
 
   ssize_t iface_idx = find_iface_idx(p, iface_name);
   if (iface_idx < 0)
-    throw_diag(&p->engine, iface_name, ERR_INTERFACE_DOESNT_EXIST, iface_name);
+    throw_diag(&p->engine, iface_name, MM_ERR_INTERFACE_DOESNT_EXIST, iface_name);
 
   expect(p, "{");
 
@@ -195,13 +188,14 @@ void parse_impl(Parser* p) {
   parse_pair(p, &header_pair);
 
   if (!span_str_cmp(header_pair.key, "$header")) {
-    throw_diag(&p->engine, header_pair.key, ERR_UNEXPECTED_TOK,
+    throw_diag(&p->engine, header_pair.key, MM_ERR_UNEXPECTED_TOK,
                "`$header = none` or `$header = \"xxxxx.h\"`", header_pair.key);
   }
   if (span_str_cmp(header_pair.val, "none")) {
     header_pair.val.len = 0;
   } else if (header_pair.val.str[0] != '"' || header_pair.val.str[header_pair.val.len - 1] != '"') {
-    throw_diag(&p->engine, header_pair.val, ERR_HEADER_FILE_NOT_IN_DOUBLE_QUOTES, header_pair.val);
+    throw_diag(&p->engine, header_pair.val, MM_ERR_HEADER_FILE_NOT_IN_DOUBLE_QUOTES,
+               header_pair.val);
   }
 
   Impl impl = {0};
@@ -224,7 +218,7 @@ void parse_impl(Parser* p) {
     iface = p->interfaces.get[iface_idx];
     int id = find_fn_id(p, iface, pair.key);
     if (id < 0)
-      throw_diag(&p->engine, pair.key, ERR_FN_NOT_DEFINED_BUT_REFERENCED, pair.key, iface->name,
+      throw_diag(&p->engine, pair.key, MM_ERR_FN_NOT_DEFINED_BUT_REFERENCED, pair.key, iface->name,
                  impl.name);
 
     impl.pairs.get[id] = pair;
@@ -250,11 +244,11 @@ void add_export_cli(Parser* p, bstr iface_name, bstr impl_name) {
 
   Interface* iface = find_iface(p, iface_span);
   if (iface == NULL)
-    throw_diag(&p->engine, NULL_SPAN, ERR_INTERFACE_DOESNT_EXIST, iface_span);
+    throw_diag(&p->engine, NULL_SPAN, MM_ERR_INTERFACE_DOESNT_EXIST, iface_span);
 
   Impl* impl = find_impl(p, iface, impl_span);
   if (impl == NULL)
-    throw_diag(&p->engine, NULL_SPAN, ERR_IMPL_NOT_DEFINED, impl_span, iface_span);
+    throw_diag(&p->engine, NULL_SPAN, MM_ERR_IMPL_NOT_DEFINED, impl_span, iface_span);
 
   ExportCmd export = {.iface = iface, .impl = impl};
   if (dup_id < 0)
@@ -276,11 +270,11 @@ void add_export_conf(Parser* p, Span iface_name, Span impl_name) {
 
   Interface* iface = find_iface(p, iface_name);
   if (iface == NULL)
-    throw_diag(&p->engine, iface_name, ERR_INTERFACE_DOESNT_EXIST, iface_name);
+    throw_diag(&p->engine, iface_name, MM_ERR_INTERFACE_DOESNT_EXIST, iface_name);
 
   Impl* impl = find_impl(p, iface, impl_name);
   if (impl == NULL)
-    throw_diag(&p->engine, impl_name, ERR_IMPL_NOT_DEFINED, impl_name, iface_name);
+    throw_diag(&p->engine, impl_name, MM_ERR_IMPL_NOT_DEFINED, impl_name, iface_name);
 
   ExportCmd export = {.iface = iface, .impl = impl};
   if (dup_id < 0)
@@ -304,7 +298,7 @@ void parse_keyw(Parser* p, Span keyw) {
   }
   DISPATCH_TABLE(X)
 #undef X
-  throw_diag(&p->engine, keyw, ERR_UNEXPECTED_KEYW, keyw);
+  throw_diag(&p->engine, keyw, MM_ERR_UNEXPECTED_KEYW, keyw);
 }
 
 void parse_conf(Parser* p) {
@@ -325,7 +319,7 @@ void read_conf(Parser* p, bstr confpath, ExportOverrideVec* export_override, VME
   p->arena = arena;
   ScannerRes res = read_file(&p->file, arena, confpath);
   if (res != SE_OK)
-    throw_diag(&p->engine, NULL_SPAN, ERR_CANT_OPEN_FILE, confpath);
+    throw_diag(&p->engine, NULL_SPAN, MM_ERR_CANT_OPEN_FILE, confpath);
   parse_conf(p);
 
   for (size_t i = 0; i < export_override->n; i++) {

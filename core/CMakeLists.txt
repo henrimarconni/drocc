@@ -8,7 +8,7 @@ add_library(
   src/utils.c
   src/stringbuilder.c
   src/scanner.c
-  src/cparser_utils.c
+  src/clexer_utils.c
   src/diagnostics.c
 )
 
