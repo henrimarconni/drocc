@@ -2,6 +2,7 @@ add_executable(
   amalgamator
   src/main.c
   src/amalgamate.c
+  src/amal_diag.c
 )
 
 target_include_directories(

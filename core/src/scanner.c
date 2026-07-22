@@ -18,6 +18,18 @@ int nextch(SourceFile* file) {
   return ch;
 }
 
+bool match_str(SourceFile* file, bstr str) {
+  size_t pos = file->pos.id;
+  while (*str) {
+    if (file->contents[pos] != *str)
+      return false;
+    pos++;
+    str++;
+  }
+  file->pos.id = pos;
+  return true;
+}
+
 int peekch(SourceFile* file) {
   if (file->pos.id >= file->pos.len)
     return EOF;

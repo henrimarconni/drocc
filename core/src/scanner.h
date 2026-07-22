@@ -25,6 +25,7 @@ typedef enum {
 int nextch(SourceFile* file);
 int peekch(SourceFile* file);
 int peeknextch(SourceFile* file);
+bool match_str(SourceFile* file, bstr str);
 void skip_space(SourceFile* file);
 ScannerRes read_file(SourceFile* sf, VMEMArena* arena, bstr confpath);
 

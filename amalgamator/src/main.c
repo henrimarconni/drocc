@@ -3,6 +3,7 @@
 #include "stringbuilder.h"
 #include "vec.h"
 #include "vmem_arena.h"
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <threads.h>
@@ -42,6 +43,8 @@ void parse_args(bstr* output_file, bstr* input_file, IncludeDirVec* include_dirs
 }
 
 int main(int argc, char** argv) {
+  if (argc == 1)
+    return -1;
   bstr output_file = NULL;
   bstr input_file = NULL;
   IncludeDirVec include_dirs = {};
@@ -50,7 +53,10 @@ int main(int argc, char** argv) {
   parse_args(&output_file, &input_file, &include_dirs);
 
   VMEMArena* arena = vmarena_new(128 * 1024);
-  StringBuilder output = amalgamate(arena, include_dirs, output_file, input_file);
+  jmp_buf onerror;
+  StringBuilder output;
+  if (setjmp(onerror) == 0)
+    output = amalgamate(arena, include_dirs, output_file, input_file, &onerror);
 
   vec_destroy(output);
   vec_destroy(include_dirs);

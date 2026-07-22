@@ -46,6 +46,12 @@ void shrink_span(Span* span) {
   span->len--;
 }
 
+void extend_span(Span* span) {
+  assert(span->len + span->str <= span->file->contents + span->file->pos.len);
+  nextch(span->file);
+  span->len++;
+}
+
 Span span_begin(SourceFile* file) {
   return (Span){.str = &file->contents[file->pos.id],
                 .len = 0,

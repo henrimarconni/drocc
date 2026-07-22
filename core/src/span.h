@@ -21,6 +21,7 @@ typedef struct {
 
 Span span_begin(SourceFile *file);
 void span_end(Span *span);
+void extend_span(Span* span);
 void highlight_span(Span span);
 bool span_cmp(Span span1, Span span2);
 Span str_to_span(bstr str);

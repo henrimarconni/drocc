@@ -1,11 +1,14 @@
+#include "amal_diag.h"
 #include "amalgamate.h"
 #include "clexer_utils.h"
+#include "diagnostics.h"
 #include "scanner.h"
 #include "span.h"
 #include "stringbuilder.h"
 #include "utils.h"
 #include "vmem_arena.h"
 #include <assert.h>
+#include <setjmp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,6 +18,7 @@ typedef struct {
   IncludeDirVec include_dirs;
   SourceFile file;
   VMEMArena* arena;
+  DiagEngine engine;
 } Amalgamator;
 
 void preprocessor_cmd(Amalgamator* a);
@@ -39,8 +43,13 @@ void process_file(Amalgamator* a) {
 
 void process_include(Amalgamator* a) {
   Span include_file = span_begin(&a->file);
-  assert(lex_cstr(&a->file) == CLEX_OK);
+  if (lex_cstr(&a->file) != CLEX_OK) {
+    span_end(&include_file);
+    throw_diag(&a->engine, include_file, AMAL_ERR_INVALID_STR, include_file);
+  }
   span_end(&include_file);
+  shrink_span(&include_file);
+  advance_span(&include_file);
   VMEMArenaMark mark = vmarena_mark(a->arena);
   for (size_t i = 0; i < a->include_dirs.n; i++) {
     bstr included_dir = a->include_dirs.get[i];
@@ -55,6 +64,9 @@ void process_include(Amalgamator* a) {
     path[pathlen - 1] = '\0';
 
     if (file_exists(path)) {
+      SourceFile file;
+      read_file(&file, a->arena, path);
+      printf("%s", file.contents);
     } else
       vmarena_mark_reset(a->arena, mark);
   }
@@ -62,25 +74,32 @@ void process_include(Amalgamator* a) {
 
 void preprocessor_cmd(Amalgamator* a) {
   skip_unwanted(&a->file);
-  Span span = span_begin(&a->file);
-  char ch;
-  while ((ch = peekch(&a->file)) != EOF) {
-    if (span.len > strlen("include"))
-      break;
-    if (span_str_cmp(span, "include")) {
-      skip_space(&a->file);
+  char ch = peekch(&a->file);
+  while (peekch(&a->file) != EOF) {
+    skip_unwanted(&a->file);
+
+    if (peekch(&a->file) != '#') {
+      nextch(&a->file);
+      continue;
+    }
+
+    nextch(&a->file); // '#'
+
+    if (match_str(&a->file, "include")) {
+      skip_unwanted(&a->file);
       if (peekch(&a->file) == '"')
         process_include(a);
       else
-        break;
-    }
-    nextch(&a->file);
+        continue;
+    } else
+      continue;
   }
-  span_end(&span);
 }
 
-StringBuilder amalgamate(VMEMArena* arena, IncludeDirVec idirs, bstr output, bstr input) {
+StringBuilder amalgamate(VMEMArena* arena, IncludeDirVec idirs, bstr output, bstr input,
+                         jmp_buf* onerror) {
   Amalgamator a = {};
+  a.engine = new_engine(amal_diaginfos, __amal_diaginfos_len, onerror);
   ScannerRes res = read_file(&a.file, arena, input);
   assert(res == SE_OK);
   a.arena = arena;
