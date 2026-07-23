@@ -49,9 +49,14 @@ void gen_from_file(Codegen* c, TestFile* file) {
     gen_from_node(c, &file->nodes.get[i]);
 }
 
+char runner_code[] = {
+#embed RUNNER_SOURCE_PATH
+};
+
 void generate_code(Codegen* c, ParserState* state) {
   for (size_t i = 0; i < state->files.n; i++)
     gen_from_file(c, &state->files.get[i]);
+  append_str(&c->output, runner_code);
   append_ch(&c->output, '\0');
   printf("%s\n", c->output.get);
 }

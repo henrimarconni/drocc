@@ -30,6 +30,16 @@ void skip_unwanted(SourceFile* file) {
   } while (file->pos.id != last_id && peekch(file) != EOF);
 }
 
+void skip_unwanted_str(SourceFile* file) {
+  int last_id;
+  do {
+    last_id = file->pos.id;
+    skip_c_comments(file);
+    skip_space(file);
+    lex_cstr(file);
+  } while (file->pos.id != last_id && peekch(file) != EOF);
+}
+
 bool check_cached(SourceFile* file, Amalgamator* a, bstr fname) {
   for (size_t i = 0; i < a->cache.n; i++) {
     *file = a->cache.get[i];
@@ -73,6 +83,7 @@ SourceFile include(Amalgamator* a, bstr fname) {
   throw_diag(&a->engine, NULL_SPAN, AMAL_ERR_FILE_NOT_FOUND, fname);
 }
 
+// TODO: Skip strings while processing
 void append_processed(Amalgamator* a, SourceFile* file) {
   Span span = span_begin(file);
   while (peekch(file) != EOF) {
@@ -109,6 +120,7 @@ void append_processed(Amalgamator* a, SourceFile* file) {
     }
     nextch(file);
   }
+  skip_unwanted_str(file);
   span_end(&span);
   append_span(&a->output, span);
 }
