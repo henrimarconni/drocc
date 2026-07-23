@@ -59,11 +59,12 @@ int main(int argc, char** argv) {
   jmp_buf onerror;
   if (setjmp(onerror) == 0) {
     StringBuilder output = amalgamate(arena, include_dirs, input_files, &onerror);
-    if (output.get)
-      printf("%s\n", output.get);
+    // if (output.get)
+    //   printf("%s\n", output.get);
     vec_destroy(output);
   }
   vec_destroy(include_dirs);
+  vec_destroy(input_files);
   vmarena_free(arena);
   return 0;
 }

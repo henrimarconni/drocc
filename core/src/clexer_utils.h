@@ -4,6 +4,7 @@
 
 typedef enum {
   CLEX_OK,
+  CLEX_INVALID_STR,
   CLEX_UNEXPECTED_EOF
 } CLexerRes;
 

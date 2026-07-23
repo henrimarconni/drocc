@@ -30,6 +30,8 @@ CLexerRes skip_c_comments(SourceFile* file) {
 }
 
 CLexerRes lex_cstr(SourceFile* file) {
+  if (peekch(file) != '"')
+    return CLEX_INVALID_STR;
   nextch(file); // consume opening '"'
   for (;;) {
     switch (nextch(file)) {
