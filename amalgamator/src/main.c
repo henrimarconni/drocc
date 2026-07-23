@@ -45,6 +45,20 @@ void parse_args(bstr* output_file, InputFIleVec* input_files, IncludeDirVec* inc
   }
 }
 
+void write_out(bstr output_path, StringBuilder b) {
+  FILE* out = output_path ? fopen(output_path, "w") : stdout;
+  if (!out) {
+    printf("Could not open output file %s for writing\n", output_path);
+    return;
+  }
+
+  fprintf(out, "%s", b.get);
+
+  if (output_path) {
+    fclose(out);
+  }
+}
+
 int main(int argc, char** argv) {
   if (argc == 1)
     return -1;
@@ -59,8 +73,12 @@ int main(int argc, char** argv) {
   jmp_buf onerror;
   if (setjmp(onerror) == 0) {
     StringBuilder output = amalgamate(arena, include_dirs, input_files, &onerror);
-    // if (output.get)
-    //   printf("%s\n", output.get);
+    if (output.get) {
+      if (output_file)
+        write_out(output_file, output);
+      else
+        printf("%s", output.get);
+    }
     vec_destroy(output);
   }
   vec_destroy(include_dirs);
