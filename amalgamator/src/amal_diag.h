@@ -3,7 +3,7 @@
 
 #include "diagnostics.h"
 #define AMAL_ERRORS(X)\
-X(AMAL_ERR_INVALID_STR, "Invalid string: %span", DL_ERROR)
+X(AMAL_ERR_FILE_NOT_FOUND, "File: %s not found", DL_ERROR)
 
 typedef enum {
 #define X(a, _, __) a,

@@ -1,3 +1,4 @@
+#include "diagnostics.h"
 #include "scanner.h"
 #include "vmem_arena.h"
 #include <ctype.h>
@@ -19,14 +20,14 @@ int nextch(SourceFile* file) {
 }
 
 bool match_str(SourceFile* file, bstr str) {
-  size_t pos = file->pos.id;
+  Position pos = file->pos;
   while (*str) {
-    if (file->contents[pos] != *str)
+    if (nextch(file) != *str) {
+      file->pos = pos;
       return false;
-    pos++;
+    }
     str++;
   }
-  file->pos.id = pos;
   return true;
 }
 

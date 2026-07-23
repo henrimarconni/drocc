@@ -6,11 +6,13 @@
 #include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <threads.h>
 
-void parse_args(bstr* output_file, bstr* input_file, IncludeDirVec* include_dirs) {
-  ce_add_meta("amalgamator", "Amalgamates all #include \"...\" into a single file",
-              "./amalgamator file.c -o output.c -I includes/");
+void parse_args(bstr* output_file, InputFIleVec* input_files, IncludeDirVec* include_dirs) {
+  // TODO: Make it scan all #includes and recursively expand them
+  // ce_add_meta("amalgamator", "Amalgamates all #include \"...\" into a single file",
+  //             "./amalgamator file.c -o output.c -I includes/");
+  ce_add_meta("amalgamator", "Concatenates multiple source files into a single output file.",
+              "./amalgamator file1.c file2.c file3.c -o amalgamated.c -I ./code_dir");
   ce_addopt("help", 'h', 0, "Print help");
   ce_addopt("output", 'o', 's', "Specify output location");
   ce_addopt("include-dir", 'I', 's', "Specify a location to find included files");
@@ -21,7 +23,7 @@ void parse_args(bstr* output_file, bstr* input_file, IncludeDirVec* include_dirs
     switch (ch) {
     case 'h':
       ce_printhelp();
-      break;
+      exit(0);
     case 'o':
       if (*output_file) {
         printf("Error: output file already specified\n");
@@ -33,12 +35,13 @@ void parse_args(bstr* output_file, bstr* input_file, IncludeDirVec* include_dirs
       vec_push(*include_dirs, popt.s);
       break;
     case CE_PLAIN_VALUE:
-      if (*input_file) {
-        printf("Error: input file already specified\n");
-        exit(-1);
-      }
-      *input_file = popt.s;
+      vec_push(*input_files, popt.s);
+      break;
     }
+  }
+  if (input_files->n == 0) {
+    printf("Error: no files specified\n");
+    exit(-1);
   }
 }
 
@@ -46,19 +49,20 @@ int main(int argc, char** argv) {
   if (argc == 1)
     return -1;
   bstr output_file = NULL;
-  bstr input_file = NULL;
+  InputFIleVec input_files = {};
   IncludeDirVec include_dirs = {};
   vec_push(include_dirs, "."); // add current directory to search list
   ce_initopt(argc, argv);
-  parse_args(&output_file, &input_file, &include_dirs);
+  parse_args(&output_file, &input_files, &include_dirs);
 
   VMEMArena* arena = vmarena_new(128 * 1024);
   jmp_buf onerror;
-  StringBuilder output;
-  if (setjmp(onerror) == 0)
-    output = amalgamate(arena, include_dirs, output_file, input_file, &onerror);
-
-  vec_destroy(output);
+  if (setjmp(onerror) == 0) {
+    StringBuilder output = amalgamate(arena, include_dirs, input_files, &onerror);
+    if (output.get)
+      printf("%s\n", output.get);
+    vec_destroy(output);
+  }
   vec_destroy(include_dirs);
   vmarena_free(arena);
   return 0;
