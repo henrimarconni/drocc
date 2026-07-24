@@ -11,7 +11,8 @@ $test "A test to check printf" : stdio_suite(printf_test) {
   /*
     Multiline comment {
 
-  */}
+  */
+}
 
 $test "A test to check addition" : math_suite(add_test) {
   assert(1 + 1 == 11);

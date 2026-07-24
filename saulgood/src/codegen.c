@@ -55,24 +55,7 @@ void gen_from_file(Codegen* c, TestFile* file) {
     gen_from_node(c, &file->nodes.get[i]);
 }
 
-char runner_code[] = {
-#embed RUNNER_SOURCE_PATH
-};
-
-char runner_header_code[] = {
-#embed RUNNER_HEADER_PATH
-};
-
-void generate_code(Codegen* c, ParserState* state) {
-  c->test_len = 0;
-
-  // Add runner header
-  append_str(&c->output, runner_header_code);
-
-  // Generate tests
-  for (size_t i = 0; i < state->files.n; i++)
-    gen_from_file(c, &state->files.get[i]);
-
+void declare_test_list(Codegen* c, ParserState* state) {
   // Declare list of tests
   append_str(&c->output, "struct SGTest saulgood_tests[] = {\n");
   for (size_t i = 0; i < state->files.n; i++) {
@@ -86,6 +69,29 @@ void generate_code(Codegen* c, ParserState* state) {
     }
   }
   append_str(&c->output, "\n};\n");
+}
+
+// #embed doesnt null terminate
+char runner_code[] = {
+#embed RUNNER_SOURCE_PATH
+    , '\0'};
+
+char runner_header_code[] = {
+#embed RUNNER_HEADER_PATH
+    , '\0'};
+
+void generate_code(Codegen* c, ParserState* state) {
+  c->test_len = 0;
+
+  // Add runner header
+  append_str(&c->output, runner_header_code);
+
+  // Generate tests
+  for (size_t i = 0; i < state->files.n; i++)
+    gen_from_file(c, &state->files.get[i]);
+
+  declare_test_list(c, state);
+
   // Declare number of tests
   appendf(&c->output, "const int sg_test_len = %d;\n", c->test_len);
   // Add runner source
