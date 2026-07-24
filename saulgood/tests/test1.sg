@@ -4,7 +4,8 @@ $c {
 }
 
 $test "A test to check printf" : stdio_suite(printf_test) {
-  int res = printf("420");
+  char buf[5];
+  int res = snprintf(buf, 5, "420");
   assert(res == 3);
   // comment {
   /*
@@ -14,4 +15,19 @@ $test "A test to check printf" : stdio_suite(printf_test) {
 
 $test "A test to check addition" : math_suite(add_test) {
   assert(1 + 1 == 11);
+}
+$test "A test to check addition" : math_suite(add_test1) {
+  assert(1 + 1 == 2);
+}
+$test "A test to check addition" : math_suite(add_test2) {
+  assert(1 + 2 == 3);
+}
+$test "A test to check addition" : math_suite(add_test3) {
+  assert(1 + 3 == 4);
+}
+$test "A test to check addition" : math_suite(add_test4) {
+  assert(1 + 4 == 5);
+}
+$test "A test to check addition" : math_suite(add_test5) {
+  assert(1 + 5 == 6);
 }

@@ -7,6 +7,7 @@
 
 typedef struct {
   StringBuilder output;
+  size_t test_len;
 } Codegen;
 
 void generate_code(Codegen* c, ParserState* state);
