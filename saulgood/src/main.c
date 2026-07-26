@@ -1,11 +1,16 @@
 #include "ce_getopt.h"
+#include "cli_diag.h"
 #include "codegen.h"
 #include "parser.h"
 #include "stringdef.h"
+#include "utils.h"
 #include "vec.h"
 #include "vmem_arena.h"
 #include <assert.h>
 #include <setjmp.h>
+#include <stdio.h>
+
+typedef enum : int { SGCLI_INVALID_ARG = -1, SGCLI_FILE_DOESNT_EXIST = -2 } SGCLIError;
 
 void parse_args(bstr* outfile, InputFiles* files) {
   char ch;
@@ -24,22 +29,21 @@ void parse_args(bstr* outfile, InputFiles* files) {
       vec_push(*files, popt.s);
       break;
     }
+    default:
+      clid_throw_diag(CLID_ERROR, SGCLI_INVALID_ARG, "Invalid argument %c", ch);
     }
   }
+  if (files->n == 0)
+    exit(0);
 }
 
-void write_out(bstr output_path, StringBuilder b) {
-  FILE* out = output_path ? fopen(output_path, "w") : stdout;
-  if (!out) {
-    printf("Could not open output file %s for writing\n", output_path);
-    return;
-  }
-
-  fprintf(out, "%s", b.get);
-
-  if (output_path) {
-    fclose(out);
-  }
+void emit_output(Codegen* c, bstr outfile) {
+  if (outfile) {
+    int res = write_out(outfile, c->output.get);
+    if (res < 0)
+      clid_throw_diag(CLID_ERROR, SGCLI_FILE_DOESNT_EXIST, "File %s doesnt exist", outfile);
+  } else
+    printf("%s\n", c->output.get);
 }
 
 int main(int argc, char** argv) {
@@ -50,18 +54,22 @@ int main(int argc, char** argv) {
 
   InputFiles files = {};
   bstr outfile = NULL;
+
   parse_args(&outfile, &files);
 
   VMEMArena* arena = vmarena_new(128 * 1024);
   ParserState state = {};
   state.arena = arena;
   jmp_buf onerror;
-  if (setjmp(onerror) == 0)
+
+  if (setjmp(onerror) == 0) {
     parse_files(&state, files, &onerror);
-  else {
     Codegen c = {};
     generate_code(&c, &state);
+    emit_output(&c, outfile);
     codegen_destroy(&c);
   }
+  parser_free(&state);
   vmarena_free(arena);
+  vec_destroy(files);
 }

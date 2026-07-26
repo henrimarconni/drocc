@@ -59,6 +59,7 @@ typedef struct {
 
 
 void parse_files(ParserState* state, InputFiles files, jmp_buf* onerror);
+void parser_free(ParserState* state);
 
 
 #endif
