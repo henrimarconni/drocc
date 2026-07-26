@@ -1,9 +1,9 @@
-#include "ce_getopt.h"
-#include "cli_diag.h"
-#include "mm_arg.h"
-#include "parser.h"
-#include "stringdef.h"
-#include "vec.h"
+#include "core/ce_getopt.h"
+#include "core/cli_diag.h"
+#include "core/stringdef.h"
+#include "core/vec.h"
+#include "macromancer/mm_arg.h"
+#include "macromancer/parser.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>

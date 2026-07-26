@@ -1,5 +1,5 @@
-#include "clexer_utils.h"
-#include "scanner.h"
+#include "core/clexer_utils.h"
+#include "core/scanner.h"
 #include <stdio.h>
 
 CLexerRes skip_c_comments(SourceFile* file) {

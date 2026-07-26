@@ -1,7 +1,7 @@
-#include "codegen.h"
-#include "parser.h"
-#include "stringbuilder.h"
-#include "vec.h"
+#include "core/stringbuilder.h"
+#include "core/vec.h"
+#include "saulgood/codegen.h"
+#include "saulgood/parser.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>

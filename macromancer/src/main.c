@@ -1,16 +1,15 @@
-#include "cli_diag.h"
-#include "codegen.h"
-#include "mm_arg.h"
-#include "parser.h"
-#include "stringdef.h"
-#include "utils.h"
-#include "vec.h"
-#include "vmem_arena.h"
+#include "core/cli_diag.h"
+#include "core/stringdef.h"
+#include "core/utils.h"
+#include "core/vec.h"
+#include "core/vmem_arena.h"
+#include "macromancer/codegen.h"
+#include "macromancer/mm_arg.h"
+#include "macromancer/parser.h"
 #include <assert.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 int emit_output(bstr output_path, Codegen* c) {
   if (!output_path) {

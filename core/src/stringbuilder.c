@@ -1,5 +1,5 @@
-#include "span.h"
-#include "stringbuilder.h"
+#include "core/span.h"
+#include "core/stringbuilder.h"
 
 void append_span(StringBuilder* b, Span span) {
   while (span.len--) {

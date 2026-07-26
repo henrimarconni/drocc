@@ -1,7 +1,7 @@
 #ifndef ARGP_H
 #define ARGP_H
 
-#include "stringdef.h"
+#include "core/stringdef.h"
 #include <stdbool.h>
 #include <stddef.h>
 

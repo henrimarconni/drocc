@@ -1,9 +1,9 @@
 #ifndef CORE_DIAGNOSTICS_H
 #define CORE_DIAGNOSTICS_H
 
-#include "span.h"
-#include "stringdef.h"
-#include "vec.h"
+#include "core/span.h"
+#include "core/stringdef.h"
+#include "core/vec.h"
 #include <setjmp.h>
 #include <stdio.h> // IWYU pragma: keep
 #include <stddef.h>

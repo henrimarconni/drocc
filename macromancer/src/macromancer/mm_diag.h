@@ -1,7 +1,7 @@
 #ifndef MM_DIAG_H
 #define MM_DIAG_H
 
-#include "diagnostics.h"
+#include "core/diagnostics.h"
 
 
 #define ERRORS(X) \

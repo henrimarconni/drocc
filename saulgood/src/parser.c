@@ -1,10 +1,10 @@
-#include "clexer_utils.h"
-#include "diagnostics.h"
-#include "parser.h"
-#include "scanner.h"
-#include "sg_diag.h"
-#include "span.h"
-#include "vec.h"
+#include "core/clexer_utils.h"
+#include "core/diagnostics.h"
+#include "core/scanner.h"
+#include "core/span.h"
+#include "core/vec.h"
+#include "saulgood/parser.h"
+#include "saulgood/sg_diag.h"
 #include <ctype.h>
 #include <setjmp.h>
 #include <stddef.h>

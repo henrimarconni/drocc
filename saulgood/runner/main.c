@@ -1,7 +1,7 @@
 #include "ce_getopt.c"
-#include "ce_getopt.h"
+#include "core/ce_getopt.h"
+#include "core/stringdef.h"
 #include "runner.h"
-#include "stringdef.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>

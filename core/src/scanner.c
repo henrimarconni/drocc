@@ -1,6 +1,6 @@
-#include "diagnostics.h"
-#include "scanner.h"
-#include "vmem_arena.h"
+#include "core/diagnostics.h"
+#include "core/scanner.h"
+#include "core/vmem_arena.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

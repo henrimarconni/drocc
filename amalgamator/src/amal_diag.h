@@ -1,7 +1,7 @@
 #ifndef AMAL_DIAG_H
 #define AMAL_DIAG_H
 
-#include "diagnostics.h"
+#include "core/diagnostics.h"
 #define AMAL_ERRORS(X)\
 X(AMAL_ERR_FILE_NOT_FOUND, "File: %s not found", DL_ERROR)
 

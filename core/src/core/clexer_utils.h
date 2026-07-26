@@ -1,6 +1,6 @@
 #ifndef CPARSER_UTILS_H
 #define CPARSER_UTILS_H
-#include "scanner.h"
+#include "core/scanner.h"
 
 typedef enum {
   CLEX_OK,

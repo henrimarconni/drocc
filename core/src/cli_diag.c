@@ -1,5 +1,5 @@
-#include "cli_diag.h"
-#include "span.h"
+#include "core/cli_diag.h"
+#include "core/span.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

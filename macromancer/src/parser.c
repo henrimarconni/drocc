@@ -1,10 +1,10 @@
-#include "diagnostics.h"
-#include "mm_diag.h"
-#include "parser.h"
-#include "scanner.h"
-#include "span.h"
-#include "vec.h"
-#include "vmem_arena.h"
+#include "core/diagnostics.h"
+#include "core/scanner.h"
+#include "core/span.h"
+#include "core/vec.h"
+#include "core/vmem_arena.h"
+#include "macromancer/mm_diag.h"
+#include "macromancer/parser.h"
 #include <assert.h>
 #include <ctype.h>
 #include <setjmp.h>

@@ -1,8 +1,8 @@
 #include "amalgamate.h"
-#include "ce_getopt.h"
-#include "stringbuilder.h"
-#include "vec.h"
-#include "vmem_arena.h"
+#include "core/ce_getopt.h"
+#include "core/stringbuilder.h"
+#include "core/vec.h"
+#include "core/vmem_arena.h"
 #include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>

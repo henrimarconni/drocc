@@ -1,8 +1,8 @@
 #ifndef MM_ARG_H
 #define MM_ARG_H
 
-#include "stringdef.h"
-#include "parser.h"
+#include "core/stringdef.h"
+#include "macromancer/parser.h"
 
 typedef enum {
   MMCLI_ERR_OUTPUT_FLAG_MISUSE = -1,

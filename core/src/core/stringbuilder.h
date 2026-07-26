@@ -1,9 +1,9 @@
 #ifndef STRINGBUILDER_H
 #define STRINGBUILDER_H
 
-#include "stringdef.h"
-#include "vec.h"
-#include "span.h"
+#include "core/stringdef.h"
+#include "core/vec.h"
+#include "core/span.h"
 
 typedef vec(char) StringBuilder;
 

@@ -1,5 +1,5 @@
+#include "core/stringdef.h"
 #include "runner.h"
-#include "stringdef.h"
 
 #include <stdio.h>
 #include <windows.h>
