@@ -10,7 +10,7 @@
 #include <setjmp.h>
 #include <stdio.h>
 
-typedef enum : int { SGCLI_INVALID_ARG = -1, SGCLI_FILE_DOESNT_EXIST = -2 } SGCLIError;
+typedef enum { SGCLI_INVALID_ARG = -1, SGCLI_FILE_DOESNT_EXIST = -2 } SGCLIError;
 
 void parse_args(bstr* outfile, InputFiles* files) {
   char ch;
@@ -37,13 +37,16 @@ void parse_args(bstr* outfile, InputFiles* files) {
     exit(0);
 }
 
-void emit_output(Codegen* c, bstr outfile) {
-  if (outfile) {
-    int res = write_out(outfile, c->output.get);
-    if (res < 0)
-      clid_throw_diag(CLID_ERROR, SGCLI_FILE_DOESNT_EXIST, "File %s doesnt exist", outfile);
-  } else
+int emit_output(Codegen* c, bstr outfile) {
+  if (!outfile) {
     printf("%s\n", c->output.get);
+    return 0;
+  }
+  int res = write_out(outfile, c->output.get);
+  if (res < 0) {
+    clid_print_diag(CLID_ERROR, "Cannot open file: %s for writing", outfile);
+  }
+  return 0;
 }
 
 int main(int argc, char** argv) {

@@ -4,6 +4,7 @@ add_executable(
   src/codegen.c
   src/parser.c
   src/mm_diag.c
+  src/mm_arg.c
 )
 
 target_include_directories(
