@@ -4,6 +4,7 @@
 #include "scanner.h"
 #include "sg_diag.h"
 #include "span.h"
+#include "vec.h"
 #include <ctype.h>
 #include <setjmp.h>
 #include <stddef.h>
@@ -189,4 +190,12 @@ void parse_files(ParserState* state, InputFiles files, jmp_buf* onerror) {
     parse_file(state, &file);
     vec_push(state->files, file);
   }
+}
+
+void parser_free(ParserState* state) {
+  for (size_t i = 0; i < state->files.n; i++) {
+    TestFile file = state->files.get[i];
+    vec_destroy(file.nodes);
+  }
+  vec_destroy(state->files);
 }

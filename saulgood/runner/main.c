@@ -9,6 +9,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "capture.c"
+
 SGResult sg_run_process(bstr exec, int test_id);
 
 #if defined(_WIN32)

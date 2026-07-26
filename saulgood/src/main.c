@@ -6,8 +6,6 @@
 #include "vmem_arena.h"
 #include <assert.h>
 #include <setjmp.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 void parse_args(bstr* outfile, InputFiles* files) {
   char ch;
@@ -20,7 +18,7 @@ void parse_args(bstr* outfile, InputFiles* files) {
     }
     case 'h': {
       ce_printhelp();
-      exit(0);
+      break;
     }
     case CE_PLAIN_VALUE: {
       vec_push(*files, popt.s);
@@ -28,9 +26,19 @@ void parse_args(bstr* outfile, InputFiles* files) {
     }
     }
   }
-  if (files->n == 0) {
-    printf("No files specified, exiting\n");
-    exit(0);
+}
+
+void write_out(bstr output_path, StringBuilder b) {
+  FILE* out = output_path ? fopen(output_path, "w") : stdout;
+  if (!out) {
+    printf("Could not open output file %s for writing\n", output_path);
+    return;
+  }
+
+  fprintf(out, "%s", b.get);
+
+  if (output_path) {
+    fclose(out);
   }
 }
 
@@ -40,7 +48,7 @@ int main(int argc, char** argv) {
   ce_addopt("directoy", 'd', 's', "Walks a directory and amalgamates all tests together");
   ce_addopt("help", 'h', 0, "Print help message");
 
-  InputFiles files = {0};
+  InputFiles files = {};
   bstr outfile = NULL;
   parse_args(&outfile, &files);
 
@@ -50,10 +58,10 @@ int main(int argc, char** argv) {
   jmp_buf onerror;
   if (setjmp(onerror) == 0)
     parse_files(&state, files, &onerror);
-  else
-    return -1;
-
-  Codegen c = {};
-  generate_code(&c, &state);
-  codegen_destroy(&c);
+  else {
+    Codegen c = {};
+    generate_code(&c, &state);
+    codegen_destroy(&c);
+  }
+  vmarena_free(arena);
 }

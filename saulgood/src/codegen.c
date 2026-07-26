@@ -97,6 +97,5 @@ void generate_code(Codegen* c, ParserState* state) {
   // Add runner source
   append_str(&c->output, runner_code);
   append_ch(&c->output, '\0');
-  printf("%s\n", c->output.get);
 }
 void codegen_destroy(Codegen* c) { vec_destroy(c->output); }

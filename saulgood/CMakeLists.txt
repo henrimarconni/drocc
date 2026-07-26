@@ -58,3 +58,95 @@ target_link_libraries(
   PRIVATE
   core
 )
+
+include(CMakeParseArguments)
+
+function(saulgood_add_tests)
+  set(options)
+  set(oneValueArgs TARGET NAME OUTPUT)
+  set(multiValueArgs FILES LIBRARIES)
+
+  cmake_parse_arguments(SG
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+
+  if(NOT SG_FILES)
+    message(FATAL_ERROR "saulgood_add_tests: FILES is required.")
+  endif()
+
+  if(NOT SG_NAME)
+    if(SG_TARGET)
+      set(SG_NAME "${SG_TARGET}_tests")
+    else()
+      set(SG_NAME "saulgood_tests")
+    endif()
+  endif()
+
+  if(NOT SG_OUTPUT)
+    set(SG_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${SG_NAME}.c")
+  endif()
+
+  add_custom_command(
+    OUTPUT ${SG_OUTPUT}
+    COMMAND
+      $<TARGET_FILE:saulgood>
+      ${SG_FILES}
+      -o ${SG_OUTPUT}
+    DEPENDS
+      saulgood
+      ${SG_FILES}
+    WORKING_DIRECTORY
+      ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM
+  )
+
+  add_executable(${SG_NAME} ${SG_OUTPUT})
+
+  add_dependencies(${SG_NAME} saulgood)
+
+  if(SG_LIBRARIES)
+    target_link_libraries(${SG_NAME}
+      PRIVATE
+      ${SG_LIBRARIES}
+    )
+  endif()
+
+  if(SG_TARGET)
+    get_target_property(TARGET_TYPE ${SG_TARGET} TYPE)
+
+    if(TARGET_TYPE STREQUAL "STATIC_LIBRARY"
+      OR TARGET_TYPE STREQUAL "SHARED_LIBRARY"
+      OR TARGET_TYPE STREQUAL "OBJECT_LIBRARY")
+
+      target_link_libraries(${SG_NAME}
+        PRIVATE
+        ${SG_TARGET}
+      )
+
+    elseif(TARGET_TYPE STREQUAL "EXECUTABLE")
+
+      target_compile_definitions(${SG_NAME}
+        PRIVATE
+        SG_TARGET_EXECUTABLE="$<TARGET_FILE:${SG_TARGET}>"
+      )
+
+    else()
+      message(FATAL_ERROR
+        "saulgood_add_tests: Unsupported target type '${TARGET_TYPE}'."
+      )
+    endif()
+  endif()
+
+  add_test(
+    NAME ${SG_NAME}
+    COMMAND $<TARGET_FILE:${SG_NAME}>
+  )
+endfunction()
+
+saulgood_add_tests(
+  TARGET saulgood
+  FILES tests/test1.sg
+)

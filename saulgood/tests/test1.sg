@@ -1,17 +1,19 @@
 $c {
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 }
 
 $test "A test to check printf" : stdio_suite(printf_test) {
-  char buf[5];
-  int res = snprintf(buf, 5, "420");
-  assert(res == 3);
-  // comment {
-  /*
-    Multiline comment {
+  SGCapture cap;
+  capture_begin(&cap, stdout);
 
-  */
+  int res = printf("420");
+
+  char *out = capture_end(&cap);
+  printf("Captured: %s\n", out);
+  free(out);
+  assert(res == 3);
 }
 
 $test "A test to check addition" : math_suite(add_test) {
