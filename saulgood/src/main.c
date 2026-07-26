@@ -6,6 +6,8 @@
 #include "vmem_arena.h"
 #include <assert.h>
 #include <setjmp.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 void parse_args(bstr* outfile, InputFiles* files) {
   char ch;
@@ -18,13 +20,17 @@ void parse_args(bstr* outfile, InputFiles* files) {
     }
     case 'h': {
       ce_printhelp();
-      break;
+      exit(0);
     }
     case CE_PLAIN_VALUE: {
       vec_push(*files, popt.s);
       break;
     }
     }
+  }
+  if (files->n == 0) {
+    printf("No files specified, exiting\n");
+    exit(0);
   }
 }
 
@@ -34,7 +40,7 @@ int main(int argc, char** argv) {
   ce_addopt("directoy", 'd', 's', "Walks a directory and amalgamates all tests together");
   ce_addopt("help", 'h', 0, "Print help message");
 
-  InputFiles files = {};
+  InputFiles files = {0};
   bstr outfile = NULL;
   parse_args(&outfile, &files);
 
@@ -44,6 +50,8 @@ int main(int argc, char** argv) {
   jmp_buf onerror;
   if (setjmp(onerror) == 0)
     parse_files(&state, files, &onerror);
+  else
+    return -1;
 
   Codegen c = {};
   generate_code(&c, &state);

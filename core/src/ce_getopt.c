@@ -7,33 +7,69 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_OPTS 256
+#define MAX_OPTS 62
 #define FORMAT_SPACES 20
 
-Opt opts[MAX_OPTS] = {};
-int argc = 0;
-int curr = 1;
-char** argv = NULL;
-bstr desc = NULL;
-bstr name = NULL;
-bstr usage = NULL;
+typedef struct {
+  Opt opts[MAX_OPTS];
+  int argc;
+  int curr;
+  char** argv;
+  bstr desc;
+  bstr name;
+  bstr usage;
+} GetoptData;
 
-void ce_add_meta(bstr _name, bstr _desc, bstr _usage) {
-  desc = _desc;
-  name = _name;
-  usage = _usage;
+static GetoptData ce_data = {
+    .curr = 1,
+    .argc = 0,
+    .argv = NULL,
+    .desc = NULL,
+    .name = NULL,
+    .usage = NULL,
+    .opts = {0},
+};
+
+static Opt nullopt = {0};
+
+/*
+  Maps [A..Z] [a..z] and '0-9' to a number [0..61]
+  Returns -1 on invalid character
+*/
+static int ce_translate(char ch) {
+  if (ch <= 'z' && ch >= 'a')
+    return ch - 'a';
+  else if (ch <= 'Z' && ch >= 'A')
+    return 26 + ch - 'A';
+  else if (ch <= '9' && ch >= '0')
+    return 26 + 26 + ch - '9';
+  else
+    return -1;
 }
 
-void ce_initopt(int _argc, char** _argv) {
-  argv = _argv;
-  argc = _argc;
+static bool is_opt_empty(const Opt* opt) { return memcmp(opt, &nullopt, sizeof(Opt)) == 0; }
+
+static Opt* get_opt(char ch) {
+  int idx = ce_translate(ch);
+  if (idx < 0)
+    return NULL;
+  return &ce_data.opts[idx];
 }
 
-bool is_opt_empty(const Opt* opt) { return memcmp(opt, &opts['\0'], sizeof(Opt)) == 0; }
+void ce_add_meta(bstr name, bstr desc, bstr usage) {
+  ce_data.desc = desc;
+  ce_data.name = name;
+  ce_data.usage = usage;
+}
+
+void ce_initopt(int argc, char** argv) {
+  ce_data.argv = argv;
+  ce_data.argc = argc;
+}
 
 void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc) {
-  Opt* opt = &opts[shorthand];
-  if (!isalnum(shorthand)) {
+  Opt* opt = get_opt(shorthand);
+  if (!opt) {
     printf("Error: shorthand isnt an alphabet or number\n");
     abort();
   }
@@ -45,25 +81,26 @@ void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc) {
 }
 
 void ce_printhelp() {
-  if (name && desc)
-    printf("%s: %s\n", name, desc);
-  if (usage)
-    printf("Usage: %s\n", usage);
+  if (ce_data.name && ce_data.desc)
+    printf("%s: %s\n", ce_data.name, ce_data.desc);
+  if (ce_data.usage)
+    printf("Usage: %s\n", ce_data.usage);
 
   int format_spaces = FORMAT_SPACES;
   for (size_t i = 0; i < MAX_OPTS; i++) {
-    if (!is_opt_empty(&opts[i])) {
-      format_spaces -= printf("-%c, --%s", opts[i].shorthand, opts[i].longhand);
+    Opt* opt = &ce_data.opts[i];
+    if (!is_opt_empty(opt)) {
+      format_spaces -= printf("-%c, --%s", opt->shorthand, opt->longhand);
       while (format_spaces > 0 && format_spaces--)
         putchar(' ');
-      printf(": %s\n", opts[i].desc);
+      printf(": %s\n", opt->desc);
       format_spaces = FORMAT_SPACES;
     }
   }
 }
 
-float parse_float(const Opt opt) {
-  bstr str = argv[curr++];
+static float parse_float(const Opt* opt) {
+  bstr str = ce_data.argv[ce_data.curr++];
   float f = 0;
   bool floated = false;
   float divisor = 1;
@@ -71,14 +108,15 @@ float parse_float(const Opt opt) {
   while ((ch = *str++) != '\0') {
     if (ch == '.') {
       if (floated) {
-        printf("Bad float: %s\n", argv[curr - 1]);
+        printf("Bad float: %s\n", ce_data.argv[ce_data.curr - 1]);
         exit(-1);
       }
       floated = true;
       continue;
     }
     if (!isdigit(ch)) {
-      printf("Error: Expected float in --%s, found: %s\n", opt.longhand, argv[curr - 1]);
+      printf("Error: Expected float in --%s, found: %s\n", opt->longhand,
+             ce_data.argv[ce_data.curr - 1]);
       exit(-1);
     }
     if (!floated) {
@@ -91,13 +129,14 @@ float parse_float(const Opt opt) {
   return f;
 }
 
-int parse_int(const Opt opt) {
-  bstr str = argv[curr++];
+static int parse_int(const Opt* opt) {
+  bstr str = ce_data.argv[ce_data.curr++];
   char ch;
   int num = 0;
   while ((ch = *str++) != '\0') {
     if (!isdigit(ch)) {
-      printf("Error: Expected integer in --%s, found: %s\n", opt.longhand, argv[curr - 1]);
+      printf("Error: Expected integer in --%s, found: %s\n", opt->longhand,
+             ce_data.argv[ce_data.curr - 1]);
       exit(-1);
     }
     num *= 10;
@@ -106,21 +145,21 @@ int parse_int(const Opt opt) {
   return num;
 }
 
-void parse_opt(const Opt opt, ParsedOpt* popt) {
-  if (opt.val_format == 0) {
+static void parse_opt(const Opt* opt, ParsedOpt* popt) {
+  if (opt->val_format == 0) {
     popt->flag = true;
     return;
   }
 
-  if (curr == argc) {
-    printf("Error: Expected value of type %c, found nothing in option --%s\n", opt.val_format,
-           opt.longhand);
+  if (ce_data.curr == ce_data.argc) {
+    printf("Error: Expected value of type %c, found nothing in option --%s\n", opt->val_format,
+           opt->longhand);
     exit(-1);
   }
 
-  switch (opt.val_format) {
+  switch (opt->val_format) {
   case 's': {
-    popt->s = argv[curr++];
+    popt->s = ce_data.argv[ce_data.curr++];
     break;
   }
   case 'd': {
@@ -132,7 +171,7 @@ void parse_opt(const Opt opt, ParsedOpt* popt) {
     break;
   }
   default: {
-    printf("Invalid value specifier: %c\n", opt.val_format);
+    printf("Invalid value specifier: %c\n", opt->val_format);
     abort();
   }
   }
@@ -140,14 +179,14 @@ void parse_opt(const Opt opt, ParsedOpt* popt) {
 
 bool ce_getopt(char* ch, ParsedOpt* popt) {
   *popt = (ParsedOpt){};
-  if (!argv || !argc) {
+  if (!ce_data.argv || !ce_data.argc) {
     printf("Error: use ce_initopt before ce_getopt\n");
     abort();
   }
-  if (curr == argc)
+  if (ce_data.curr == ce_data.argc)
     return false;
 
-  bstr str = argv[curr++];
+  bstr str = ce_data.argv[ce_data.curr++];
   if (str[0] != '-') {
     *ch = CE_PLAIN_VALUE;
     popt->s = str;
@@ -157,7 +196,11 @@ bool ce_getopt(char* ch, ParsedOpt* popt) {
   size_t len = strlen(str);
   if (len == 2) {
     char shorthand = str[1];
-    const Opt opt = opts[shorthand];
+    Opt* opt = get_opt(shorthand);
+    if (!opt) {
+      printf("Error: invalid argument: -%c\n", shorthand);
+      return false;
+    }
     *ch = shorthand;
     parse_opt(opt, popt);
     return true;
@@ -169,9 +212,10 @@ bool ce_getopt(char* ch, ParsedOpt* popt) {
   }
 
   for (size_t i = 0; i < MAX_OPTS; i++) {
-    if (opts[i].longhand && strcmp(opts[i].longhand, str + 2) == 0) {
-      *ch = opts[i].shorthand;
-      parse_opt(opts[i], popt);
+    Opt* opt = &ce_data.opts[i];
+    if (opt->longhand && strcmp(opt->longhand, str + 2) == 0) {
+      *ch = opt->shorthand;
+      parse_opt(opt, popt);
       return true;
     }
   }
