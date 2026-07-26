@@ -1,5 +1,5 @@
+#include "core/stringdef.h"
 #include "runner.h"
-#include "stringdef.h"
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>

@@ -1,8 +1,8 @@
 #ifndef SPAN_H
 #define SPAN_H
 
-#include "scanner.h"
-#include "stringdef.h"
+#include "core/scanner.h"
+#include "core/stringdef.h"
 #include <stddef.h>
 #include <stdbool.h>
 

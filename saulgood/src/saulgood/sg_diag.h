@@ -2,7 +2,7 @@
 #define SG_DIAG_H
 
 
-#include "diagnostics.h"
+#include "core/diagnostics.h"
 #define ERRORS(X)\
 X(ERR_CANT_OPEN_FILE, "Cannot open file: %s", DL_ERROR)\
 X(ERR_UNEXPECTED_EOF, "Unexpected End-Of-File", DL_ERROR)\

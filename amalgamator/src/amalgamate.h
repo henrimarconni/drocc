@@ -1,8 +1,8 @@
 #ifndef AMALGAMATE_H
 #define AMALGAMATE_H
 
-#include "stringbuilder.h"
-#include "vmem_arena.h"
+#include "core/stringbuilder.h"
+#include "core/vmem_arena.h"
 #include <setjmp.h>
 
 typedef vec(bstr) IncludeDirVec;

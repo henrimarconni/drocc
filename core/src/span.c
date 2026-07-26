@@ -1,5 +1,5 @@
-#include "scanner.h"
-#include "span.h"
+#include "core/scanner.h"
+#include "core/span.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>

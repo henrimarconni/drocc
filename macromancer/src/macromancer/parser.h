@@ -1,12 +1,12 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "diagnostics.h"
-#include "scanner.h"
-#include "stringdef.h"
-#include "vec.h"
-#include "vmem_arena.h"
-#include "span.h"
+#include "core/diagnostics.h"
+#include "core/scanner.h"
+#include "core/stringdef.h"
+#include "core/vec.h"
+#include "core/vmem_arena.h"
+#include "core/span.h"
 #include <setjmp.h>
 #include <stdbool.h>
 

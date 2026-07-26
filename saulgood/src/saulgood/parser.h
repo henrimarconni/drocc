@@ -1,12 +1,12 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "diagnostics.h"
-#include "scanner.h"
-#include "span.h"
-#include "vec.h"
-#include "vmem_arena.h"
-#include "stringdef.h"
+#include "core/diagnostics.h"
+#include "core/scanner.h"
+#include "core/span.h"
+#include "core/vec.h"
+#include "core/vmem_arena.h"
+#include "core/stringdef.h"
 #include <setjmp.h>
 
 typedef vec(bstr) InputFiles;

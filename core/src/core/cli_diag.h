@@ -8,7 +8,7 @@
 #ifndef CLI_DIAG_H
 #define CLI_DIAG_H
 
-#include "stringdef.h"
+#include "core/stringdef.h"
 
 
 typedef enum {

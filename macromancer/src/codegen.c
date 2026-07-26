@@ -1,7 +1,7 @@
-#include "codegen.h"
-#include "parser.h"
-#include "span.h"
-#include "vec.h"
+#include "core/span.h"
+#include "core/vec.h"
+#include "macromancer/codegen.h"
+#include "macromancer/parser.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>

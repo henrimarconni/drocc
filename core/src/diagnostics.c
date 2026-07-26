@@ -1,6 +1,6 @@
-#include "diagnostics.h"
-#include "span.h"
-#include "stringdef.h"
+#include "core/diagnostics.h"
+#include "core/span.h"
+#include "core/stringdef.h"
 #include <assert.h>
 #include <setjmp.h>
 #include <stdarg.h>

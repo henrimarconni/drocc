@@ -1,7 +1,7 @@
 #ifndef SG_RUNNER_H
 #define SG_RUNNER_H
 
-#include "stringdef.h"
+#include "core/stringdef.h"
 #include <stdio.h>
 
 typedef enum { SG_PASS, SG_FAIL, SG_CRASH, SG_ERROR } SGResult;

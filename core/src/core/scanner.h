@@ -1,8 +1,8 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
-#include "stringdef.h"
-#include "vmem_arena.h"
+#include "core/stringdef.h"
+#include "core/vmem_arena.h"
 #include <stddef.h>
 #define EOF (-1)
 
