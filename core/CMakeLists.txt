@@ -10,6 +10,7 @@ add_library(
   src/scanner.c
   src/clexer_utils.c
   src/diagnostics.c
+  src/cli_diag.c
 )
 
 target_include_directories(
