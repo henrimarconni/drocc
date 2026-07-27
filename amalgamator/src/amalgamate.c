@@ -42,11 +42,14 @@ void skip_unwanted_str(SourceFile* file) {
 
 bool check_cached(SourceFile* file, Amalgamator* a, bstr fname) {
   for (size_t i = 0; i < a->cache.n; i++) {
-    *file = a->cache.get[i];
-    if (strcmp(file->name, fname) == 0)
+    if (strcmp(a->cache.get[i].name, fname) == 0) {
+      *file = a->cache.get[i];
+      // printf("CACHE HIT: %s\n", fname);
       return true;
+    }
   }
-  *file = (SourceFile){0};
+
+  // printf("CACHE MISS: %s\n", fname);
   return false;
 }
 

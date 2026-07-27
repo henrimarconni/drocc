@@ -1,9 +1,10 @@
-#include "core/diagnostics.h"
 #include "core/scanner.h"
 #include "core/vmem_arena.h"
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int nextch(SourceFile* file) {
   int ch = file->contents[file->pos.id++];
@@ -63,11 +64,21 @@ ScannerRes read_file(SourceFile* sf, VMEMArena* arena, bstr confpath) {
     return SE_ERR_IO;
   rewind(file);
 
+  size_t pathlen = strlen(confpath);
+  bstr dup = vmarena_alloc(arena, pathlen + 1);
+  memcpy(dup, confpath, pathlen);
+  dup[pathlen] = '\0';
+
   sf->pos.len = file_size;
-  sf->name = confpath;
+  sf->name = dup;
   sf->contents = vmarena_alloc(arena, file_size + 1);
   size_t n = fread(sf->contents, 1, file_size, file);
+  if (n != (size_t)file_size) {
+    fclose(file);
+    return SE_ERR_IO;
+  }
   sf->contents[file_size] = '\0';
 
   fclose(file);
+  return SE_OK;
 }

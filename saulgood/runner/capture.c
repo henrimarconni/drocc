@@ -1,5 +1,3 @@
-// capture.c
-
 #include "runner.h"
 
 #include <assert.h>
