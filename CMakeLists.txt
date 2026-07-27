@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.14)
 project(drift)
 
+enable_testing()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
+  include("${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
+  message(STATUS "Loaded modules natively from drocc directories.")
+else()
+  find_package(Saulgood REQUIRED)
+  message(STATUS "Loaded modules from system installation.")
+endif()
+
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
