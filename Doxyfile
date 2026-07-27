@@ -1,0 +1,26 @@
+PROJECT_NAME           = "Drocc"
+PROJECT_BRIEF          = "Drocc Compiler Collection - cohesive tools with personality"
+
+OUTPUT_DIRECTORY       = docs
+
+INPUT                  = .
+RECURSIVE              = YES
+FILE_PATTERNS          = *.c \
+                         *.h \
+                         *.md \
+                         *.dox
+
+EXCLUDE                = build \
+                         .git \
+                         docs/html \
+                         docs/latex
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = .
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+SOURCE_BROWSER         = NO
+INLINE_SOURCES         = NO
