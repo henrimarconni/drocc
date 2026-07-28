@@ -1,5 +1,5 @@
+#include "core/fs.h"
 #include "core/stringdef.h"
-#include "core/utils.h"
 #include <assert.h>
 #include <stdio.h>
 

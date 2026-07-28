@@ -1,3 +1,8 @@
+/**
+  @file
+  Provides an arena allocator which uses Demand Paging
+*/
+
 #ifndef __VMEM_ARENA_H
 #define __VMEM_ARENA_H
 
@@ -22,12 +27,16 @@ void *_vmarena_alloc(VMEMArena *arena, size_t size);
 void *_vmarena_calloc(VMEMArena *arena, size_t size);
 void *_vmarena_realloc(VMEMArena *arena, void *ptr, size_t old_size,
                        size_t new_size);
+
 void vmarena_reset(VMEMArena *arena);
 void vmarena_mark_reset(VMEMArena *arena, VMEMArenaMark mark);
 VMEMArenaMark vmarena_mark(VMEMArena *arena);
 void vmarena_free(VMEMArena *arena);
 
-
+/**
+  If VMEM_ARENA_DEBUG is defined, allocations done using vmarena_** macros
+  will print the caller information and the allocation size
+*/
 #ifdef VMEM_ARENA_DEBUG
 #define vmarena_alloc(arena, size)                                             \
   ((printf("Allocation requested by: %s, %d, \npos=%zu size=%zu cap=%zu "      \

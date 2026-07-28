@@ -5,7 +5,7 @@ add_library(
   src/ce_getopt.c
   src/span.c
   src/vmem_arena.c
-  src/utils.c
+  src/fs.c
   src/stringbuilder.c
   src/scanner.c
   src/clexer_utils.c

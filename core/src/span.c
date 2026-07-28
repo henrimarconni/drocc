@@ -35,10 +35,9 @@ bstr dup_span_buf(Span span, bstr buf) {
 }
 
 void advance_span(Span* span) {
-  if (span->len > 0) {
-    span->str++;
-    span->len--;
-  }
+  assert(span->len > 0);
+  span->str++;
+  span->len--;
 }
 
 void shrink_span(Span* span) {
