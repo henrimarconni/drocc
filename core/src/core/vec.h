@@ -1,15 +1,31 @@
+/**
+  @file
+  Lightweight vector utility
+*/
+
 #ifndef VEC_H
 #define VEC_H
 
 #include <stdlib.h> // IWYU pragma: keep
 
-// Usage: vec.get[i] = element, etc.
+/// vec.n => length, vec.m => capacity, vec.get => pointer to the start of the array
 #define vec(T) struct { T* get; size_t m, n; }
-#define vec_grow(vec) ( ((vec).m = ((vec).m ? (vec).m * 2 : 2) ) , (vec).get = realloc((vec).get, (vec).m * sizeof(*(vec).get)))
-#define vec_resize(vec, n) ( (vec).get = realloc((vec).get, n * sizeof(*(vec).get)), (vec).m = n )
-#define vec_push(vec, e) ( ( ((vec).n == (vec).m) ? vec_grow((vec)) : 0), (vec).get[(vec).n++] = (e) )
-#define vec_pop(vec) (assert((vec).n > 0), (vec).get[--(vec).n])
-#define vec_destroy(vec) free((vec).get)
-#define vec_freeze(vec) ((vec).get = realloc((vec).get, (vec).n * sizeof(*(vec).get)))
+
+/**
+  Grow vector by 2x the current capacity
+  @note If the current capacity (vec.m) is 0, it will set it by default to 2
+*/
+#define vec_grow(vec) ( ((vec).m = ((vec).m ? (vec).m * 2 : 2) ) , (vec).get = realloc((vec).get, (vec).m * sizeof(*(vec).get)), 0 )
+
+/**
+  @param n Resize vector to n of elements
+  @warning If the resize results in reduction of elements such that vec.m < vec.n, can cause bugs
+*/
+#define vec_resize(vec, n) ( (vec).get = realloc((vec).get, n * sizeof(*(vec).get)), (vec).m = n , 0 )
+#define vec_push(vec, e) ( ( ((vec).n == (vec).m) ? vec_grow((vec)) : 0), (vec).get[(vec).n++] = (e), 0 )
+#define vec_pop(vec) (assert((vec).n > 0), (vec).get[--(vec).n], 0)
+#define vec_destroy(vec) ( (vec).get ? ( free((vec).get), 0, (vec).get = NULL, (vec).n = 0, (vec).m = 0 ) : 0 )
+/// Resize vector so that vec.m = vec.n (capacity = length)
+#define vec_freeze(vec) ((vec).get = realloc((vec).get, (vec).n * sizeof(*(vec).get)), 0)
 
 #endif

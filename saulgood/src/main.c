@@ -1,7 +1,7 @@
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
+#include "core/fs.h"
 #include "core/stringdef.h"
-#include "core/utils.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
 #include "saulgood/codegen.h"

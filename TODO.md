@@ -7,8 +7,8 @@ This file tracks long-term work across the Drocc Compiler Collection.
 ### Core
 
 * [ ] Finish unit tests for all shared utilities.
-* [ ] Review public API consistency.
-* [ ] Document code using Doxygen format
+* [-] Review public API consistency.
+* [✓] Document code using Doxygen format
 
 ### SaulGood
 

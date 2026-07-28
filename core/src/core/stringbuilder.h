@@ -1,3 +1,8 @@
+/**
+  @file
+  Simple StringBuilder based on core/vec.h
+*/
+
 #ifndef STRINGBUILDER_H
 #define STRINGBUILDER_H
 
