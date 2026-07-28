@@ -1,5 +1,5 @@
-#include "runner.h"
-
+#define SG_RUNNER_DEV
+#include "sg_api.h"
 #include <assert.h>
 #include <stdlib.h>
 

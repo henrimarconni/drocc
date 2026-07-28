@@ -72,19 +72,15 @@ void declare_test_list(Codegen* c, ParserState* state) {
 }
 
 // #embed doesnt null terminate
-char runner_code[] = {
-#embed RUNNER_SOURCE_PATH
-    , '\0'};
-
-char runner_header_code[] = {
-#embed RUNNER_HEADER_PATH
+char runner_api_code[] = {
+#embed SG_RUNNER_API
     , '\0'};
 
 void generate_code(Codegen* c, ParserState* state) {
   c->test_len = 0;
 
   // Add runner header
-  append_str(&c->output, runner_header_code);
+  append_str(&c->output, runner_api_code);
 
   // Generate tests
   for (size_t i = 0; i < state->files.n; i++)
@@ -94,8 +90,7 @@ void generate_code(Codegen* c, ParserState* state) {
 
   // Declare number of tests
   appendf(&c->output, "const int sg_test_len = %d;\n", c->test_len);
-  // Add runner source
-  append_str(&c->output, runner_code);
   append_ch(&c->output, '\0');
 }
+
 void codegen_destroy(Codegen* c) { vec_destroy(c->output); }

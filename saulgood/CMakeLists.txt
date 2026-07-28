@@ -1,3 +1,5 @@
+
+# SaulGood 
 add_executable(
   saulgood
   src/main.c
@@ -11,29 +13,10 @@ target_include_directories(
   src
 )
 
-target_amalgamation(saulgood
-  NAME runner
-  INPUT "${CMAKE_SOURCE_DIR}/saulgood/runner/main.c"
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/runner.c"
-  FLAGS
-    -I ${CMAKE_SOURCE_DIR}/saulgood/runner/
-    -I ${CMAKE_SOURCE_DIR}/core/src
-)
-
-target_amalgamation(saulgood
-  NAME runner_h
-  INPUT "${CMAKE_SOURCE_DIR}/saulgood/runner/runner.h"
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/runner.h"
-  FLAGS
-    -I ${CMAKE_SOURCE_DIR}/saulgood/runner/
-    -I ${CMAKE_SOURCE_DIR}/core/src
-)
-
 target_compile_definitions(
   saulgood
   PRIVATE
-  RUNNER_SOURCE_PATH=\"${CMAKE_CURRENT_BINARY_DIR}/runner.c\"
-  RUNNER_HEADER_PATH=\"${CMAKE_CURRENT_BINARY_DIR}/runner.h\"
+  SG_RUNNER_API=\"${CMAKE_CURRENT_SOURCE_DIR}/runner/sg_api.h\"
 )
 
 target_link_libraries(
@@ -42,6 +25,21 @@ target_link_libraries(
   core
 )
 
+# SaulGood Runner
+add_executable(
+  sgrun
+  runner/main.c
+  runner/capture.c
+  runner/loader.c
+)
+
+target_link_libraries(
+  sgrun
+  PRIVATE
+  core
+)
+
+# Example test
 saulgood_add_tests(
   TARGET saulgood
   FILES 
