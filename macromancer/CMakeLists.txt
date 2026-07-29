@@ -16,3 +16,8 @@ target_link_libraries(
   PRIVATE
   core
 )
+
+macromancer_generate(
+  TARGET macromancer
+  INPUT "tests/animals.mm"
+)
