@@ -31,6 +31,8 @@ add_executable(
   runner/main.c
   runner/capture.c
   runner/loader.c
+  runner/sg_fmt.c
+  runner/runner.c
 )
 
 target_link_libraries(

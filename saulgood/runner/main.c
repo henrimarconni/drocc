@@ -2,46 +2,27 @@
 #include "core/cli_diag.h"
 #include "core/stringdef.h"
 #include "core/strparse.h"
-#include "loader.h"
-#include "sg_api.h"
+#include "core/strutils.h"
+#include "runner.h"
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-typedef enum {
-  SGRE_INVALID_ARG = -1,
-  SGRE_CANT_OPEN_LIB = -2,
-  SGRE_RUN_FN_INVALID_CMD = -3,
-} SGRErorr;
+static void parse_test_info(bstr str, int* tests_len, bstr* name) {
+  bstr tests_len_str;
+  int res = split_str_inplace(str, ':', name, &tests_len_str);
 
-static bstr exe_path;
+  if (res < 0)
+    clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
 
-void sg_run_test(SGTestLib* lib, size_t id) {
-  if (id >= lib->tests_len)
-    return;
-  struct SGTest test = lib->tests[id];
-  printf("\nRunning test: %s\n", test.name);
-  test.fn();
-  printf("\nTest run successfully\n");
-}
+  StrParserError res2 = parse_int(tests_len, tests_len_str);
 
-void sg_test_lib(bstr name) {
-  SGTestLib lib;
-  if (sg_load(&lib, name) < 0)
-    clid_throw_diag(CLID_ERROR, SGRE_CANT_OPEN_LIB, "Cannot open library: %s", name);
-
-  size_t i = 0;
-  while (i < lib.tests_len) {
-    char buf[1024];
-    snprintf(buf, sizeof(buf), "%s --run-fn %s:%zu", exe_path, lib.name, i++);
-    system(buf);
-  }
-
-  sg_unload(&lib);
+  if (res2 != STRP_OK)
+    clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
+  if (tests_len < 0)
+    clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
 }
 
 int main(int argc, char** argv) {
-  exe_path = argv[0];
+  bstr runner_exe = argv[0];
   ce_initopt(argc, argv);
   ce_add_meta("sgrun", "SaulGood Test Runner", "./sgrun libtest1.so libtest2.so");
   ce_addopt("help", 'h', 0, "Print help");
@@ -52,7 +33,7 @@ int main(int argc, char** argv) {
   while (ce_getopt(&ch, &popt)) {
     switch (ch) {
     case CE_PLAIN_VALUE:
-      sg_test_lib(popt.s);
+      sg_test_lib(popt.s, runner_exe);
       break;
 
     case 'h':
@@ -60,24 +41,12 @@ int main(int argc, char** argv) {
       break;
 
     case 'g': {
-      bstr name = popt.s;
-
-      while (*popt.s && *popt.s != ':')
-        popt.s++;
-      if (!*popt.s)
-        clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
-      *popt.s++ = '\0';
-
+      bstr name;
       int test_id;
-      if (parse_int(&test_id, popt.s) != STRP_OK)
-        clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
-      assert(test_id >= 0);
+      parse_test_info(popt.s, &test_id, &name);
 
-      SGTestLib lib;
-      sg_load(&lib, name);
-      sg_run_test(&lib, test_id);
-      sg_unload(&lib);
-
+      SGRunnerState rs = sg_new_runner(name, runner_exe);
+      sg_run_test(&rs, test_id);
       break;
     }
     default:
