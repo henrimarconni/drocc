@@ -19,6 +19,7 @@ int sg_load(SGTestLib* lib, bstr name) {
 
   saulg->capture_begin = capture_begin;
   saulg->capture_end = capture_end;
+  saulg->capture_discard = capture_discard;
 
   // printf("tests[%d] = %p\n", *tests_len, (void*)tests);
   // printf("fn        = %p\n", (void*)tests[0].fn);
