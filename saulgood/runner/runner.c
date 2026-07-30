@@ -1,6 +1,8 @@
 #include "capture.h"
 #include "core/cli_diag.h"
 #include "loader.h"
+#include "platf_proc.h"
+#include "process.h"
 #include "runner.h"
 #include "sg_api.h"
 #include "sg_fmt.h"
@@ -46,7 +48,7 @@ void sg_test_lib(bstr name, bstr runner_exe) {
     struct SGTest test = lib.tests[i];
 
     char cmd[1024];
-    snprintf(cmd, sizeof(cmd), "%s --run-fn %s:%zu", runner_exe, lib.name, i);
+    snprintf(cmd, sizeof(cmd), "%s:%zu", lib.name, i);
 
     printf("[%*zu/%*d] %-40s ", fmt_width, i + 1, fmt_width, lib.tests_len, test.name);
     fflush(stdout);
@@ -56,9 +58,13 @@ void sg_test_lib(bstr name, bstr runner_exe) {
     capture_begin(&out, stdout);
     capture_begin(&err, stderr);
 
-    int status = system(cmd);
+    SGProcess* proc = sg_spawn_proc(runner_exe, (char*[]){runner_exe, "-g", cmd, NULL});
+    if (sg_wait_proc(proc) < 0)
+      clid_throw_diag(CLID_ERROR, SGRE_PROCESS_ERROR, "Cannot wait for process with test %s",
+                      test.name);
 
-    if (status == 0) {
+    SGProcessStatus status = sg_proc_status(proc);
+    if (status.state == SGPROC_EXITED && status.code == 0) {
       passed++;
       capture_discard(&out);
       capture_discard(&err);
@@ -68,7 +74,7 @@ void sg_test_lib(bstr name, bstr runner_exe) {
       ostr output = capture_end(&out);
       ostr error = capture_end(&err);
 
-      printf("FAIL (%d)\n", status);
+      printf("FAIL (%d:%d)\n", status.state, status.code);
 
       if (strlen(output) != 0) {
         printf("stdout: \n");
@@ -82,6 +88,7 @@ void sg_test_lib(bstr name, bstr runner_exe) {
       free(output);
       free(error);
     }
+    sg_free_proc(proc);
   }
 
   putchar('\n');

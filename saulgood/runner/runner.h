@@ -15,6 +15,7 @@ typedef enum {
   SGRE_INVALID_ARG = -1,
   SGRE_CANT_OPEN_LIB = -2,
   SGRE_RUN_FN_INVALID_CMD = -3,
+  SGRE_PROCESS_ERROR = -4
 } SGRError;
 
 SGRunnerState sg_new_runner(bstr name, bstr runner_exe);
