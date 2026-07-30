@@ -13,6 +13,7 @@ add_library(
   src/cli_diag.c
   src/strparse.c
   src/strutils.c
+  src/string_interner.c
 )
 
 target_include_directories(
