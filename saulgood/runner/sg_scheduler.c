@@ -21,11 +21,13 @@ SGJob* sgjs_poll(SGJScheduler* sched) {
   }
 
   while (true) {
+    // Populate the sched->executing ring buffer
     while (sched->executing.n < sched->max_jobs && sched->pending.n > 0) {
       vec_push(sched->executing, vec_pop(sched->pending));
       sched->executing.get[sched->executing.n - 1].state = SGJS_STARTING;
     }
 
+    // If theres no more job to execute
     if (sched->executing.n == 0)
       return NULL;
 
@@ -34,10 +36,13 @@ SGJob* sgjs_poll(SGJScheduler* sched) {
     SGJob* job = &sched->executing.get[sched->curr];
 
     if (job->state != SGJS_STOPPING) {
+      // Advance ring buffer
       sched->curr = (sched->curr + 1) % sched->executing.n;
       return job;
     }
 
+    // If the job is stopping and there are other pending tasks
+    // then replace the job
     if (sched->pending.n > 0) {
       *job = vec_pop(sched->pending);
       job->state = SGJS_STARTING;
@@ -45,6 +50,8 @@ SGJob* sgjs_poll(SGJScheduler* sched) {
       return job;
     }
 
+    // if there are no more pending jobs but a job is stopping
+    // then remove it
     vec_remove_swap(sched->executing, sched->curr);
 
     if (sched->curr >= sched->executing.n)
