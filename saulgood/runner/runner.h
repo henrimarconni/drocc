@@ -21,6 +21,6 @@ typedef enum {
 SGRunnerState sg_new_runner(bstr name, bstr runner_exe);
 void sg_runner_free(SGRunnerState* rs);
 void sg_run_test(SGRunnerState* rs, size_t id);
-void sg_test_lib(bstr name, bstr runner_exe);
+void sg_test_lib(bstr name, bstr runner_exe, size_t max_jobs);
 
 #endif

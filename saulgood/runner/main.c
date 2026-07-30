@@ -21,19 +21,29 @@ static void parse_test_info(bstr str, int* tests_len, bstr* name) {
     clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
 }
 
+const int DEFAULT_MAX_JOBS = 2;
+
 int main(int argc, char** argv) {
   bstr runner_exe = argv[0];
   ce_initopt(argc, argv);
   ce_add_meta("sgrun", "SaulGood Test Runner", "./sgrun libtest1.so libtest2.so");
   ce_addopt("help", 'h', 0, "Print help");
   ce_addopt("run-fn", 'g', 's', "Runs a test from a specific library and exits");
+  ce_addopt("jobs", 'j', 'd', "Specify maximum concurrent jobs");
 
   char ch;
   ParsedOpt popt;
+  int max_jobs = DEFAULT_MAX_JOBS;
+
   while (ce_getopt(&ch, &popt)) {
     switch (ch) {
     case CE_PLAIN_VALUE:
-      sg_test_lib(popt.s, runner_exe);
+      sg_test_lib(popt.s, runner_exe, max_jobs);
+      break;
+
+    case 'j':
+      if (popt.d > 0)
+        max_jobs = popt.d;
       break;
 
     case 'h':
