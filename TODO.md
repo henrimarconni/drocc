@@ -14,7 +14,7 @@ This file tracks long-term work across the Drocc Compiler Collection.
 
 * [ ] Add examples.
 * [ ] Add parallel test running
-* [ ] Explore the idea of tests getting compiled to a library and being run using saulgood runner instead of this amalgamated setup
+* [-] Explore the idea of tests getting compiled to a library and being run using saulgood runner instead of this amalgamated setup
 
 ### Amalgamator
 

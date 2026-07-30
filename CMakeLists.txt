@@ -18,5 +18,5 @@ add_compile_options(-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=)
 
 add_subdirectory(core)
 add_subdirectory(amalgamator)
-add_subdirectory(saulgood)
 add_subdirectory(macromancer)
+add_subdirectory(saulgood)

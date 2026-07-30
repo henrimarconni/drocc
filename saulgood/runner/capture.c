@@ -1,5 +1,5 @@
-#include "runner.h"
-
+#define SG_RUNNER_DEV
+#include "sg_api.h"
 #include <assert.h>
 #include <stdlib.h>
 
@@ -28,6 +28,19 @@ void capture_begin(SGCapture* cap, FILE* stream) {
   assert(cap->tmp);
 
   assert(sg_dup2(sg_fileno(cap->tmp), sg_fileno(stream)) != -1);
+}
+
+void capture_discard(SGCapture* cap) {
+  fflush(cap->stream);
+  fflush(cap->tmp);
+
+  dup2(cap->saved_fd, fileno(cap->stream));
+  close(cap->saved_fd);
+
+  fclose(cap->tmp);
+
+  cap->saved_fd = -1;
+  cap->tmp = NULL;
 }
 
 char* capture_end(SGCapture* cap) {

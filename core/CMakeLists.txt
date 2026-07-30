@@ -11,6 +11,8 @@ add_library(
   src/clexer_utils.c
   src/diagnostics.c
   src/cli_diag.c
+  src/strparse.c
+  src/strutils.c
 )
 
 target_include_directories(

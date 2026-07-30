@@ -50,11 +50,13 @@ function(saulgood_add_tests)
         VERBATIM
     )
 
-    add_executable(${SG_NAME} "${SG_OUTPUT}")
+    add_library(${SG_NAME} SHARED "${SG_OUTPUT}")
 
     if(SG_LIBRARIES)
         target_link_libraries(${SG_NAME} PRIVATE ${SG_LIBRARIES})
     endif()
+
+    add_dependencies(${SG_NAME} ${SG_TARGET})
 
     if(SG_TARGET AND TARGET ${SG_TARGET})
         get_target_property(target_type ${SG_TARGET} TYPE)
@@ -70,5 +72,4 @@ function(saulgood_add_tests)
         endif()
     endif()
 
-    add_test(NAME ${SG_NAME} COMMAND $<TARGET_FILE:${SG_NAME}>)
 endfunction()

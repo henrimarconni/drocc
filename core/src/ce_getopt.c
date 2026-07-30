@@ -1,7 +1,7 @@
 #include "core/ce_getopt.h"
+#include "core/strparse.h"
 #include <asm-generic/errno-base.h>
 #include <assert.h>
-#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -99,52 +99,6 @@ void ce_printhelp() {
   }
 }
 
-static float parse_float(const Opt* opt) {
-  bstr str = ce_data.argv[ce_data.curr++];
-  float f = 0;
-  bool floated = false;
-  float divisor = 1;
-  char ch;
-  while ((ch = *str++) != '\0') {
-    if (ch == '.') {
-      if (floated) {
-        printf("Bad float: %s\n", ce_data.argv[ce_data.curr - 1]);
-        exit(-1);
-      }
-      floated = true;
-      continue;
-    }
-    if (!isdigit(ch)) {
-      printf("Error: Expected float in --%s, found: %s\n", opt->longhand,
-             ce_data.argv[ce_data.curr - 1]);
-      exit(-1);
-    }
-    if (!floated) {
-      f = (f * 10.0) + (ch - '0');
-    } else {
-      divisor *= 10.0;
-      f = f + ((ch - '0') / divisor);
-    }
-  }
-  return f;
-}
-
-static int parse_int(const Opt* opt) {
-  bstr str = ce_data.argv[ce_data.curr++];
-  char ch;
-  int num = 0;
-  while ((ch = *str++) != '\0') {
-    if (!isdigit(ch)) {
-      printf("Error: Expected integer in --%s, found: %s\n", opt->longhand,
-             ce_data.argv[ce_data.curr - 1]);
-      exit(-1);
-    }
-    num *= 10;
-    num += ch - '0';
-  }
-  return num;
-}
-
 static void parse_opt(const Opt* opt, ParsedOpt* popt) {
   if (opt->val_format == 0) {
     popt->flag = true;
@@ -163,11 +117,11 @@ static void parse_opt(const Opt* opt, ParsedOpt* popt) {
     break;
   }
   case 'd': {
-    popt->d = parse_int(opt);
+    parse_int(&popt->d, ce_data.argv[ce_data.curr++]);
     break;
   }
   case 'f': {
-    popt->f = parse_float(opt);
+    parse_float(&popt->f, ce_data.argv[ce_data.curr++]);
     break;
   }
   default: {

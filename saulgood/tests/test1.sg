@@ -6,11 +6,11 @@ $c {
 
 $test "A test to check printf" : stdio_suite(printf_test) {
   SGCapture cap;
-  capture_begin(&cap, stdout);
+  saulg.capture_begin(&cap, stdout);
 
   int res = printf("420");
 
-  char *out = capture_end(&cap);
+  char *out = saulg.capture_end(&cap);
   printf("Captured: %s\n", out);
   free(out);
   assert(res == 3);

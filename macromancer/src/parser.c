@@ -303,6 +303,7 @@ void parse_keyw(Parser* p, Span keyw) {
 
 void parse_conf(Parser* p) {
   while (true) {
+    skip_unwanted(&p->file);
     if (peekch(&p->file) == EOF)
       break;
     Span keyw = get_tok(p);
