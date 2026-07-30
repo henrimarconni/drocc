@@ -33,6 +33,7 @@ add_executable(
   runner/loader.c
   runner/sg_fmt.c
   runner/runner.c
+  runner/sg_scheduler.c
 )
 
 if(WIN32)
