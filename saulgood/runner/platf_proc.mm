@@ -1,7 +1,7 @@
 
 $interface SGProc as Static {
 # return 0 on success
-# SGProcess* sg_spawn_proc(bstr exe_path, bstr const* argv);
+# SGProcess* sg_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags);
   sg_spawn_proc
 
 # return 0 on success
@@ -20,6 +20,12 @@ $interface SGProc as Static {
 
 # SGProcessStatus sg_proc_status(SGProcess*);
   sg_proc_status
+
+  # ostr posix_proc_take_stdout(SGProcess*);
+  sg_proc_take_stdout
+
+  # ostr posix_proc_take_stderr(SGProcess*);
+  sg_proc_take_stderr
 }
 
 $impl WinProc as SGProc {
@@ -30,6 +36,8 @@ $impl WinProc as SGProc {
   sg_kill_proc    = win_kill_proc  
   sg_free_proc    = win_free_proc  
   sg_proc_status  = win_proc_status
+  sg_proc_take_stdout = win_proc_take_stdout
+  sg_proc_take_stderr = win_proc_take_stderr
 }
 
 $impl PosixProc as SGProc {
@@ -40,15 +48,7 @@ $impl PosixProc as SGProc {
   sg_kill_proc    = posix_kill_proc
   sg_free_proc    = posix_free_proc
   sg_proc_status  = posix_proc_status
+  sg_proc_take_stdout = posix_proc_take_stdout
+  sg_proc_take_stderr = posix_proc_take_stderr
 }
 
-# uses system()
-$impl FallbackProc as SGProc {
-  $header         = "stdlib.h"
-  sg_spawn_proc   = fallback_spawn_proc   # synchronous..
-  sg_wait_proc    = fallback_wait_proc    # empty function...
-  sg_trywait_proc = fallback_trywait_proc # empty
-  sg_kill_proc    = fallback_kill_proc    # no killing, cuz its synchronous
-  sg_free_proc    = fallback_free_proc    # no freeing, cuz it doesn't allocate
-  sg_proc_status  = fallback_proc_status
-}

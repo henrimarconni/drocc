@@ -9,6 +9,8 @@ int  win_wait_proc(SGProcess*);
 int  win_trywait_proc(SGProcess*);
 int  win_kill_proc(SGProcess*);
 void win_free_proc(SGProcess*);
+ostr win_proc_take_stdout(SGProcess*);
+ostr win_proc_take_stderr(SGProcess*);
 
 
 #endif
