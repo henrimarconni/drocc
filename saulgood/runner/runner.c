@@ -1,4 +1,3 @@
-#include "capture.h"
 #include "core/cli_diag.h"
 #include "core/vmem_arena.h"
 #include "loader.h"
@@ -105,24 +104,20 @@ bool print_test(int fmt_width, SGTestCtx* ctx) {
 }
 
 void sg_test_lib(bstr name, bstr runner_exe, size_t max_jobs) {
-  SGTestLib lib;
-  if (sg_load(&lib, name) < 0)
-    clid_throw_diag(CLID_ERROR, SGRE_CANT_OPEN_LIB, "Cannot open library: %s", name);
-
   size_t passed = 0;
   size_t failed = 0;
-
-  print_heading('=', "Test Library: %s", lib.name);
-  printf("Tests   : %d\n", lib.tests_len);
-  printf("Max Jobs: %zu\n\n", max_jobs);
-  int fmt_width = snprintf(NULL, 0, "%d", lib.tests_len);
 
   SGRunnerState rs = sg_new_runner(name, runner_exe);
   SGJScheduler sched = sgjs_new(max_jobs);
 
+  print_heading('=', "Test Library: %s", rs.lib.name);
+  printf("Tests   : %d\n", rs.lib.tests_len);
+  printf("Max Jobs: %zu\n\n", max_jobs);
+  int fmt_width = snprintf(NULL, 0, "%d", rs.lib.tests_len);
+
   VMEMArena* arena = vmarena_new(128 * 1024);
-  for (size_t i = 0; i < lib.tests_len; i++) {
-    SGTestCtx tmpctx = new_test_ctx(i, &lib.tests[i], &rs);
+  for (size_t i = 0; i < rs.lib.tests_len; i++) {
+    SGTestCtx tmpctx = new_test_ctx(i, &rs.lib.tests[i], &rs);
     SGTestCtx* ctx = vmarena_alloc(arena, sizeof(SGTestCtx));
     *ctx = tmpctx;
     sgjs_submit(&sched, (SGJob){ctx, SGJS_STARTING});
@@ -157,7 +152,7 @@ void sg_test_lib(bstr name, bstr runner_exe, size_t max_jobs) {
     }
   }
 
-  print_summary(&lib, failed, passed);
+  sgjs_free(&sched);
+  print_summary(&rs.lib, failed, passed);
   vmarena_free(arena);
-  sg_unload(&lib);
 }
