@@ -13,14 +13,15 @@ This file tracks long-term work across the Drocc Compiler Collection.
 ### SaulGood
 
 * [ ] Add examples.
-* [ ] Add parallel test running
-* [-] Explore the idea of tests getting compiled to a library and being run using saulgood runner instead of this amalgamated setup
+* [ ] Add tests.
+* [✓] Add parallel test running
+* [✓] Explore the idea of tests getting compiled to a library and being run using saulgood runner instead of this amalgamated setup
 
 ### Amalgamator
 
 * [ ] Impove include cache implementation.
 * [ ] Skip preprocessor directives inside strings. (this should be fixed after chucci_front is implemented)
-* [ ] Improve path resolution.
+* [ ] Add examples.
 * [ ] Add tests.
 
 ### Macromancer
@@ -57,17 +58,16 @@ This file tracks long-term work across the Drocc Compiler Collection.
   * `MMCodegen`
   * `AMParser`
   * ...
-* [ ] Review enums.
-* [ ] Review macros.
-* [ ] Review public functions.
+* [✓] Review enums.
+* [✓] Review macros.
+* [✓] Review public functions.
 
 ---
 
 # Documentation
 
-* [ ] Finish Doxygen comments.
+* [✓] Finish Doxygen comments.
 * [ ] Add project overviews.
-* [ ] Document public APIs only.
 * [ ] Publish documentation through CI.
 
 ---
@@ -93,9 +93,6 @@ This file tracks long-term work across the Drocc Compiler Collection.
 # Nice to Have
 
 * [ ] Benchmarks.
-* [ ] Fuzz testing.
-* [ ] Coverage reports.
-* [ ] Static analysis.
 * [ ] Release automation.
 * [ ] Package generation.
 
