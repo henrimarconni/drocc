@@ -35,6 +35,38 @@ add_executable(
   runner/runner.c
 )
 
+if(WIN32)
+  target_sources(sgrun PRIVATE runner/windl.c runner/win_proc.c)
+  macromancer_generate(
+    TARGET sgrun
+    INPUT "runner/platf_loader.mm"
+    FLAGS -e "SGDll=WinDll"
+  )
+  macromancer_generate(
+    TARGET sgrun
+    INPUT "runner/platf_proc.mm"
+    FLAGS -e "SGProc=WinProc"
+  )
+else()
+  target_sources(sgrun PRIVATE runner/posix_proc.c)
+  macromancer_generate(
+    TARGET sgrun
+    INPUT "runner/platf_loader.mm"
+    FLAGS -e "SGDll=PosixDll"
+  )
+  macromancer_generate(
+    TARGET sgrun
+    INPUT "runner/platf_proc.mm"
+    FLAGS -e "SGProc=PosixProc"
+  )
+endif()
+
+target_include_directories(
+  sgrun
+  PRIVATE
+  runner
+)
+
 target_link_libraries(
   sgrun
   PRIVATE
