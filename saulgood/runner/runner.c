@@ -79,7 +79,7 @@ static bool start_new_job(SGTestCtx* ctx) {
 
 /// Print test status after test has finished
 bool print_test(int fmt_width, SGTestCtx* ctx) {
-  printf("[%*zu/%*d] %-40s", fmt_width, ctx->id, fmt_width, ctx->rs->lib.tests_len,
+  printf("[%*zu/%*d] %-40s", fmt_width, ctx->id + 1, fmt_width, ctx->rs->lib.tests_len,
          ctx->test->name);
 
   SGProcessStatus status = sg_proc_status(ctx->proc);
@@ -94,9 +94,9 @@ bool print_test(int fmt_width, SGTestCtx* ctx) {
     ostr out = sg_proc_take_stdout(ctx->proc);
 
     if (err && strlen(err) > 0)
-      printf("stderr:\n %s\n", err);
+      printf("stderr:\n%s\n", err);
     if (out && strlen(out) > 0)
-      printf("stdout:\n %s\n", out);
+      printf("stdout:\n%s\n", out);
 
     if (err)
       free(err);

@@ -78,5 +78,5 @@ target_link_libraries(
 saulgood_add_tests(
   TARGET saulgood
   FILES 
-    tests/test1.sg
+    tests/test1.test
 )
