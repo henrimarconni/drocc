@@ -4,7 +4,7 @@ add_library(
   STATIC
   # src/lexer.c
   src/token.c
-  # src/token_stream.c
+  src/token_stream.c
 )
 
 target_include_directories(
