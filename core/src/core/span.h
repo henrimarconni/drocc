@@ -81,4 +81,9 @@ void advance_span(Span* span);
 */
 void shrink_span(Span* span);
 
+/**
+  Helps prevent repetitive printf("%.*s", (int)span.len, span.str);
+*/
+#define span_fmt(span) (int)(span).len, (span).str
+
 #endif
