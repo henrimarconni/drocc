@@ -1,10 +1,40 @@
 # Macromancer
 
-Macromancer is a code generator for C that provides a simple interface/implementation system without changing the language or requiring compiler extensions.
+Macromancer is a code generator for C that separates API from implementation, allowing seamless switching between implementations without any change in API.
 
 You describe interfaces and implementations in a small configuration file, and Macromancer generates a single header that connects them together.
 
 The generated code is ordinary C. There is no runtime library or dependency on Macromancer after code generation.
+
+
+
+## Usage
+
+Run this to generate the code from the IDL:
+```
+    macromancer animals.mm -o animals.h
+```
+or If you want to switch implementations
+```
+    macromancer animals.mm -o animals.h --export Animal=Cat
+```
+
+The generated header can then be used direcly like this:
+
+```c
+// for Dynamic interfaces, define the implementation
+#define MM_Animal_IMPLEMENTATION
+#include "animals.h"
+
+int main() {
+    eat();
+    sleep();
+    speak();
+}
+
+```
+
+
 
 ## Static Interfaces
 
