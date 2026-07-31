@@ -1,9 +1,27 @@
 $c {
-  #include <stdio.h>
-  #include <assert.h>
-  #include "core/string_interner.h"
-  #include "core/vmem_arena.h"
-  #include "core/span.h"
+#include "core/span.h"
+#include "core/string_interner.h"
+#include "core/vmem_arena.h"
+#include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+}
+
+$c {
+  bool interner_fuzz(char* buf, size_t len) {
+    if (len == 0)
+      return false;
+
+    for (size_t i = len; i-- > 0;) {
+      if (++buf[i] != 0)
+        return true;
+      // skip null char
+      else
+        buf[i] = 1;
+    }
+    return false;
+  }
 }
 
 $test "Interner Test" : core(interner) {
@@ -16,7 +34,7 @@ $test "Interner Test" : core(interner) {
   InternID id2 = intern(span, interner);
   InternID id3 = intern(span, interner);
   InternID id4 = intern(span, interner);
-  printf("%d %d %d %d\n", id, id2, id3, id4);
+  printf("%d == %d == %d == %d == 0\n", id, id2, id3, id4);
   fflush(stdout);
   assert(id == id2 && id == id3 && id == id4 && id == 0);
 
@@ -26,9 +44,35 @@ $test "Interner Test" : core(interner) {
   id2 = intern(span, interner);
   id3 = intern(span, interner);
   id4 = intern(span, interner);
-  printf("%d %d %d %d\n", id, id2, id3, id4);
+  printf("%d == %d == %d == %d == 1\n", id, id2, id3, id4);
   fflush(stdout);
   assert(id == id2 && id == id3 && id == id4 && id == 1);
 
   interner_free(interner);
+  vmarena_free(arena);
+}
+
+$test "Interner Resize Test" : core(interner_resize) {
+  VMEMArena* arena = vmarena_new(128 * 1024);
+  StringInterner* interner = interner_new(arena);
+
+  char buf[3] = {0};
+
+  Span span;
+  span.str = buf;
+
+  for (size_t n = 1; n < sizeof(buf) - 1; n++) {
+    span.len = n;
+    size_t i = 0;
+    memset(buf, 0, sizeof(buf));
+    do {
+      InternID id = intern(span, interner);
+      printf("%d == %zu for `%s`\n", id, i, buf);
+      fflush(stdout);
+      assert(i++ == id);
+    } while (interner_fuzz(buf, n));
+  }
+
+  interner_free(interner);
+  vmarena_free(arena);
 }
