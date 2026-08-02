@@ -11,6 +11,12 @@
 int split_str_inplace(bstr str, char delim, bstr* p1, bstr* p2);
 
 
+/// @return -1 on failure
+int parse_float(float* f, bstr str);
+/// @return -1 on failure
+int parse_int(int* i, bstr str);
+
+
 
 
 #endif

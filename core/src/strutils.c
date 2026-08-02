@@ -1,4 +1,53 @@
 #include "core/strutils.h"
+#include <ctype.h>
+
+int parse_float(float* f, bstr str) {
+  *f = 0;
+  bool floated = false;
+  float divisor = 1;
+  char ch;
+
+  while ((ch = *str++) != '\0') {
+    if (ch == '.') {
+      if (floated)
+        return -1;
+      floated = true;
+      continue;
+    }
+
+    if (!isdigit(ch))
+      return -1;
+
+    if (!floated)
+      *f = (*f * 10.0) + (ch - '0');
+    else {
+      divisor *= 10.0;
+      *f = *f + ((ch - '0') / divisor);
+    }
+  }
+  return 0;
+}
+
+int parse_int(int* num, bstr str) {
+  char ch;
+  int mul = 1;
+  *num = 0;
+
+  if (*str == '-') {
+    mul = -1;
+    str++;
+  }
+
+  while ((ch = *str++) != '\0') {
+    if (!isdigit(ch))
+      return -1;
+    *num *= 10;
+    *num += ch - '0';
+  }
+
+  *num *= mul;
+  return 0;
+}
 
 int split_str_inplace(bstr str, char delim, bstr* p1, bstr* p2) {
   *p1 = str;
