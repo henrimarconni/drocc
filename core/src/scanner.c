@@ -1,30 +1,37 @@
 #include "core/scanner.h"
-#include "core/vmem_arena.h"
+#include "core/srcman.h"
+#include <assert.h>
 #include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-int nextch(SourceFile* file) {
-  int ch = file->contents[file->pos.id++];
+SrcScanner scanner_new(SourceManager* sman, SrcID id) {
+  SrcScanner scanner = {0};
+  scanner.sman = sman;
+  scanner.srcid = id;
+  return scanner;
+}
+
+int nextch(SrcScanner* scanner) {
+  SMSource file = scanner->sman->sources.get[scanner->srcid];
+  int ch = file.contents[scanner->id++];
   if (ch == '\n') {
-    file->pos.row++;
-    file->pos.col = 0;
+    scanner->row++;
+    scanner->col = 0;
   } else if (ch == '\0') {
-    file->pos.id--;
+    scanner->id--;
     return EOF;
   } else
-    file->pos.col++;
+    scanner->col++;
 
   return ch;
 }
 
-bool match_str(SourceFile* file, bstr str) {
-  Position pos = file->pos;
+bool match_str(SrcScanner* scanner, bstr str) {
+  SrcScanner bak = *scanner;
   while (*str) {
-    if (nextch(file) != *str) {
-      file->pos = pos;
+    if (nextch(scanner) != *str) {
+      *scanner = bak;
       return false;
     }
     str++;
@@ -32,53 +39,36 @@ bool match_str(SourceFile* file, bstr str) {
   return true;
 }
 
-int peekch(SourceFile* file) {
-  if (file->pos.id >= file->pos.len)
+int peekch(SrcScanner* scanner) {
+  assert(scanner->sman);
+  assert(scanner->srcid < scanner->sman->sources.n);
+  SMSource file = scanner->sman->sources.get[scanner->srcid];
+  if (scanner->id >= file.len)
     return EOF;
-  int ch = file->contents[file->pos.id];
+  int ch = file.contents[scanner->id];
   return ch == '\0' ? EOF : ch;
 }
 
-int peeknextch(SourceFile* file) {
-  if (file->pos.id + 1 >= file->pos.len)
+int peeknextch(SrcScanner* scanner) {
+  SMSource file = scanner->sman->sources.get[scanner->srcid];
+  if (scanner->id + 1 >= file.len)
     return EOF;
-  int ch = file->contents[file->pos.id + 1];
+  int ch = file.contents[scanner->id + 1];
   return ch == '\0' ? EOF : ch;
 }
 
-void skip_space(SourceFile* file) {
-  int ch = peekch(file);
+void skip_space(SrcScanner* scanner) {
+  int ch = peekch(scanner);
   while (ch != EOF && isspace(ch)) {
-    nextch(file);
-    ch = peekch(file);
+    nextch(scanner);
+    ch = peekch(scanner);
   }
 }
 
-ScannerRes read_file(SourceFile* sf, VMEMArena* arena, bstr confpath) {
-  FILE* file = fopen(confpath, "r");
-  if (!file)
-    return SE_ERR_CANT_OPEN_FILE;
-  fseek(file, 0, SEEK_END);
-  long file_size = ftell(file);
-  if (file_size < 0)
-    return SE_ERR_IO;
-  rewind(file);
-
-  size_t pathlen = strlen(confpath);
-  bstr dup = vmarena_alloc(arena, pathlen + 1);
-  memcpy(dup, confpath, pathlen);
-  dup[pathlen] = '\0';
-
-  sf->pos.len = file_size;
-  sf->name = dup;
-  sf->contents = vmarena_alloc(arena, file_size + 1);
-  size_t n = fread(sf->contents, 1, file_size, file);
-  if (n != (size_t)file_size) {
-    fclose(file);
-    return SE_ERR_IO;
-  }
-  sf->contents[file_size] = '\0';
-
-  fclose(file);
-  return SE_OK;
+Span span_begin(SrcScanner* scanner) {
+  Span span = {.offset = scanner->id, .len = 0, .srcid = scanner->srcid};
+  return span;
 }
+
+void span_end(Span* span, SrcScanner* scanner) { span->len = scanner->id - span->offset; }
+SrcScanner scanner_new(SourceManager* sman, SrcID id);
