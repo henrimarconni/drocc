@@ -6,7 +6,7 @@
 #ifndef CORE_DIAGNOSTICS_H
 #define CORE_DIAGNOSTICS_H
 
-#include "core/span.h"
+#include "core/srcman.h"
 #include "core/stringdef.h"
 #include "core/vec.h"
 #include <setjmp.h>
@@ -20,7 +20,7 @@
   Format specifiers X-macro, containing all the format specifiers
 */
 #define FORMAT_SPECS(X)                                                                            \
-  X("%span", print_span, Span)                                                                     \
+  X("%sv", print_sv, StringView)                                                                   \
   X("%s", print_str, bstr)                                                                         \
   X("%c", putchar, int)
 
@@ -50,6 +50,7 @@ typedef struct {
   vec(Diag) diags;
   size_t info_len;
   jmp_buf* onerror;
+  SourceManager* sman;
 } DiagEngine;
 
 /**
@@ -74,10 +75,9 @@ diagnostic
 _*/
 void _print_diag(DiagEngine* eng, Span span, int diag_type, ...);
 
-
 /// Populates DiagEngine with the given parameters
-DiagEngine new_engine(const DiagInfo* infos, size_t info_len, jmp_buf* onerror);
-
+DiagEngine new_engine(const DiagInfo* infos, size_t info_len, SourceManager* sman,
+                      jmp_buf* onerror);
 
 /**
   Throws a diagnostic exception containing additional caller information.

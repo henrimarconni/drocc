@@ -6,16 +6,15 @@
 
 #ifndef CLEXER_UTILS_H
 #define CLEXER_UTILS_H
-#include "core/scanner.h"
+#include "core/srcman.h"
 
-typedef enum {
-  CLEX_OK,
-  CLEX_INVALID_STR,
-  CLEX_UNEXPECTED_EOF
-} CLexerRes;
+/// @return -1 on failure
+int skip_c_comments(SrcScanner* scanner);
 
-/// Tries to skip c comments, returns error if there is some unknown syntax
-CLexerRes skip_c_comments(SourceFile* file);
-CLexerRes lex_cstr(SourceFile* file);
+/**
+  lex string with double quotes
+  @return -1 on failure
+*/
+int lex_cstr(SrcScanner* scanner);
 
 #endif
