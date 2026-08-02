@@ -4,6 +4,8 @@ add_library(
   core STATIC
   src/ce_getopt.c
   src/span.c
+  src/scanner.c
+  src/srcman.c
   src/vmem_arena.c
   src/fs.c
   src/stringbuilder.c
@@ -11,7 +13,6 @@ add_library(
   src/clexer_utils.c
   src/diagnostics.c
   src/cli_diag.c
-  src/strparse.c
   src/strutils.c
 )
 
