@@ -40,23 +40,31 @@ SrcScanner include(Amalgamator* a, bstr fname) {
     return scanner_new(&a->sman, srcid);
 
   // try all directory + file combinations
+  size_t fnamelen = strlen(fname);
+
   for (size_t i = 0; i < a->idirs.n; i++) {
     bstr dir = a->idirs.get[i];
     size_t dirlen = strlen(dir);
-    size_t fnamelen = strlen(fname);
 
-    // dir + '/' + fname + '\0'
+    VMEMArenaMark mark = vmarena_mark(a->arena);
     bstr path = vmarena_alloc(a->arena, dirlen + 1 + fnamelen + 1);
+
+    // path = dir + / + fname
     memcpy(path, dir, dirlen);
     path[dirlen] = '/';
     memcpy(path + dirlen + 1, fname, fnamelen);
-    path[dirlen + fnamelen + 1] = '\0';
+    path[dirlen + 1 + fnamelen] = '\0';
 
-    // if match found, return
-    SrcID srcid = sman_open(&a->sman, path, a->arena);
+    srcid = sman_open(&a->sman, path, a->arena);
+    printf("%s sheet %d\n", path, srcid);
+
     if (srcid != INVALID_SRC_ID)
       return scanner_new(&a->sman, srcid);
+
+    // reset arena on failure
+    vmarena_mark_reset(a->arena, mark);
   }
+
   throw_diag(&a->engine, NULL_SPAN, AMAL_ERR_FILE_NOT_FOUND, fname);
 }
 
