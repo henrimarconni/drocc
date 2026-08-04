@@ -2,11 +2,10 @@
 #define PARSER_H
 
 #include "core/diagnostics.h"
-#include "core/scanner.h"
+#include "core/srcman.h"
 #include "core/stringdef.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
-#include "core/span.h"
 #include <setjmp.h>
 #include <stdbool.h>
 
@@ -15,29 +14,12 @@ typedef struct {
   bstr impl, iface;
 } ExportOverride;
 
+typedef struct MMPair MMPair;
+typedef struct MMToken MMToken;
+typedef struct Interface Interface;
+typedef struct Impl Impl ;
+
 typedef vec(ExportOverride) ExportOverrideVec;
-
-typedef struct {
-  Span key, val;
-} ImplKVPair;
-
-typedef struct {
-  Span name;
-  Span header;
-  vec(ImplKVPair) pairs;
-} Impl;
-
-typedef struct {
-  Span name;
-  vec(Span) functions;
-  vec(Impl*) impls;
-  bool is_dynamic;
-} Interface;
-
-typedef enum {
-  PE_OK,
-  PE_ERR
-} ParserError;
 
 typedef struct {
   Interface* iface;
@@ -45,15 +27,17 @@ typedef struct {
 } ExportCmd;
 
 typedef struct {
+  VMEMArena* arena;
   vec(Interface*) interfaces;
   vec(ExportCmd) exports;
   DiagEngine engine;
-  SourceFile file;
-  VMEMArena* arena;
-} Parser;
+  SourceManager* sman;
+  SrcScanner scanner;
+} MMParser;
 
-void read_conf(Parser* p, bstr confpath, ExportOverrideVec* export_override, VMEMArena* arena, jmp_buf* onerror);
-void parser_destroy(Parser* p);
+
+void read_conf(MMParser* p, SourceManager* sman, VMEMArena* arena, bstr file, ExportOverrideVec* export_override, jmp_buf* onerror);
+void parser_destroy(MMParser* p);
 
 
 #endif

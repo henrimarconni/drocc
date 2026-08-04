@@ -1,5 +1,6 @@
 #include "core/cli_diag.h"
 #include "core/fs.h"
+#include "core/srcman.h"
 #include "core/stringdef.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
@@ -11,7 +12,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-int emit_output(bstr output_path, Codegen* c) {
+int emit_output(bstr output_path, MMCodegen* c) {
   if (!output_path) {
     printf("%s\n", c->output.get);
     return 0;
@@ -32,11 +33,12 @@ int main(int argc, char** argv) {
   parse_arg(argc, argv, &output_path, &confpath, &export_overrides);
 
   jmp_buf onerror;
-  Parser p;
+  MMParser p;
+  SourceManager sman = sman_new();
   VMEMArena* arena = vmarena_new(1024 * 128); // max size is 128 kb
 
   if (setjmp(onerror) == 0)
-    read_conf(&p, confpath, &export_overrides, arena, &onerror);
+    read_conf(&p, &sman, arena, confpath, &export_overrides, &onerror);
   else {
     vec_destroy(export_overrides);
     parser_destroy(&p);
@@ -44,8 +46,9 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  Codegen c;
+  MMCodegen c;
   generate_code(&c, &p);
+
   int res = emit_output(output_path, &c);
   vec_destroy(export_overrides);
   codegen_destroy(&c);
