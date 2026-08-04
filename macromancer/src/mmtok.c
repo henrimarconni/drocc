@@ -6,7 +6,6 @@
 #include "macromancer/mm_diag.h"
 #include "macromancer/mmtok.h"
 #include "macromancer/parser.h"
-#include <assert.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -30,7 +29,7 @@ void skip_unwanted(SrcScanner* scanner) {
 MMToken tok_ident(MMParser* p) {
   Span span = span_begin(&p->scanner);
 
-  assert(nextch(&p->scanner) != EOF);
+  nextch(&p->scanner);
   char ch = peekch(&p->scanner);
   while (ch != EOF && (isalnum(ch) || ch == '_')) {
     nextch(&p->scanner);
@@ -52,7 +51,7 @@ MMToken tok_ident(MMParser* p) {
 
 MMToken tok_surround(MMParser* p, char start, char end) {
   Span span = span_begin(&p->scanner);
-  assert(nextch(&p->scanner) == start);
+  nextch(&p->scanner); // start character
 
   int ch = peekch(&p->scanner);
   while (ch != end && ch != EOF) {
@@ -60,9 +59,11 @@ MMToken tok_surround(MMParser* p, char start, char end) {
     ch = peekch(&p->scanner);
   }
 
-  assert(ch == end);
-  assert(nextch(&p->scanner) == end);
+  nextch(&p->scanner);
   span_end(&span, &p->scanner);
+
+  if (ch != end)
+    throw_diag(&p->engine, span, MM_ERR_UNEXPECTED_EOF);
 
   MMToken tok = {0};
   tok.span = span;
@@ -72,14 +73,6 @@ MMToken tok_surround(MMParser* p, char start, char end) {
   tok.sv.str++;
 
   return tok;
-}
-
-void expect_str(MMParser* p, bstr str) {
-  MMToken tok = get_mmtok(p);
-  size_t len = strlen(str);
-
-  assert(tok.sv.len == len);
-  assert(strncmp(tok.sv.str, str, len) == 0);
 }
 
 MMToken tok_angstr(MMParser* p) {
@@ -96,10 +89,8 @@ MMToken tok_str(MMParser* p) {
 
 MMToken tok_keyw(MMParser* p) {
   Span span = span_begin(&p->scanner);
-  assert(nextch(&p->scanner) == '$');
-
+  nextch(&p->scanner); // '$'
   char ch = peekch(&p->scanner);
-  assert(isalpha(ch) || ch == '_');
 
   while (ch != EOF && (isalnum(ch) || ch == '_')) {
     nextch(&p->scanner);
@@ -132,7 +123,8 @@ MMToken get_mmtok(MMParser* p) {
   skip_unwanted(&p->scanner);
 
   int ch = peekch(&p->scanner);
-  assert(ch != EOF);
+  if (ch == EOF)
+    throw_diag(&p->engine, span_begin(&p->scanner), MM_ERR_UNEXPECTED_EOF);
 
   if (ch == '_' || isalpha(ch))
     return tok_ident(p);
@@ -144,7 +136,7 @@ MMToken get_mmtok(MMParser* p) {
     tok.type = MMT_HEADERPAIR;
 
     skip_unwanted(&p->scanner);
-    expect_str(p, "=");
+    expect_mmtok(p, MMT_EQ);
     skip_unwanted(&p->scanner);
 
     char next_c = peekch(&p->scanner);
@@ -153,7 +145,7 @@ MMToken get_mmtok(MMParser* p) {
     else if (next_c == '<')
       tok.sv = tok_angstr(p).sv;
     else
-      assert(false);
+      throw_diag(&p->engine, tok.span, MM_ERR_HEADER_FILE_NOT_IN_DOUBLE_QUOTES);
 
     span_end(&start_span, &p->scanner);
 
@@ -177,7 +169,7 @@ MMToken get_mmtok(MMParser* p) {
     return tok_keyw(p);
   }
 
-  assert(false);
+  throw_diag(&p->engine, span_begin(&p->scanner), MM_ERR_UNEXPECTED_CHAR, ch);
 }
 
 const bstr mmtok_type_to_str[] = {
