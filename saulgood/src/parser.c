@@ -2,6 +2,8 @@
 #include "core/diagnostics.h"
 #include "core/scanner.h"
 #include "core/span.h"
+#include "core/srcman.h"
+#include "core/stringdef.h"
 #include "core/vec.h"
 #include "saulgood/parser.h"
 #include "saulgood/sg_diag.h"
@@ -13,7 +15,7 @@
 
 bstr toktype_to_str[] = {"Block", "String", "Identifier", "`(`", "`)`", "`:`"};
 
-void skip_comment(SourceFile* file) {
+void skip_comment(SrcScanner* file) {
   if (peekch(file) == '#') {
     while (peekch(file) != '\n' && peekch(file) != EOF) {
       nextch(file);
@@ -21,77 +23,81 @@ void skip_comment(SourceFile* file) {
   }
 }
 
-void skip_unwanted(SourceFile* file) {
+void skip_unwanted(SrcScanner* file) {
   int last_id;
   do {
-    last_id = file->pos.id;
+    last_id = file->id;
     skip_comment(file);
     skip_space(file);
-  } while (file->pos.id != last_id && peekch(file) != EOF);
+  } while (file->id != last_id && peekch(file) != EOF);
 }
 
-Token tok_block(DiagEngine* engine, TestFile* file) {
-  nextch(&file->source); // skip {
-  Span span = span_begin(&file->source);
+SGToken tok_block(DiagEngine* engine, TestFile* file) {
+  nextch(&file->scanner); // skip {
+  Span span = span_begin(&file->scanner);
 
   int depth = 1;
   while (depth > 0) {
-    if (skip_c_comments(&file->source) != CLEX_OK)
-      throw_diag(engine, span, ERR_UNEXPECTED_EOF);
-    else if (peekch(&file->source) == '"') {
-      if (lex_cstr(&file->source) != CLEX_OK)
-        throw_diag(engine, span, ERR_UNEXPECTED_EOF);
+    if (skip_c_comments(&file->scanner) < 0)
+      throw_diag(engine, span, SG_ERR_UNEXPECTED_EOF);
+    else if (peekch(&file->scanner) == '"') {
+      if (lex_cstr(&file->scanner) < 0)
+        throw_diag(engine, span, SG_ERR_UNEXPECTED_EOF);
     }
 
-    int ch = nextch(&file->source);
+    int ch = nextch(&file->scanner);
 
     if (ch == EOF)
-      throw_diag(engine, span, ERR_UNEXPECTED_EOF);
+      throw_diag(engine, span, SG_ERR_UNEXPECTED_EOF);
     else if (ch == '{')
       depth++;
     else if (ch == '}')
       depth--;
   }
-  span_end(&span);
-  shrink_span(&span); // remove that trailing }
-  return (Token){TOK_BLOCK, span};
+  span_end(&span, &file->scanner);
+  span.len--; // skip last }
+  StringView sv = span_sv(file->scanner.sman, span);
+  return (SGToken){TOK_BLOCK, sv, span};
 }
 
 #define is_id_start(ch) (isalpha((ch)) || (ch) == '_' || (ch) == '$')
 #define is_id_body(ch) (isalnum((ch)) || (ch) == '_')
 
-Token tok_id(TestFile* file) {
-  Span span = span_begin(&file->source);
-  nextch(&file->source); // first character
-  int ch = peekch(&file->source);
+SGToken tok_id(TestFile* file) {
+  Span span = span_begin(&file->scanner);
+  nextch(&file->scanner); // first character
+  int ch = peekch(&file->scanner);
   while (is_id_body(ch)) {
-    nextch(&file->source);
-    ch = peekch(&file->source);
+    nextch(&file->scanner);
+    ch = peekch(&file->scanner);
   }
-  span_end(&span);
-  return (Token){TOK_ID, span};
+  span_end(&span, &file->scanner);
+  StringView sv = span_sv(file->scanner.sman, span);
+  return (SGToken){TOK_ID, sv, span};
 }
 
-Token tok_str(DiagEngine* engine, TestFile* file) {
-  Span span = span_begin(&file->source);
-  if (lex_cstr(&file->source) != CLEX_OK)
-    throw_diag(engine, span, ERR_UNEXPECTED_EOF);
-  span_end(&span);
-  return (Token){TOK_STR, span};
+SGToken tok_str(DiagEngine* engine, TestFile* file) {
+  Span span = span_begin(&file->scanner);
+  if (lex_cstr(&file->scanner) < 0)
+    throw_diag(engine, span, SG_ERR_UNEXPECTED_EOF);
+  span_end(&span, &file->scanner);
+  StringView sv = span_sv(file->scanner.sman, span);
+  return (SGToken){TOK_STR, sv, span};
 }
 
-Token tok_simple(TokenType type, int ch, Span span) {
+SGToken tok_simple(TestFile* file, SGTokenType type, int ch, Span span) {
   span.len = 1;
-  return (Token){type, span};
+  StringView sv = span_sv(file->scanner.sman, span);
+  return (SGToken){type, sv, span};
 }
 
 // \t\t\t$
 //       ^ (after skip_unwanted)
 //        ^ (after nextch)
-Token get_tok(DiagEngine* engine, TestFile* file) {
-  skip_unwanted(&file->source);
-  Span span = span_begin(&file->source);
-  int ch = peekch(&file->source);
+SGToken get_tok(DiagEngine* engine, TestFile* file) {
+  skip_unwanted(&file->scanner);
+  Span span = span_begin(&file->scanner);
+  int ch = peekch(&file->scanner);
 
   switch (ch) {
   case '{':
@@ -99,94 +105,79 @@ Token get_tok(DiagEngine* engine, TestFile* file) {
   case '"':
     return tok_str(engine, file);
   case ':':
-    return tok_simple(TOK_COLON, nextch(&file->source), span);
+    return tok_simple(file, TOK_COLON, nextch(&file->scanner), span);
   case '(':
-    return tok_simple(TOK_LPAREN, nextch(&file->source), span);
+    return tok_simple(file, TOK_LPAREN, nextch(&file->scanner), span);
   case ')':
-    return tok_simple(TOK_RPAREN, nextch(&file->source), span);
+    return tok_simple(file, TOK_RPAREN, nextch(&file->scanner), span);
   default:
     if (is_id_start(ch))
       return tok_id(file);
-    span_end(&span);
-    throw_diag(engine, span, ERR_UNEXPECTED_CHAR, span);
+    span_end(&span, &file->scanner);
+    throw_diag(engine, span, SG_ERR_UNEXPECTED_CHAR, span);
   }
 }
 
-Token expect_tok(DiagEngine* engine, TestFile* file, TokenType type) {
-  Token tok = get_tok(engine, file);
+SGToken expect_tok(DiagEngine* engine, TestFile* file, SGTokenType type) {
+  SGToken tok = get_tok(engine, file);
   if (tok.type != type)
-    throw_diag(engine, tok.span, ERR_UNEXPECTED_TOK, toktype_to_str[type], tok.span);
+    throw_diag(engine, tok.span, SG_ERR_UNEXPECTED_TOK, toktype_to_str[type], tok.span);
   return tok;
 }
 
 void parse_cblock(DiagEngine* engine, TestFile* file) {
-  CodegenNode node = {};
-  Token block = expect_tok(engine, file, TOK_BLOCK);
-  node.c_code = block.span;
+  SGCodegenNode node = {};
+  SGToken block = expect_tok(engine, file, TOK_BLOCK);
+  node.c_code = block;
   node.type = CG_CBLOCK;
   vec_push(file->nodes, node);
 }
 
 // Syntax: $test "description" : TestGroup(test_name) {...}
 void parse_test(DiagEngine* engine, TestFile* file) {
-  CodegenNode node = {};
+  SGCodegenNode node = {};
   node.type = CG_TEST;
 
-  Token desc = expect_tok(engine, file, TOK_STR);
+  node.test.desc = expect_tok(engine, file, TOK_STR);
   expect_tok(engine, file, TOK_COLON);
-  Token group = expect_tok(engine, file, TOK_ID);
+  node.test.group = expect_tok(engine, file, TOK_ID);
   expect_tok(engine, file, TOK_LPAREN);
-  Token name = expect_tok(engine, file, TOK_ID);
+  node.test.name = expect_tok(engine, file, TOK_ID);
   expect_tok(engine, file, TOK_RPAREN);
-  Token body = expect_tok(engine, file, TOK_BLOCK);
-
-  node.test.desc = desc.span;
-  node.test.group = group.span;
-  node.test.name = name.span;
-  node.test.body = body.span;
+  node.test.body = expect_tok(engine, file, TOK_BLOCK);
 
   vec_push(file->nodes, node);
 }
 
-void parse_keyw(DiagEngine* engine, TestFile* file, Token keyw) {
-  if (span_str_cmp(keyw.span, "$c"))
+void parse_keyw(DiagEngine* engine, TestFile* file, SGToken keyw) {
+  if (span_str_cmp(file->scanner.sman, keyw.span, "$c"))
     parse_cblock(engine, file);
-  else if (span_str_cmp(keyw.span, "$test"))
+  else if (span_str_cmp(file->scanner.sman, keyw.span, "$test"))
     parse_test(engine, file);
   else
-    throw_diag(engine, keyw.span, ERR_UNEXPECTED_KEYW, keyw.span);
-}
-
-void print_codegen_node(CodegenNode node) {
-  printf("Node(%d): ", node.type);
-  if (node.type == CG_CBLOCK)
-    printf("\n$c {\n%.*s}\n", (int)node.c_code.len, node.c_code.str);
-  else if (node.type == CG_TEST) {
-    printf("$test \"%.*s\" : %.*s(%.*s)\n", (int)node.test.desc.len, node.test.desc.str,
-           (int)node.test.group.len, node.test.group.str, (int)node.test.name.len,
-           node.test.name.str);
-    printf("\n{\n%.*s}\n", (int)node.test.body.len, node.test.body.str);
-  }
+    throw_diag(engine, keyw.span, SG_ERR_UNEXPECTED_KEYW, keyw.span);
 }
 
 void parse_file(ParserState* state, TestFile* file) {
   while (true) {
-    skip_unwanted(&file->source);
-    if (peekch(&file->source) == EOF)
+    skip_unwanted(&file->scanner);
+    if (peekch(&file->scanner) == EOF)
       break;
-    Token token = get_tok(&state->engine, file);
+    SGToken token = get_tok(&state->engine, file);
     parse_keyw(&state->engine, file, token);
   }
 }
 
-void parse_files(ParserState* state, InputFiles files, jmp_buf* onerror) {
-  state->engine = new_engine(sg_diaginfos, __sg_diagtype_len, onerror);
+void parse_files(ParserState* state, SourceManager* sman, InputFiles files, jmp_buf* onerror) {
+  state->engine = new_engine(sg_diaginfos, __sg_diagtype_len, sman, onerror);
 
   for (size_t i = 0; i < files.n; i++) {
-    TestFile file = {};
-    ScannerRes res = read_file(&file.source, state->arena, files.get[i]);
-    if (res != SE_OK)
-      throw_diag(&state->engine, NULL_SPAN, ERR_CANT_OPEN_FILE, files.get[i]);
+    TestFile file = {0};
+    SrcID srcid = sman_open(sman, files.get[i], state->arena);
+    if (srcid == INVALID_SRC_ID)
+      throw_diag(&state->engine, NULL_SPAN, SG_ERR_CANT_OPEN_FILE, files.get[i]);
+
+    file.scanner = scanner_new(sman, srcid);
     parse_file(state, &file);
     vec_push(state->files, file);
   }
