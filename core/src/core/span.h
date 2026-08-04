@@ -22,7 +22,7 @@ void highlight_span(SourceManager* sman, Span span);
   Compare the underlying slice of memory of both spans
   @return true if span1 == span2, false otherwise
 */
-bool span_cmp(Span span1, Span span2);
+bool span_cmp(SourceManager* sman, Span span1, Span span2);
 
 /**
  Compare a null-terminated string with a span

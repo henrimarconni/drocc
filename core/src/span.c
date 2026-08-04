@@ -1,6 +1,7 @@
 #include "core/span.h"
 #include "core/srcman.h"
 #include "core/stringdef.h"
+#include "core/strutils.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -17,7 +18,11 @@ StringView span_sv(SourceManager* man, Span span) {
   return (StringView){span_str(man, span), span.len};
 }
 
-bool span_cmp(Span span1, Span span2) { return memcmp(&span1, &span2, sizeof(Span)) == 0; }
+bool span_cmp(SourceManager* sman, Span span1, Span span2) {
+  StringView s1 = span_sv(sman, span1);
+  StringView s2 = span_sv(sman, span2);
+  return memcmp(&span1, &span2, sizeof(Span)) == 0 || sv_cmp(s1, s2);
+}
 
 bool span_str_cmp(SourceManager* man, Span span, bstr str) {
   bstr str2 = span_str(man, span);
@@ -60,37 +65,51 @@ void highlight_span(SourceManager* man, Span span) {
   print_line_start(offset1);
   putchar('\n');
 
-  // line 2, with actual contents
-  putchar('\n');
-  bstr line_start = info.sv.str - info.col;
-  size_t spaces = 0;
+  // line 2
+  printf("%s| ", line_no);
+
+  bstr line_start = info.sv.str - info.col + 1;
+  size_t spaces_before_span = 0;
+  size_t span_visual_width = 0;
 
   // print line
   for (bstr cur = line_start; *cur && *cur != '\n'; cur++) {
+
     // highlight the span
     if (cur == info.sv.str)
       printf(ANSI_YELLOW);
-    // reset the color back
-    else if (cur == info.sv.str + info.sv.len)
+
+    if (cur == info.sv.str + info.sv.len)
       printf(ANSI_RESET);
 
-    // replace \t with TAB_WIDTH spaces
-    if (*cur == '\t') {
+    // calculate visual width (1 for char, TAB_WIDTH for tab)
+    int char_width = (*cur == '\t') ? TAB_WIDTH : 1;
+
+    // track visual alignment spaces
+    if (cur < info.sv.str)
+      spaces_before_span += char_width;
+    else if (cur < info.sv.str + info.sv.len)
+      span_visual_width += char_width;
+
+    // print the character
+    if (*cur == '\t')
       print_n_spaces(TAB_WIDTH);
-      spaces += TAB_WIDTH;
-    }
-    // else just print the character
-    else {
+    else
       putchar(*cur);
-      spaces++;
-    }
   }
 
-  // line 3, spaces before span start + ^~~~ highlighting
+  printf(ANSI_RESET);
+  putchar('\n');
+
   print_line_start(offset1);
-  print_n_spaces(spaces);
-  putchar('^');
-  for (size_t i = 1; i < span.len; ++i)
-    putchar('~');
+  print_n_spaces(spaces_before_span);
+
+  if (span_visual_width > 0) {
+    putchar('^');
+    for (size_t i = 1; i < span_visual_width; ++i) {
+      putchar('~');
+    }
+  } else
+    putchar('^');
   putchar('\n');
 }
