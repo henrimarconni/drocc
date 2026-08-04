@@ -129,8 +129,6 @@ MMToken get_mmtok(MMParser* p) {
   if (ch == '_' || isalpha(ch))
     return tok_ident(p);
 
-  Span start_span = span_begin(&p->scanner);
-
   if (match_str(&p->scanner, "$header")) {
     MMToken tok = {0};
     tok.type = MMT_HEADERPAIR;
@@ -139,6 +137,7 @@ MMToken get_mmtok(MMParser* p) {
     expect_mmtok(p, MMT_EQ);
     skip_unwanted(&p->scanner);
 
+    Span start_span = span_begin(&p->scanner);
     char next_c = peekch(&p->scanner);
     if (next_c == '"')
       tok.sv = tok_str(p).sv;
