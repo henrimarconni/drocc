@@ -1,6 +1,5 @@
 #include "core/ce_getopt.h"
-#include "core/strparse.h"
-#include <asm-generic/errno-base.h>
+#include "core/strutils.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>

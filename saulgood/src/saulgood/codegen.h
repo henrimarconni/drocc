@@ -8,9 +8,9 @@
 typedef struct {
   StringBuilder output;
   size_t test_len;
-} Codegen;
+} SGCodegen;
 
-void generate_code(Codegen* c, ParserState* state);
-void codegen_destroy(Codegen* c);
+void generate_code(SGCodegen* c, ParserState* state);
+void codegen_destroy(SGCodegen* c);
 
 #endif

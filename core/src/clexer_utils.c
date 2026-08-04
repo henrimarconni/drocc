@@ -1,51 +1,54 @@
 #include "core/clexer_utils.h"
 #include "core/scanner.h"
+#include "core/srcman.h"
 #include <stdio.h>
 
-CLexerRes skip_c_comments(SourceFile* file) {
-  while (peekch(file) == '/') {
-    if (peeknextch(file) == '/') {
+int skip_c_comments(SrcScanner* scanner) {
+  while (peekch(scanner) == '/') {
+    if (peeknextch(scanner) == '/') {
       char ch;
-      while ((ch = peekch(file)) != '\n') {
-        ch = nextch(file);
+      while ((ch = peekch(scanner)) != '\n') {
+        ch = nextch(scanner);
         if (ch == EOF)
-          return CLEX_UNEXPECTED_EOF;
+          return -1;
       }
-    } else if (peeknextch(file) == '*') {
-      nextch(file);           // skip /
-      char ch = nextch(file); // skip *
+    } else if (peeknextch(scanner) == '*') {
+      nextch(scanner);           // skip /
+      char ch = nextch(scanner); // skip *
       while (true) {
-        ch = nextch(file);
-        if (ch == '*' && peekch(file) == '/') {
-          nextch(file); // skip /
+        ch = nextch(scanner);
+        if (ch == '*' && peekch(scanner) == '/') {
+          nextch(scanner); // skip /
           break;
         }
         if (ch == EOF)
-          return CLEX_UNEXPECTED_EOF;
+          return -1;
       }
     } else
       break;
   }
-  return CLEX_OK;
+  return 0;
 }
 
-CLexerRes lex_cstr(SourceFile* file) {
-  if (peekch(file) != '"')
-    return CLEX_INVALID_STR;
-  nextch(file); // consume opening '"'
-  for (;;) {
-    switch (nextch(file)) {
+int lex_cstr(SrcScanner* scanner) {
+  if (peekch(scanner) != '"')
+    return -1;
+
+  // consume opening "
+  nextch(scanner);
+  while (true) {
+    switch (nextch(scanner)) {
     case '"':
-      return CLEX_OK;
+      return 0;
 
     case '\\':
-      if (nextch(file) == EOF)
-        return CLEX_UNEXPECTED_EOF;
+      if (nextch(scanner) == EOF)
+        return -1;
       break;
 
     case '\n':
     case EOF:
-      return CLEX_UNEXPECTED_EOF;
+      return -1;
 
     default:
       break;

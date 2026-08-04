@@ -62,27 +62,29 @@ void write_out(bstr output_path, StringBuilder b) {
 int main(int argc, char** argv) {
   if (argc == 1)
     return -1;
-  bstr output_file = NULL;
-  InputFIleVec input_files = {};
-  IncludeDirVec include_dirs = {};
-  vec_push(include_dirs, "."); // add current directory to search list
-  ce_initopt(argc, argv);
-  parse_args(&output_file, &input_files, &include_dirs);
 
-  VMEMArena* arena = vmarena_new(128 * 1024);
+  bstr output_file = NULL;
+
+  Amalgamator a = {};
+
+  vec_push(a.idirs, "."); // add current directory to search list
+  ce_initopt(argc, argv);
+  parse_args(&output_file, &a.files, &a.idirs);
+
+  a.arena = vmarena_new(128 * 1024);
   jmp_buf onerror;
+
   if (setjmp(onerror) == 0) {
-    StringBuilder output = amalgamate(arena, include_dirs, input_files, &onerror);
+
+    StringBuilder output = amalgamate(&a, &onerror);
+
     if (output.get) {
       if (output_file)
         write_out(output_file, output);
       else
         printf("%s", output.get);
     }
-    vec_destroy(output);
   }
-  vec_destroy(include_dirs);
-  vec_destroy(input_files);
-  vmarena_free(arena);
+  amalgamator_free(&a);
   return 0;
 }

@@ -1,7 +1,6 @@
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
 #include "core/stringdef.h"
-#include "core/strparse.h"
 #include "core/strutils.h"
 #include "runner.h"
 #include <assert.h>
@@ -13,9 +12,9 @@ static void parse_test_info(bstr str, int* tests_len, bstr* name) {
   if (res < 0)
     clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
 
-  StrParserError res2 = parse_int(tests_len, tests_len_str);
+  int res2 = parse_int(tests_len, tests_len_str);
 
-  if (res2 != STRP_OK)
+  if (res2 < 0)
     clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
   if (tests_len < 0)
     clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");

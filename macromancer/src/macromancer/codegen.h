@@ -1,16 +1,18 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+#include "core/srcman.h"
 #include "macromancer/parser.h"
 #include "core/stringbuilder.h"
 
 typedef struct {
-  Parser* parser;
+  MMParser* parser;
   StringBuilder output;
-} Codegen;
+  SourceManager* sman;
+} MMCodegen;
 
-void generate_code(Codegen* c, Parser* p);
-void codegen_destroy(Codegen* c);
+void generate_code(MMCodegen* c, MMParser* p);
+void codegen_destroy(MMCodegen* c);
 
 
 #endif
