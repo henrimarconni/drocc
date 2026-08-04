@@ -1,5 +1,6 @@
 #include "core/strutils.h"
 #include <ctype.h>
+#include <string.h>
 
 int parse_float(float* f, bstr str) {
   *f = 0;
@@ -60,4 +61,8 @@ int split_str_inplace(bstr str, char delim, bstr* p1, bstr* p2) {
   *str++ = '\0'; // skip delim and set it to '\0'
   *p2 = str;
   return 0;
+}
+
+bool sv_cmp(StringView s1, StringView s2) {
+  return s1.len == s2.len && memcmp(s1.str, s2.str, s1.len) == 0;
 }

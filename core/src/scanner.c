@@ -15,14 +15,10 @@ SrcScanner scanner_new(SourceManager* sman, SrcID id) {
 int nextch(SrcScanner* scanner) {
   SMSource file = scanner->sman->sources.get[scanner->srcid];
   int ch = file.contents[scanner->id++];
-  if (ch == '\n') {
-    scanner->row++;
-    scanner->col = 0;
-  } else if (ch == '\0') {
+  if (ch == '\0') {
     scanner->id--;
     return EOF;
-  } else
-    scanner->col++;
+  }
 
   return ch;
 }

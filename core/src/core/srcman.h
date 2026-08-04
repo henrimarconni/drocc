@@ -37,7 +37,7 @@ typedef struct {
 } SourceManager;
 
 typedef struct SrcScanner {
-  size_t id, row, col;
+  size_t id;
   SourceManager* sman;
   SrcID srcid;
 } SrcScanner;

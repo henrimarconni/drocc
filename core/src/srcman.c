@@ -22,30 +22,23 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   info.sv = span_sv(sman, span);
   info.file = src;
 
-  // Binary search to find row and column
   size_t start = 0;
-  size_t end = sman->sources.n - 1;
-  size_t mid;
-  while (true) {
-    mid = (start + (end - start) / 2);
-    printf("Searching: %zu - %zu - %zu\n", start, mid, end);
+  size_t end = src->offsets.n - 1;
+  size_t row = 0;
 
-    uint32_t off1 = src->offsets.get[mid];
-    if (mid == sman->sources.n - 1)
-      break;
-    uint32_t off2 = src->offsets.get[mid + 1];
-    if (info.id >= off1 && info.id <= off2)
-      break;
+  while (start <= end) {
+    size_t mid = start + (end - start) / 2;
+    uint32_t line_start_offset = src->offsets.get[mid];
 
-    if (info.id > off1)
-      start = mid;
-    else
-      end = mid;
+    if (line_start_offset <= info.id) {
+      row = mid;
+      start = mid + 1;
+    } else
+      end = mid - 1;
   }
-  printf("Found: %zu\n", mid);
 
-  info.row = mid;
-  info.col = src->offsets.get[mid] - info.id;
+  info.row = row + 1;
+  info.col = info.id - src->offsets.get[row];
 
   return info;
 }
@@ -94,12 +87,26 @@ SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
     return INVALID_SRC_ID;
   }
 
+  SMSource source = {0};
+
   // Finalize string copies and initialize struct
   memcpy(dup, name, pathlen);
   dup[pathlen] = '\0';
   contents[file_size] = '\0';
 
-  SMSource source = {.len = file_size, .name = dup, .contents = contents};
+  source.len = file_size;
+  source.name = dup;
+  source.contents = contents;
+
+  // Calculate offsets
+  size_t offset = 0;
+  // first line
+  vec_push(source.offsets, 0);
+  for (bstr curr = contents; curr < contents + file_size; curr++) {
+    if (*curr == '\n')
+      vec_push(source.offsets, offset);
+    offset++;
+  }
 
   // Push to vector
   SrcID srcid = man->sources.n;

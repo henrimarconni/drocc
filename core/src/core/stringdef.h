@@ -13,4 +13,6 @@ typedef struct {
   uint32_t len;
 } StringView;
 
+#define strview(cstr) (StringView){ .len = strlen((cstr)), .str = (cstr) }
+
 #endif
