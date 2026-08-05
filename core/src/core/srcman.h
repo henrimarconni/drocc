@@ -58,6 +58,12 @@ void sman_free(SourceManager* sman);
 */
 SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena);
 
+/**
+  Consider a string as a file
+  @note This doesnt allocate memory, so the contents you provide must live till the SourceManager
+*/
+SrcID sman_str(SourceManager* man, bstr name, bstr contents, size_t len);
+
 /// Get information about the span
 SMSpanInfo sman_info(SourceManager* sman, Span span);
 
