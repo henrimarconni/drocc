@@ -1,7 +1,7 @@
 #ifndef __STRING_INTERNER_H
 #define __STRING_INTERNER_H
 
-#include "core/span.h"
+#include "core/stringdef.h"
 #include "core/vmem_arena.h"
 #include "core/vec.h"
 #include <stdint.h>
@@ -33,7 +33,7 @@ typedef struct StringInterner {
 } StringInterner;
 
 StringInterner* interner_new(VMEMArena *arena);
-InternID intern(Span span, StringInterner *interner);
+InternID intern(StringView span, StringInterner *interner);
 void interner_free(StringInterner *interner);
 
 #endif

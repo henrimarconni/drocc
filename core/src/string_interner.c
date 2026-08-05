@@ -1,4 +1,3 @@
-#include "core/span.h"
 #include "core/string_interner.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
@@ -28,8 +27,8 @@ StringInterner* interner_new(VMEMArena* arena) {
   return interner;
 }
 
-static inline InternID populate(InternEntry* entry, StringInterner* interner, bstr str,
-                                size_t len) {
+static inline InternID
+populate(InternEntry* entry, StringInterner* interner, bstr str, size_t len) {
   entry->is_full = true;
   entry->char1 = str[0];
   entry->intern_id = interner->len++;
@@ -87,16 +86,16 @@ void resize(StringInterner* interner) {
   vec_destroy(old_entries);
 }
 
-InternID intern(Span span, StringInterner* interner) {
-  assert(span.len > 0);
+InternID intern(StringView strv, StringInterner* interner) {
+  assert(strv.len > 0);
 
   if ((float)interner->len / (float)interner->cap >= DEFAULT_INTERNER_RESIZE_RATIO)
     resize(interner);
 
-  InternEntry* entry = find_entry(interner, span.str, span.len);
+  InternEntry* entry = find_entry(interner, strv.str, strv.len);
   if (entry->is_full)
     return entry->intern_id;
-  return populate(entry, interner, span.str, span.len);
+  return populate(entry, interner, strv.str, strv.len);
 }
 
 void interner_free(StringInterner* interner) { vec_destroy(interner->entries); }
