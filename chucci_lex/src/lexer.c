@@ -1,195 +1,173 @@
 #include "chucci_lex/lexer.h"
-#include "chucci_lex/token_stream.h"
+#include "chucci_lex/token.h"
+#include "core/clexer_utils.h"
+#include "core/scanner.h"
+#include "core/span.h"
+#include "core/srcman.h"
 #include "core/string_interner.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdio.h>
 
-#define current_source(lexer, ctx) (filevec_access_ptr(&(ctx)->sources, lexer->file_pos))
-#define current_source_ptr(lexer, ctx) (filevec_access_ptr(&(ctx)->sources, lexer->file_pos))
-#define cursor(lexer) (&(lexer)->cursor)
-#define get_cursor_mark(lexer) cursor_mark(cursor(lexer))
+static InternID keyword_ids[__keyword_count];
 
-InternID keyword_to_id[__token_kind_count];
+Lexer lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner) {
+  Lexer lexer = {0};
+  lexer.sman = sman;
+  lexer.scanner = scanner_new(sman, srcid);
+  lexer.interner = interner;
 
-TokenStream lexer_new(SourceFile file) {
-#define X(kind, str) keyword_to_id[kind] = intern(cstr_to_sv(str), ctx->interner);
+// TODO: Relative caching (instead of kind, do (kind - first keyword), so that order doesnt matter)
+// (see token.h for the minor problem with current approach)
+#define X(kind, str) keyword_ids[kind] = intern(strview(str), interner);
   KEYWORDS(X)
 #undef X
-  Lexer* lexer = vmarena_calloc(ctx->arena, sizeof(Lexer));
-  lexer->file_pos = 0;
-  lexer->cursor = cursor_new(current_source(lexer, ctx));
+
   return lexer;
 }
 
-Token lex_op_sep(Lexer* lexer, CompilerCtx* ctx, char ch) {
-  Span span = span_from_cursor(cursor(lexer), 1);
+Token lex_op_sep(Lexer* lexer, int ch) {
+  Span span = span_begin(&lexer->scanner);
 #define X(kind, str, ch1)                                                                          \
-  if (ch1 == ch && cursor_match_str(cursor(lexer), cstr_to_sv(str)))                               \
-    return new_tok_simple(span, kind);
+  if (ch1 == ch && match_str(&lexer->scanner, str)) {                                              \
+    span_end(&span, &lexer->scanner);                                                              \
+    return token_new(span, kind);                                                                  \
+  }
   OPERATORS(X)
   SEPARATORS(X)
 #undef X
   assert(false);
 }
 
-Token lex_num(Lexer* lexer, CompilerCtx* ctx) {
-  CursorMark mark1 = get_cursor_mark(lexer);
-  char ch = cursor_advance(cursor(lexer));
-  ch = cursor_peek(cursor(lexer));
-  bool is_float = false;
-  bool has_error = false;
-  while (true) {
-    char _ch = cursor_peek(cursor(lexer));
-    if (!isdigit(_ch) && _ch != '.')
-      break;
-    if (ch == '.') {
-      if (is_float)
-        has_error = true;
-      is_float = true;
+static int chucci_nextch(SrcScanner* scanner) {
+  int ch = nextch(scanner);
+  if (ch == '\\') {
+    int lookahead = peekch(scanner);
+    // unix \n
+    if (lookahead == '\n') {
+      nextch(scanner);
+      return chucci_nextch(scanner);
     }
-    ch = cursor_advance(cursor(lexer));
+    // windows \r\n
+    if (lookahead == '\r') {
+      nextch(scanner);
+      if (peekch(scanner) == '\n')
+        nextch(scanner);
+      return chucci_nextch(scanner);
+    }
   }
-  CursorMark mark2 = get_cursor_mark(lexer);
 
-  if (has_error) {
-    diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
-                   ERR_INVALID_NUMERIC_LITERAL);
-  }
-
-  StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
-  return new_tok_val(span_from_mark(cursor(lexer), mark1, mark2));
+  return ch;
 }
 
-Token lex_str(Lexer* lexer, CompilerCtx* ctx) {
-  CursorMark mark1 = get_cursor_mark(lexer);
-  char ch = cursor_advance(cursor(lexer));
-  while (true) {
-    ch = cursor_peek(cursor(lexer));
-    if (ch == '\\') {
-      cursor_advance(cursor(lexer)); // skip '\\'
-      cursor_advance(cursor(lexer)); // skip the escape character
-      ch = cursor_peek(cursor(lexer));
-    }
-    if (ch == '\"') {
-      cursor_advance(cursor(lexer));
-      break;
-    }
-    if (ch == '\0' || ch == '\n') {
-      CursorMark mark2 = cursor_mark(cursor(lexer));
-      diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
-                     ERR_UNTERMINATED_STRING);
-      break;
-    }
-    cursor_advance(cursor(lexer));
-  }
-  CursorMark mark2 = get_cursor_mark(lexer);
-
-  return new_tok_val(span_from_mark(cursor(lexer), mark1, mark2));
+void skip_unwanted(SrcScanner* scanner) {
+  int last_id;
+  do {
+    last_id = scanner->id;
+    int res = skip_c_comments(scanner);
+    if (res < 0)
+      assert(false);
+    skip_space(scanner);
+  } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-Token lex_ident(Lexer* lexer, CompilerCtx* ctx, char ch) {
-  CursorMark mark1 = get_cursor_mark(lexer);
-  while (true) {
-    ch = cursor_peek(cursor(lexer));
-    if (!isalnum((unsigned char)ch) && ch != '_')
-      break;
-    cursor_advance(cursor(lexer));
+Token lex_ident(Lexer* lexer, int ch) {
+  Span span = span_begin(&lexer->scanner);
+  while (isalnum(ch) || ch == '_') {
+    nextch(&lexer->scanner);
+    ch = peekch(&lexer->scanner);
   }
-  CursorMark mark2 = get_cursor_mark(lexer);
+  span_end(&span, &lexer->scanner);
+  InternID id = intern(span_sv(lexer->sman, span), lexer->interner);
 
-  StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
-  InternID id = intern(lexeme, ctx->interner);
+  // keyword checking
+  // 'i' here is not only an index, but also the
+  // NOTE: you gotta change this if you change the logic to use relative ordering
+  // instead of depending on the KEYWORDS being the first thing in the enum
+  size_t i = __keyword_count;
+  while (i--) {
+    if (keyword_ids[i] == id)
+      return token_new(span, i);
+  }
 
-#define X(kind, str)                                                                               \
-  if (keyword_to_id[kind] == id)                                                                   \
-    return new_tok_simple(span_from_mark(cursor(lexer), mark1, mark2), kind);
-  KEYWORDS(X)
-#undef X
-
-  return new_tok_ident(span_from_mark(cursor(lexer), mark1, mark2), id);
+  return token_new_ident(span, TOK_IDENT, id);
 }
 
-void skip_comments(Lexer* lexer, CompilerCtx* ctx, char ch) {
-  CursorMark mark1 = cursor_mark(cursor(lexer));
-  cursor_advance(cursor(lexer));
-  ch = cursor_peek(cursor(lexer));
-  // single line comment
-  if (ch == '/') {
-    while (ch != '\0' && ch != '\n') {
-      cursor_advance(cursor(lexer));
-      ch = cursor_peek(cursor(lexer));
-    }
-    return;
-  }
-  // Multi line comments
-  else if (ch == '*') {
-    while (true) {
-      if (ch == '\0') {
-        CursorMark mark2 = cursor_mark(cursor(lexer));
-        diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
-                       ERR_UNTERMINATED_MULTILINE_COMMENT);
-        break;
-      }
-      if (ch == '*') {
-        cursor_advance(cursor(lexer));
-        ch = cursor_peek(cursor(lexer));
-        if (ch == '/') {
-          cursor_advance(cursor(lexer));
-          ch = cursor_peek(cursor(lexer));
-          break;
-        }
-      }
-      cursor_advance(cursor(lexer));
-      ch = cursor_peek(cursor(lexer));
-    }
-  }
-}
+Token lexer_next(Lexer* lexer) {
+  skip_unwanted(&lexer->scanner);
+  int ch = peekch(&lexer->scanner);
 
-Token lex_next_token(Lexer* lexer, CompilerCtx* ctx) {
-  skip_whitespace_except_newline(cursor(lexer));
-  char ch = cursor_peek(cursor(lexer));
-  if (ch == '/') {
-    char next = cursor_peek_next(cursor(lexer));
-    if (next == '*' || next == '/') {
-      skip_comments(lexer, ctx, ch);
-      return lex_next_token(lexer, ctx);
+  if (ch == EOF)
+    return EOF_TOKEN;
+
+  if (isdigit(ch)) {
+    Span span = span_begin(&lexer->scanner);
+    while (isalnum(ch) || ch == '.') {
+      nextch(&lexer->scanner);
+      ch = peekch(&lexer->scanner);
     }
+    span_end(&span, &lexer->scanner); // FIX: Added missing span_end!
+    return token_new(span, TOK_VAL);
   }
-  if (ch == '\0') {
-    Span span = span_from_cursor(cursor(lexer), 1);
-    if (ctx->sources.len > 1) {
-      filevec_pop(&ctx->sources);
-      lexer->cursor = cursor_new(current_source(lexer, ctx));
-      return lex_next_token(lexer, ctx);
+
+  if (isalpha(ch) || ch == '_')
+    return lex_ident(lexer, ch);
+
+  if (ch == '<') {
+    Span span = span_begin(&lexer->scanner);
+    nextch(&lexer->scanner); // <
+
+    // try to lex the <....> string
+    while (ch != '\n' && ch != '>') {
+      nextch(&lexer->scanner);
+      ch = peekch(&lexer->scanner);
     }
-    return new_tok_simple(span, TOK_EOF);
+
+    if (ch == '>') {
+      span_end(&span, &lexer->scanner);
+      nextch(&lexer->scanner); // >
+      span.offset++;           // skip the first <
+      span.len--;
+      return token_new(span, TOK_ANGLE);
+    }
+
+    // rewind if failed
+    scanner_rewind(&lexer->scanner, span);
+    ch = peekch(&lexer->scanner);
   }
-  if (ch == '\\' && cursor_peek_next(cursor(lexer))) {
-    cursor_advance(cursor(lexer)); // skip '\'
-    cursor_advance(cursor(lexer)); // skip '\n'
-    return lex_next_token(lexer, ctx);
-  }
-  if (ch == '\n') {
-    Span span = span_from_cursor(cursor(lexer), 1);
-    cursor_advance(cursor(lexer));
-    return new_tok_simple(span, SEP_NEWLINE);
-  }
-  if (isalpha((unsigned char)ch) || ch == '_')
-    return lex_ident(lexer, ctx, ch);
-  if (ch == '\"')
-    return lex_str(lexer, ctx);
-  if (isdigit(ch))
-    return lex_num(lexer, ctx);
+
   if (is_op(ch) || is_sep(ch))
-    return lex_op_sep(lexer, ctx, ch);
-  assert(false);
-}
+    return lex_op_sep(lexer, ch);
 
-Token lex_peek_token(Lexer* lexer, CompilerCtx* ctx) {
-  Cursor mark = *cursor(lexer);
-  Token token = lex_next_token(lexer, ctx);
-  assert(anystr_eq(token.span.source->name, mark.source->name));
-  *cursor(lexer) = mark;
-  return token;
+  if (ch == '\"') {
+    Span span = span_begin(&lexer->scanner);
+    int res = lex_cstr(&lexer->scanner);
+    if (res < 0)
+      assert(false);
+    span_end(&span, &lexer->scanner);
+    return token_new(span, TOK_STR);
+  }
+
+  if (ch == '\'') {
+    Span span = span_begin(&lexer->scanner);
+
+    nextch(&lexer->scanner); // '\''
+
+    ch = peekch(&lexer->scanner);
+    if (ch == '\\') {
+      nextch(&lexer->scanner); // '\'
+      nextch(&lexer->scanner); // escaped character
+    } else if (ch != '\'')
+      nextch(&lexer->scanner); // normal character
+
+    assert(peekch(&lexer->scanner) == '\'');
+
+    nextch(&lexer->scanner); // Consume the closing '\''
+
+    span_end(&span, &lexer->scanner);
+    return token_new(span, TOK_VAL);
+  }
+
+  assert(false);
 }

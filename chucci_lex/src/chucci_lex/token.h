@@ -88,32 +88,16 @@ extern const char* tok_to_str[];
   X(KW_CHAR, "char")                                                                               \
   X(KW_SIZEOF, "sizeof")
 
-#define PREPROCESSOR_CMD(X)                                                                        \
-  X(PP_DEFINE, "define")                                                                           \
-  X(PP_UNDEF, "undef")                                                                             \
-  X(PP_IFDEF, "ifdef")                                                                             \
-  X(PP_IFNDEF, "ifndef")                                                                           \
-  X(PP_ELIF, "elif")                                                                               \
-  X(PP_ENDIF, "endif")                                                                             \
-  X(PP_ERROR, "error")                                                                             \
-  X(PP_LINE, "line")                                                                               \
-  X(PP_PRAGMA, "pragma")
-
 #define is_tok_op_or_sep(token) (token.kind < TOK_EOF && token.kind > KW_SIZEOF)
-
-typedef enum {
-#define X(a, b) a,
-  PREPROCESSOR_CMD(X)
-#undef X
-      __preprocessor_cmd_len
-} PPCmd;
 
 typedef enum TokenKind {
 
+// NOTE: Keywords must be the first thing in here or lexer caching will break
 // X-macro generated kinds start
 #define X(a, b) a,
   KEYWORDS(X)
 #undef X
+__keyword_count,
 #define X(a, b, c) a,
       OPERATORS(X)
 #undef X
@@ -124,29 +108,28 @@ typedef enum TokenKind {
 
   TOK_EOF,   //< End-of-File
   TOK_IDENT, //< Variable/Function/... names
-  TOK_VAL,   //< String literals or numerical values
-  TOK_PP,    //< Preprocessor commands
+  TOK_STR,   //< String literals
+  TOK_VAL,   //< Numerical value
+  TOK_ANGLE, //< Preprocessor Angle strings <>
   __token_kind_count,
 } TokenKind;
 
 typedef struct {
   Span span;
   TokenKind kind;
-  /**
-    If token is an identifier, we intern it
-    and store the identifier InternID.
-    THIS IS AN OPTIONAL value
-  */
-  InternID ident;
+  union {
+    /// for identifiers
+    InternID ident;
+  };
 } Token;
 
-#define NULL_TOKEN (Token){NULL_SPAN, TOK_EOF, 0}
+// NOTE: Change this if you change the token struct
+#define EOF_TOKEN (Token){NULL_SPAN, TOK_EOF, 0}
+
 typedef vec(Token) TokenVec;
 
-Token new_tok_ident(Span span, InternID ident);
-Token new_tok_val(Span span);
-Token new_tok_simple(Span, TokenKind kind);
+Token token_new(Span span, TokenKind kind);
+Token token_new_ident(Span span, TokenKind kind, InternID ident);
 
 void print_token(SourceManager* sman, Token* token);
-void print_token_pretty(SourceManager* sman, Token* token);
 #endif

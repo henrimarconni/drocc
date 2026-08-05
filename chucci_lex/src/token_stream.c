@@ -31,7 +31,7 @@ TokenStream ts_from_func(void* ctx, TSNextFn next, TSPeekFn peek, TSFreeCtxFn fr
 
 Token ts_next(TokenStream* ts) {
   if (ts->is_consumed)
-    return NULL_TOKEN;
+    return EOF_TOKEN;
 
   switch (ts->kind) {
   case TS_SINGLE: {
@@ -42,7 +42,7 @@ Token ts_next(TokenStream* ts) {
   case TS_VEC: {
     if (ts->vstream.pos >= ts->vstream.vec.n) {
       ts->is_consumed = true;
-      return NULL_TOKEN;
+      return EOF_TOKEN;
     }
     Token token = ts->vstream.vec.get[ts->vstream.pos++];
     if (ts->vstream.pos >= ts->vstream.vec.n)
@@ -63,7 +63,7 @@ Token ts_peek(TokenStream* ts) {
   case TS_VEC:
     if (ts->vstream.pos >= ts->vstream.vec.n) {
       ts->is_consumed = true;
-      return NULL_TOKEN;
+      return EOF_TOKEN;
     }
     return ts->vstream.vec.get[ts->vstream.pos];
 
@@ -75,8 +75,8 @@ Token ts_peek(TokenStream* ts) {
 Token ts_expect(TokenStream* ts, TokenKind kind, DiagEngine* engine) {
   Token token = ts_next(ts);
   if (token.kind != kind) {
-    throw_diag(engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind],
-               tok_to_str[token.kind]);
+    throw_diag(
+        engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind], tok_to_str[token.kind]);
   }
 
   return token;
@@ -98,8 +98,8 @@ void ts_free(TokenStream* ts) {
 Token tstack_expect(TokenStreamStack* stack, TokenKind kind, DiagEngine* engine) {
   Token token = tstack_next(stack);
   if (token.kind != kind) {
-    throw_diag(engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind],
-               tok_to_str[token.kind]);
+    throw_diag(
+        engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind], tok_to_str[token.kind]);
   }
 
   return token;
@@ -107,7 +107,7 @@ Token tstack_expect(TokenStreamStack* stack, TokenKind kind, DiagEngine* engine)
 
 Token tstack_peek(TokenStreamStack* stack) {
   if (stack->n == 0)
-    return NULL_TOKEN;
+    return EOF_TOKEN;
 
   TokenStream* stream = &stack->get[stack->n - 1];
   return ts_peek(stream);
@@ -132,13 +132,13 @@ Token tstack_next(TokenStreamStack* stack) {
     }
 
     // If the token is valid, return it.
-    // If it's a NULL_TOKEN, loop and try the next stream
+    // If it's a EOF_TOKEN, loop and try the next stream
     if (token.kind != TOK_EOF) {
       return token;
     }
   }
 
-  return NULL_TOKEN;
+  return EOF_TOKEN;
 }
 
 void tstack_free(TokenStreamStack* ts) {

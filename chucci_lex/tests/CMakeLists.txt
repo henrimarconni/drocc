@@ -1,8 +1,9 @@
 
 saulgood_add_tests(
-  TARGET core
+  TARGET chucci_lex
   FILES
     interner.test
+    lexer.test
   LIBRARIES
-    core
+    chucci_lex
 )

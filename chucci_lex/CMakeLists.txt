@@ -2,8 +2,9 @@
 add_library(
   chucci_lex
   STATIC
-  # src/lexer.c
+  src/lexer.c
   src/token.c
+  src/cc_diag.c
   src/token_stream.c
 )
 

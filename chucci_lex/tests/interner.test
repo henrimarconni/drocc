@@ -1,6 +1,6 @@
-#include "core/stringdef.h"
 $c {
 #include "core/span.h"
+#include "core/stringdef.h"
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
 #include <assert.h>

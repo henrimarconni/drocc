@@ -2,21 +2,17 @@
 #define __LEXER_H
 
 #include "chucci_lex/token.h"
-#include "chucci_lex/token_stream.h"
-#include "core/diagnostics.h"
-#include "core/scanner.h"
+#include "core/srcman.h"
+#include "core/string_interner.h"
 
-typedef struct {
-  SourceFile file;
-  DiagEngine* engine;
+typedef struct Lexer {
+  SrcScanner scanner;
+  SourceManager* sman;
+  StringInterner* interner;
 } Lexer;
 
-TokenStream lexer_new(SourceFile file);
-
-/// Do not call this directly, use ts_next
-Token lexer_next(void* lexer);
-/// Do not call this directly, use ts_peek
-Token lexer_peek(void* lexer);
-
+Lexer lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner);
+Token lexer_next(Lexer* lexer);
+Token lexer_peek(Lexer* lexer);
 
 #endif
