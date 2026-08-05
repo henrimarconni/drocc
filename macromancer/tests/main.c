@@ -1,6 +1,6 @@
 #define DOG_CAT_IMPLEMENTATION
 #define MM_Animal_IMPLEMENTATION
-#include "core/animals.h"
+#include "animals.h"
 
 int main() {
   speak();

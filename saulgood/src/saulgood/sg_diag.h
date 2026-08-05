@@ -4,11 +4,11 @@
 
 #include "core/diagnostics.h"
 #define ERRORS(X)\
-X(SG_ERR_CANT_OPEN_FILE, "Cannot open file: %s", DL_ERROR)\
+X(SG_ERR_CANT_OPEN_FILE, "Cannot open file: `%s`", DL_ERROR)\
 X(SG_ERR_UNEXPECTED_EOF, "Unexpected End-Of-File", DL_ERROR)\
-X(SG_ERR_UNEXPECTED_TOK, "Expected %s, found %span", DL_ERROR)\
-X(SG_ERR_UNEXPECTED_CHAR, "Unexpected character: %span found", DL_ERROR)\
-X(SG_ERR_UNEXPECTED_KEYW, "Unexpected keyword %span, expected one of `$c` or `$test`", DL_ERROR)
+X(SG_ERR_UNEXPECTED_TOK, "Expected `%sv`, found `%sv`", DL_ERROR)\
+X(SG_ERR_UNEXPECTED_CHAR, "Unexpected character: `%sv` found", DL_ERROR)\
+X(SG_ERR_UNEXPECTED_KEYW, "Unexpected keyword `%sv`, expected one of `$c` or `$test`", DL_ERROR)
 
 
 typedef enum {

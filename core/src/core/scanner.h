@@ -34,8 +34,17 @@ int peeknextch(SrcScanner* scanner);
 bool match_str(SrcScanner* scanner, bstr str);
 void skip_space(SrcScanner* scanner);
 
+/**
+  Begin a span (create a 0-len span pointing to the the current character)
+  Span also works as a checkpoint
+*/
 Span span_begin(SrcScanner* scanner);
+
+/// calculate the difference and populate the length of span
 void span_end(Span* span, SrcScanner* scanner);
+
+/// Rewind back to the start of the provided span
+void scanner_rewind(SrcScanner* scanner, Span span);
 
 SrcScanner scanner_new(SourceManager* sman, SrcID id);
 

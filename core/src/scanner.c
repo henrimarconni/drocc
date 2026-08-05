@@ -68,3 +68,5 @@ Span span_begin(SrcScanner* scanner) {
 
 void span_end(Span* span, SrcScanner* scanner) { span->len = scanner->id - span->offset; }
 SrcScanner scanner_new(SourceManager* sman, SrcID id);
+
+void scanner_rewind(SrcScanner* scanner, Span span) { scanner->id = span.offset; }

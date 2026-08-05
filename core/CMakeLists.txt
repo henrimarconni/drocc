@@ -14,6 +14,7 @@ add_library(
   src/diagnostics.c
   src/cli_diag.c
   src/strutils.c
+  src/string_interner.c
 )
 
 target_include_directories(

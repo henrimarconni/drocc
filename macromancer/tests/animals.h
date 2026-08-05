@@ -1,6 +1,6 @@
 #ifndef MM_Animal_H__
 #define MM_Animal_H__
-#include "core/dog_cat.h"
+#include "dog_cat.h"
 
 
 struct MM_AnimalInterface {

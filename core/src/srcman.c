@@ -43,6 +43,29 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   return info;
 }
 
+SrcID sman_str(SourceManager* man, bstr name, bstr contents, size_t len) {
+  SMSource source = {0};
+  source.len = len;
+  source.name = name;
+  source.contents = contents;
+
+  // Calculate offsets
+  size_t offset = 0;
+  // first line
+  vec_push(source.offsets, 0);
+  for (bstr curr = contents; curr < contents + len; curr++) {
+    if (*curr == '\n')
+      vec_push(source.offsets, offset);
+    offset++;
+  }
+
+  // Push to vector
+  SrcID srcid = man->sources.n;
+  vec_push(man->sources, source);
+
+  return srcid;
+}
+
 SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
   // check if file is already loaded
   for (size_t i = 0; i < man->sources.n; i++) {
@@ -87,32 +110,12 @@ SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
     return INVALID_SRC_ID;
   }
 
-  SMSource source = {0};
-
   // Finalize string copies and initialize struct
   memcpy(dup, name, pathlen);
   dup[pathlen] = '\0';
   contents[file_size] = '\0';
 
-  source.len = file_size;
-  source.name = dup;
-  source.contents = contents;
-
-  // Calculate offsets
-  size_t offset = 0;
-  // first line
-  vec_push(source.offsets, 0);
-  for (bstr curr = contents; curr < contents + file_size; curr++) {
-    if (*curr == '\n')
-      vec_push(source.offsets, offset);
-    offset++;
-  }
-
-  // Push to vector
-  SrcID srcid = man->sources.n;
-  vec_push(man->sources, source);
-
-  return srcid;
+  return sman_str(man, name, contents, file_size);
 }
 
 void sman_free(SourceManager* sman) { vec_destroy(sman->sources); }
