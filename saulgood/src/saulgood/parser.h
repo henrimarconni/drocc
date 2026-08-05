@@ -2,8 +2,7 @@
 #define PARSER_H
 
 #include "core/diagnostics.h"
-#include "core/scanner.h"
-#include "core/span.h"
+#include "core/srcman.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
 #include "core/stringdef.h"
@@ -19,18 +18,19 @@ typedef enum {
   TOK_LPAREN,
   TOK_RPAREN,
   TOK_COLON,
-} TokenType;
+} SGTokenType;
 
 typedef struct {
-  TokenType type;
+  SGTokenType type;
+  StringView sv;
   Span span;
-} Token;
+} SGToken;
 
 typedef struct {
-  Span group;
-  Span name;
-  Span desc;
-  Span body;
+  SGToken group;
+  SGToken name;
+  SGToken desc;
+  SGToken body;
 } Test;
 
 typedef enum {
@@ -41,14 +41,14 @@ typedef enum {
 typedef struct {
   union {
     Test test;
-    Span c_code;
+    SGToken c_code;
   };
   CGenNodeType type;
-} CodegenNode;
+} SGCodegenNode;
 
 typedef struct {
-  vec(CodegenNode) nodes;
-  SourceFile source;
+  vec(SGCodegenNode) nodes;
+  SrcScanner scanner;
 } TestFile;
 
 typedef struct {
@@ -58,7 +58,7 @@ typedef struct {
 } ParserState;
 
 
-void parse_files(ParserState* state, InputFiles files, jmp_buf* onerror);
+void parse_files(ParserState* state, SourceManager* sman, InputFiles files, jmp_buf* onerror);
 void parser_free(ParserState* state);
 
 

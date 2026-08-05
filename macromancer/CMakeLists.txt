@@ -1,10 +1,11 @@
 add_executable(
   macromancer
   src/main.c
-  src/codegen.c
-  src/parser.c
   src/mm_diag.c
   src/mm_arg.c
+  src/mmtok.c
+  src/parser.c
+  src/codegen.c
 )
 
 target_include_directories(

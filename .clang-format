@@ -6,3 +6,6 @@ SortIncludes: true
 PointerAlignment: Left
 AllowShortBlocksOnASingleLine: false
 BreakBeforeBraces: Attach
+AlignAfterOpenBracket: AlwaysBreak
+BinPackArguments: false
+BinPackParameters: false

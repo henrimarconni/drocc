@@ -6,80 +6,36 @@
 #ifndef SPAN_H
 #define SPAN_H
 
-#include "core/scanner.h"
+#include "core/srcman.h"
 #include "core/stringdef.h"
-#include <stddef.h>
 #include <stdbool.h>
-
-#define NULL_SPAN (Span){0}
-#define ANSI_RED "\x1b[31m"
-#define ANSI_YELLOW "\x1b[33m"
-#define ANSI_BLUE "\x1b[34m"
-#define ANSI_RESET "\x1b[0m"
-
-typedef struct {
-  size_t row, col, len;
-  bstr str;
-  SourceFile* file;
-} Span;
+#include <stddef.h>
+#include <stdint.h>
 
 
-/// Makes a zero-length span pointing to the current file position
-
-Span span_begin(SourceFile *file);
-/**
-  Calculates the difference between the source file and the span given
-  and automatically updates length
-  @note This should only be called on fresh spans created using span_begin()
-  (do not modify span without the utilities)
-*/
-void span_end(Span *span);
-
-/**
-  Increase the length of the span by one
-  @note Asserts if the span's end reaches beyond the sourcefile end
-*/
-void extend_span(Span* span);
+StringView span_sv(SourceManager* man, Span span);
 
 /// Highlight the span for diagnostics
-void highlight_span(Span span);
+void highlight_span(SourceManager* sman, Span span);
 
 /**
-  Compares the underlying slice of memory of both spans (along with the length and span.file->name)
+  Compare the underlying slice of memory of both spans
   @return true if span1 == span2, false otherwise
 */
-bool span_cmp(Span span1, Span span2);
-
-/// Create a span from a string (This automatically populates span.file with the string)
-Span str_to_span(bstr str);
+bool span_cmp(SourceManager* sman, Span span1, Span span2);
 
 /**
  Compare a null-terminated string with a span
  @return true if span == str, false otherwise
-*/ 
-bool span_str_cmp(Span span, bstr str);
+*/
+bool span_str_cmp(SourceManager* sman, const Span span, bstr str);
 
 /**
   Copy span's underlying memory slice to the provided buffer
   as null terminated string
+  @note If the length of span is greater than the buffer size, this will truncate the output
 */
-bstr dup_span_buf(Span span, bstr buf);
-
-/**
-  Advances span.str by one and decreases the length by one
-  Example:
-  Span:          [123456abcxyz]
-  Advanced Span: [23456abcxyz]
-
-  @note Asserts (span.len > 0)
-*/
-void advance_span(Span* span);
-
-/**
-  Shrink the span from end by 1 (effectively decreases span.len by 1)
-  @note Asserts (span.len > 0)
-*/
-void shrink_span(Span* span);
+bstr dup_span_buf(SourceManager* man, Span span, bstr buf, size_t size);
 
 /**
   Helps prevent repetitive printf("%.*s", (int)span.len, span.str);

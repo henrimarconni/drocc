@@ -1,5 +1,6 @@
 #include "core/diagnostics.h"
 #include "core/span.h"
+#include "core/srcman.h"
 #include "core/stringdef.h"
 #include <assert.h>
 #include <setjmp.h>
@@ -11,24 +12,14 @@ struct Diag {
   int diag_type;
 };
 
-// TODO: Save diagnostics for later
-// typedef enum { ST_STDOUT, ST_BUF } SinkType;
-
-// typedef struct {
-//   SinkType type;
-//   union {
-//     bstr buf;
-//   };
-// } DiagSink;
-
 void print_str(bstr str) {
   while (*str)
     putchar(*str++);
 }
 
-void print_span(Span span) {
-  while (span.len--)
-    putchar(*span.str++);
+void print_sv(StringView sv) {
+  while (sv.len--)
+    putchar(*sv.str++);
 }
 
 void vformat(bstr str, va_list args) {
@@ -57,8 +48,9 @@ void print_diag_intro(DiagLevel level) {
   }
 }
 
-DiagEngine new_engine(const DiagInfo* infos, size_t info_len, jmp_buf* onerror) {
-  return (DiagEngine){infos, {}, info_len, onerror};
+DiagEngine new_engine(const DiagInfo* infos, size_t info_len, SourceManager* sman,
+                      jmp_buf* onerror) {
+  return (DiagEngine){infos, {}, info_len, onerror, sman};
 }
 
 [[noreturn]]
@@ -72,8 +64,8 @@ void _throw_diag(DiagEngine* eng, Span span, int type, ...) {
   va_end(args);
   putchar('\n');
 
-  if (span.str)
-    highlight_span(span);
+  if (span.srcid != INVALID_SRC_ID)
+    highlight_span(eng->sman, span);
   longjmp(*eng->onerror, -1);
 }
 
@@ -87,6 +79,6 @@ void _print_diag(DiagEngine* eng, Span span, int type, ...) {
   va_end(args);
   putchar('\n');
 
-  if (span.str)
-    highlight_span(span);
+  if (span.srcid != INVALID_SRC_ID)
+    highlight_span(eng->sman, span);
 }

@@ -1,6 +1,7 @@
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
 #include "core/fs.h"
+#include "core/srcman.h"
 #include "core/stringdef.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
@@ -37,7 +38,7 @@ void parse_args(bstr* outfile, InputFiles* files) {
     exit(0);
 }
 
-int emit_output(Codegen* c, bstr outfile) {
+int emit_output(SGCodegen* c, bstr outfile) {
   if (!outfile) {
     printf("%s\n", c->output.get);
     return 0;
@@ -60,14 +61,15 @@ int main(int argc, char** argv) {
 
   parse_args(&outfile, &files);
 
+  SourceManager sman = sman_new();
   VMEMArena* arena = vmarena_new(128 * 1024);
   ParserState state = {};
   state.arena = arena;
   jmp_buf onerror;
 
   if (setjmp(onerror) == 0) {
-    parse_files(&state, files, &onerror);
-    Codegen c = {};
+    parse_files(&state, &sman, files, &onerror);
+    SGCodegen c = {};
     generate_code(&c, &state);
     emit_output(&c, outfile);
     codegen_destroy(&c);
@@ -75,4 +77,5 @@ int main(int argc, char** argv) {
   parser_free(&state);
   vmarena_free(arena);
   vec_destroy(files);
+  sman_free(&sman);
 }

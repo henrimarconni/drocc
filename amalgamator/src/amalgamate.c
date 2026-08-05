@@ -4,6 +4,7 @@
 #include "core/diagnostics.h"
 #include "core/scanner.h"
 #include "core/span.h"
+#include "core/srcman.h"
 #include "core/stringbuilder.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
@@ -13,136 +14,131 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct {
-  StringBuilder output;
-  IncludeDirVec idirs;
-  vec(SourceFile) cache;
-  VMEMArena* arena;
-  DiagEngine engine;
-} Amalgamator;
-
-void skip_unwanted(SourceFile* file) {
+void skip_unwanted(SrcScanner* scanner) {
   int last_id;
   do {
-    last_id = file->pos.id;
-    skip_c_comments(file);
-    skip_space(file);
-  } while (file->pos.id != last_id && peekch(file) != EOF);
+    last_id = scanner->id;
+    skip_c_comments(scanner);
+    skip_space(scanner);
+  } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-void skip_unwanted_str(SourceFile* file) {
+void skip_unwanted_str(SrcScanner* scanner) {
   int last_id;
   do {
-    last_id = file->pos.id;
-    skip_c_comments(file);
-    skip_space(file);
-    lex_cstr(file);
-  } while (file->pos.id != last_id && peekch(file) != EOF);
+    last_id = scanner->id;
+    skip_c_comments(scanner);
+    skip_space(scanner);
+    lex_cstr(scanner);
+  } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-bool check_cached(SourceFile* file, Amalgamator* a, bstr fname) {
-  for (size_t i = 0; i < a->cache.n; i++) {
-    if (strcmp(a->cache.get[i].name, fname) == 0) {
-      *file = a->cache.get[i];
-      // printf("CACHE HIT: %s\n", fname);
-      return true;
-    }
-  }
+SrcScanner include(Amalgamator* a, bstr fname) {
+  // try to open file directly
+  SrcID srcid = sman_open(&a->sman, fname, a->arena);
+  if (srcid != INVALID_SRC_ID)
+    return scanner_new(&a->sman, srcid);
 
-  // printf("CACHE MISS: %s\n", fname);
-  return false;
-}
+  // try all directory + file combinations
+  size_t fnamelen = strlen(fname);
 
-SourceFile include(Amalgamator* a, bstr fname) {
-  SourceFile file = {};
-  if (check_cached(&file, a, fname)) {
-    return file;
-  }
-  ScannerRes res = read_file(&file, a->arena, fname);
-  if (res == SE_OK) {
-    vec_push(a->cache, file);
-    return file;
-  }
   for (size_t i = 0; i < a->idirs.n; i++) {
     bstr dir = a->idirs.get[i];
     size_t dirlen = strlen(dir);
-    size_t fnamelen = strlen(fname);
-    // dir + '/' + fname + '\0'
+
+    VMEMArenaMark mark = vmarena_mark(a->arena);
     bstr path = vmarena_alloc(a->arena, dirlen + 1 + fnamelen + 1);
+
+    // path = dir + / + fname
     memcpy(path, dir, dirlen);
     path[dirlen] = '/';
     memcpy(path + dirlen + 1, fname, fnamelen);
-    path[dirlen + fnamelen + 1] = '\0';
+    path[dirlen + 1 + fnamelen] = '\0';
 
-    if (check_cached(&file, a, path)) {
-      return file;
-    }
-    ScannerRes res = read_file(&file, a->arena, path);
-    if (res == SE_OK) {
-      vec_push(a->cache, file);
-      return file;
-    }
+    srcid = sman_open(&a->sman, path, a->arena);
+    printf("%s sheet %d\n", path, srcid);
+
+    if (srcid != INVALID_SRC_ID)
+      return scanner_new(&a->sman, srcid);
+
+    // reset arena on failure
+    vmarena_mark_reset(a->arena, mark);
   }
+
   throw_diag(&a->engine, NULL_SPAN, AMAL_ERR_FILE_NOT_FOUND, fname);
 }
 
 // TODO: Skip strings while processing
-void append_processed(Amalgamator* a, SourceFile* file) {
-  Span span = span_begin(file);
-  while (peekch(file) != EOF) {
+void append_processed(Amalgamator* a, SrcScanner* scanner) {
+  Span span = span_begin(scanner);
+  while (peekch(scanner) != EOF) {
     // TODO: #   include support
-    if (match_str(file, "#include")) {
-      span_end(&span);
+    if (match_str(scanner, "#include")) {
+
+      // add the text before #include to the output
+      span_end(&span, scanner);
       span.len -= strlen("#include");
-      append_span(&a->output, span);
+      append_sv(&a->output, span_sv(&a->sman, span));
 
-      Span spaces = span_begin(file);
-      skip_unwanted(file);
-      span_end(&spaces);
+      // remove spaces between #include and ""
+      Span spaces = span_begin(scanner);
+      skip_unwanted(scanner);
+      span_end(&spaces, scanner);
 
-      Span fname = span_begin(file);
-      CLexerRes res = lex_cstr(file);
-      span_end(&fname);
+      // file name span
+      Span fname = span_begin(scanner);
+      int res = lex_cstr(scanner);
+      span_end(&fname, scanner);
 
-      if (res != CLEX_OK) {
+      if (res < -1 || fname.len <= 2) {
+        // revert back if lexing string failed
         append_str(&a->output, "#include");
-        append_span(&a->output, spaces);
-        span = span_begin(file);
+        append_sv(&a->output, span_sv(&a->sman, spaces));
+        span = span_begin(scanner);
         continue;
       }
 
-      shrink_span(&fname);
-      advance_span(&fname);
+      // remove the surrounding ""
+      fname.len -= 2;
+      fname.offset += 1;
+
       char buf[1024];
-      dup_span_buf(fname, buf);
-      SourceFile included = include(a, buf);
+      dup_span_buf(&a->sman, fname, buf, sizeof(buf));
+      SrcScanner included = include(a, buf);
       append_processed(a, &included);
 
-      span = span_begin(file);
+      span = span_begin(scanner);
       continue;
     }
-    nextch(file);
+    nextch(scanner);
   }
-  skip_unwanted_str(file);
-  span_end(&span);
-  append_span(&a->output, span);
+  skip_unwanted_str(scanner);
+  span_end(&span, scanner);
+  append_sv(&a->output, span_sv(&a->sman, span));
 }
 
-StringBuilder amalgamate(VMEMArena* arena, IncludeDirVec idirs, InputFIleVec input_files,
-                         jmp_buf* onerror) {
-  Amalgamator a = {};
-  a.arena = arena;
-  a.idirs = idirs;
-  a.engine = new_engine(amal_diaginfos, __amal_diaginfos_len, onerror);
-  for (size_t i = 0; i < input_files.n; i++) {
-    bstr fname = input_files.get[i];
-    SourceFile file = {};
-    ScannerRes res = read_file(&file, arena, fname);
-    if (res != SE_OK)
-      throw_diag(&a.engine, NULL_SPAN, AMAL_ERR_FILE_NOT_FOUND, fname);
-    append_processed(&a, &file);
+StringBuilder amalgamate(Amalgamator* a, jmp_buf* onerror) {
+  a->sman = sman_new();
+  a->engine = new_engine(amal_diaginfos, __amal_diaginfos_len, &a->sman, onerror);
+
+  for (size_t i = 0; i < a->files.n; i++) {
+    bstr fname = a->files.get[i];
+    SrcID srcid = sman_open(&a->sman, fname, a->arena);
+
+    if (srcid == INVALID_SRC_ID)
+      throw_diag(&a->engine, NULL_SPAN, AMAL_ERR_FILE_NOT_FOUND, fname);
+
+    SrcScanner scanner = scanner_new(&a->sman, srcid);
+    append_processed(a, &scanner);
   }
-  append_ch(&a.output, '\0');
-  vec_destroy(a.cache);
-  return a.output;
+  append_ch(&a->output, '\0');
+  return a->output;
+}
+
+void amalgamator_free(Amalgamator* a) {
+  vec_destroy(a->output);
+  vec_destroy(a->idirs);
+  vec_destroy(a->files);
+  vmarena_free(a->arena);
+  sman_free(&a->sman);
 }

@@ -1,4 +1,5 @@
 #include "core/stringbuilder.h"
+#include "core/stringdef.h"
 #include "core/vec.h"
 #include "saulgood/codegen.h"
 #include "saulgood/parser.h"
@@ -15,7 +16,7 @@ void appendf(StringBuilder* b, bstr fstr, ...) {
     else {
       switch (*++fstr) {
       case 's':
-        append_span(b, va_arg(args, Span));
+        append_sv(b, va_arg(args, StringView));
         break;
       case 'd':
         char buf[32];
@@ -33,16 +34,16 @@ void appendf(StringBuilder* b, bstr fstr, ...) {
   va_end(args);
 }
 
-void gen_from_test(Codegen* c, Test* test) {
-  appendf(&c->output, "\n// %s : %s\nvoid %s() {%s}\n", test->desc, test->group, test->name,
-          test->body);
+void gen_from_test(SGCodegen* c, Test* test) {
+  appendf(&c->output, "\n// %s : %s\nvoid %s() {%s}\n", test->desc.sv, test->group.sv,
+          test->name.sv, test->body.sv);
   c->test_len++;
 }
 
-void gen_from_node(Codegen* c, CodegenNode* node) {
+void gen_from_node(SGCodegen* c, SGCodegenNode* node) {
   switch (node->type) {
   case CG_CBLOCK:
-    append_span(&c->output, node->c_code);
+    append_sv(&c->output, node->c_code.sv);
     break;
   case CG_TEST:
     gen_from_test(c, &node->test);
@@ -50,22 +51,22 @@ void gen_from_node(Codegen* c, CodegenNode* node) {
   }
 }
 
-void gen_from_file(Codegen* c, TestFile* file) {
+void gen_from_file(SGCodegen* c, TestFile* file) {
   for (size_t i = 0; i < file->nodes.n; i++)
     gen_from_node(c, &file->nodes.get[i]);
 }
 
-void declare_test_list(Codegen* c, ParserState* state) {
+void declare_test_list(SGCodegen* c, ParserState* state) {
   // Declare list of tests
   append_str(&c->output, "struct SGTest saulgood_tests[] = {\n");
   for (size_t i = 0; i < state->files.n; i++) {
     TestFile file = state->files.get[i];
     for (size_t j = 0; j < file.nodes.n; j++) {
-      CodegenNode node = file.nodes.get[j];
+      SGCodegenNode node = file.nodes.get[j];
       if (node.type == CG_CBLOCK)
         continue;
-      appendf(&c->output, "(struct SGTest){\"%s\", \"%s\", %s, &%s},", node.test.name,
-              node.test.group, node.test.desc, node.test.name);
+      appendf(&c->output, "(struct SGTest){\"%s\", \"%s\", %s, &%s},", node.test.name.sv,
+              node.test.group.sv, node.test.desc.sv, node.test.name.sv);
     }
   }
   append_str(&c->output, "\n};\n");
@@ -76,7 +77,7 @@ char runner_api_code[] = {
 #embed SG_RUNNER_API
     , '\0'};
 
-void generate_code(Codegen* c, ParserState* state) {
+void generate_code(SGCodegen* c, ParserState* state) {
   c->test_len = 0;
 
   // Add runner header
@@ -93,4 +94,4 @@ void generate_code(Codegen* c, ParserState* state) {
   append_ch(&c->output, '\0');
 }
 
-void codegen_destroy(Codegen* c) { vec_destroy(c->output); }
+void codegen_destroy(SGCodegen* c) { vec_destroy(c->output); }
