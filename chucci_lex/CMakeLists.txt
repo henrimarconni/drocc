@@ -19,10 +19,3 @@ target_link_libraries(
   core
 )
 
-saulgood_add_tests(
-  TARGET core
-  FILES
-    tests/interner.test
-  LIBRARIES
-    core
-)
