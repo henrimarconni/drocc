@@ -19,7 +19,7 @@ This file tracks long-term work across the Drocc Compiler Collection.
 
 ### Amalgamator
 
-* [ ] Impove include cache implementation.
+* [✓] Impove include cache implementation.
 * [ ] Skip preprocessor directives inside strings. (this should be fixed after chucci_front is implemented)
 * [ ] Add examples.
 * [ ] Add tests.
@@ -27,7 +27,7 @@ This file tracks long-term work across the Drocc Compiler Collection.
 ### Macromancer
 
 * [ ] Expand documentation.
-* [ ] Add examples.
+* [✓] Add example.
 * [ ] Add tests.
 
 ### Chucci Compiler
@@ -41,7 +41,7 @@ This file tracks long-term work across the Drocc Compiler Collection.
 * [ ] Homepage
 * [ ] Website.
 * [ ] User guide.
-* [ ] Contribution guide.
+* [✓] Contribution guide.
 * [ ] Release notes generator.
 * [ ] Project templates.
 
@@ -51,17 +51,13 @@ This file tracks long-term work across the Drocc Compiler Collection.
 
 ## Naming
 
-* [ ] Namespace all public symbols.
+* [✓] Namespace all public symbols.
 * [ ] Prefix public types with project code.
 
   * `SGCodegen`
   * `MMCodegen`
   * `AMParser`
   * ...
-* [✓] Review enums.
-* [✓] Review macros.
-* [✓] Review public functions.
-
 ---
 
 # Documentation
