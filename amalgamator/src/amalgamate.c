@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void skip_unwanted(SrcScanner* scanner) {
+static inline void skip_unwanted(SrcScanner* scanner) {
   int last_id;
   do {
     last_id = scanner->id;
@@ -23,7 +23,7 @@ void skip_unwanted(SrcScanner* scanner) {
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-void skip_unwanted_str(SrcScanner* scanner) {
+static inline void skip_unwanted_str(SrcScanner* scanner) {
   int last_id;
   do {
     last_id = scanner->id;
@@ -33,7 +33,7 @@ void skip_unwanted_str(SrcScanner* scanner) {
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-SrcScanner include(Amalgamator* a, bstr fname) {
+static SrcScanner include(Amalgamator* a, bstr fname) {
   // try to open file directly
   SrcID srcid = sman_open(&a->sman, fname, a->arena);
   if (srcid != INVALID_SRC_ID)
@@ -69,7 +69,7 @@ SrcScanner include(Amalgamator* a, bstr fname) {
 }
 
 // TODO: Skip strings while processing
-void append_processed(Amalgamator* a, SrcScanner* scanner) {
+static void append_processed(Amalgamator* a, SrcScanner* scanner) {
   Span span = span_begin(scanner);
   while (peekch(scanner) != EOF) {
     // TODO: #   include support

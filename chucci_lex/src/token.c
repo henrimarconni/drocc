@@ -1,6 +1,8 @@
 #include "chucci_lex/token.h"
 #include "core/span.h"
+#include "core/srcman.h"
 #include "core/string_interner.h"
+#include "core/stringdef.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,7 +18,8 @@ const char* tok_to_str[__token_kind_count] = {
             SEPARATORS(X)
 #undef X
                 "eof",
-    "ident", "value"};
+    "ident",
+    "value"};
 #define X(a, b, c) [(unsigned char) c] = true,
 
 // Ignore the warning, it is due to the fact that multiple operators start with same character
@@ -46,10 +49,12 @@ Token new_tok_simple(Span span, TokenKind kind) {
   return token;
 }
 
-void print_token(Token* token) {
-  printf("%s: %.*s", tok_to_str[token->kind], span_fmt(token->span));
+void print_token(SourceManager* sman, Token* token) {
+  StringView sv = span_sv(sman, token->span);
+  printf("%s: %.*s", tok_to_str[token->kind], sv.len, sv.str);
 }
-void print_token_pretty(Token* token) {
+void print_token_pretty(SourceManager* sman, Token* token) {
+  StringView sv = span_sv(sman, token->span);
   if (token->kind == SEP_NEWLINE) {
     printf("sep(\\n)");
     return;
@@ -73,14 +78,16 @@ void print_token_pretty(Token* token) {
     \ break;                                                                                       \
     KEYWORDS(X)
 #undef X
-  case TOK_EOF:
+  case TOK_EOF: {
     printf("eof");
     break;
+  }
   case TOK_VAL:
-    printf("val(%.*s)", span_fmt(token->span));
+    printf("val(%.*s)", sv.len, sv.str);
     break;
   case TOK_IDENT:
-    printf("ident(%.*s)", span_fmt(token->span));
+    StringView sv = span_sv(sman, token->span);
+    printf("ident(%.*s)", sv.len, sv.str);
     break;
   default:
     assert(false && "UNREACHABLE");

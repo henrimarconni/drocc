@@ -1,6 +1,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include "core/srcman.h"
 #include "core/string_interner.h"
 #include "core/vec.h"
 #include <assert.h>
@@ -146,6 +147,6 @@ Token new_tok_ident(Span span, InternID ident);
 Token new_tok_val(Span span);
 Token new_tok_simple(Span, TokenKind kind);
 
-void print_token(Token* token);
-void print_token_pretty(Token* token);
+void print_token(SourceManager* sman, Token* token);
+void print_token_pretty(SourceManager* sman, Token* token);
 #endif
