@@ -11,6 +11,7 @@ else()
   message(STATUS "Loaded modules from system installation.")
 endif()
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
@@ -24,6 +25,6 @@ add_subdirectory(chucci_lex)
 
 # add_subdirectory(core/tests)
 # add_subdirectory(amalgamator/tests)
-add_subdirectory(macromancer/tests)
+add_subdirectory(macromancer/tests macromancer_tests)
 # add_subdirectory(saulgood/tests)
-add_subdirectory(chucci_lex/tests)
+add_subdirectory(chucci_lex/tests chucci_lex_tests)

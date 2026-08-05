@@ -114,14 +114,14 @@ SGToken get_tok(DiagEngine* engine, TestFile* file) {
     if (is_id_start(ch))
       return tok_id(file);
     span_end(&span, &file->scanner);
-    throw_diag(engine, span, SG_ERR_UNEXPECTED_CHAR, span);
+    throw_diag(engine, span, SG_ERR_UNEXPECTED_CHAR, ch);
   }
 }
 
 SGToken expect_tok(DiagEngine* engine, TestFile* file, SGTokenType type) {
   SGToken tok = get_tok(engine, file);
   if (tok.type != type)
-    throw_diag(engine, tok.span, SG_ERR_UNEXPECTED_TOK, toktype_to_str[type], tok.span);
+    throw_diag(engine, tok.span, SG_ERR_UNEXPECTED_TOK, toktype_to_str[type], tok.sv);
   return tok;
 }
 
@@ -155,7 +155,7 @@ void parse_keyw(DiagEngine* engine, TestFile* file, SGToken keyw) {
   else if (span_str_cmp(file->scanner.sman, keyw.span, "$test"))
     parse_test(engine, file);
   else
-    throw_diag(engine, keyw.span, SG_ERR_UNEXPECTED_KEYW, keyw.span);
+    throw_diag(engine, keyw.span, SG_ERR_UNEXPECTED_KEYW, keyw.sv);
 }
 
 void parse_file(ParserState* state, TestFile* file) {
