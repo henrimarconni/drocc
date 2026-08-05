@@ -43,14 +43,15 @@ typedef vec(TokenStream) TokenStreamStack;
 
 TokenStream ts_from_vec(TokenVec vec);
 TokenStream ts_from_token(Token token);
+TokenStream ts_from_func(void* ctx, TSNextFn next, TSPeekFn peek, TSFreeCtxFn free);
 Token ts_next(TokenStream* ts);
 Token ts_peek(TokenStream* ts);
 Token ts_expect(TokenStream* ts, TokenKind kind, DiagEngine* engine);
+void ts_free(TokenStream* ts);
+
 Token tstack_expect(TokenStreamStack* stack, TokenKind kind, DiagEngine* engine);
 Token tstack_peek(TokenStreamStack* stack);
 Token tstack_next(TokenStreamStack* stack);
-
-void stream_free(TokenStream* ts);
 void tstack_free(TokenStreamStack* ts);
 
 #endif

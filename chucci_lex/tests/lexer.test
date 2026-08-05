@@ -1,5 +1,6 @@
 $c {
 #include "chucci_lex/lexer.h"
+#include "chucci_lex/token_stream.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
@@ -8,12 +9,12 @@ $c {
 #include <stdlib.h>
 #include <string.h>
 
-  void test_generate_token_array(Lexer * lexer, size_t len) {
+  void test_generate_token_array(TokenStream* ts, size_t len) {
     char buf[32];
     int offset = snprintf(buf, sizeof(buf), "%d", len);
 
     printf("Token tokens[] = {\n");
-    Token token = lexer_next(lexer);
+    Token token = ts_next(ts);
     while (token.kind != TOK_EOF) {
       printf(
           "\t(Token){ .span = { .offset = %*d, .len = %2d, .srcid = %d }, "
@@ -24,7 +25,7 @@ $c {
           token.span.srcid,
           token.kind,
           token.ident);
-      token = lexer_next(lexer);
+      token = ts_next(ts);
     }
     printf("};");
     printf("\n");
@@ -90,7 +91,7 @@ $test "Lexer test" : chucci_lex(lexer) {
              "}\n";
   size_t len = strlen(str);
   SrcID srcid = sman_str(&sman, "scratch", str, len);
-  Lexer lexer = lexer_new(&sman, srcid, interner);
+  TokenStream ts = lexer_new(&sman, srcid, interner);
 
   Token tokens[] = {
       (Token){.span = {.offset = 68, .len = 1, .srcid = 0}, .kind = 56, .ident = 0},
@@ -283,9 +284,10 @@ $test "Lexer test" : chucci_lex(lexer) {
       (Token){.span = {.offset = 1284, .len = 1, .srcid = 0}, .kind = 66, .ident = 0},
       (Token){.span = {.offset = 1286, .len = 1, .srcid = 0}, .kind = 61, .ident = 0},
   };
+  size_t token_len = sizeof(tokens) / sizeof(Token);
 
   size_t i = 0;
-  Token token = lexer_next(&lexer);
+  Token token = ts_next(&ts);
   while (token.kind != TOK_EOF) {
     Token expected = tokens[i];
 
@@ -297,9 +299,12 @@ $test "Lexer test" : chucci_lex(lexer) {
     assert(token.span.srcid == expected.span.srcid);
 
     i++;
-    token = lexer_next(&lexer);
+    token = ts_next(&ts);
   }
 
+  assert(i == token_len);
+ 
+  ts_free(&ts);
   sman_free(&sman);
   interner_free(interner);
   vmarena_free(arena);

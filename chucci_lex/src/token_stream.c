@@ -119,7 +119,7 @@ Token tstack_next(TokenStreamStack* stack) {
     TokenStream* stream = &stack->get[stack->n - 1];
 
     if (stream->is_consumed) {
-      stream_free(stream);
+      ts_free(stream);
       vec_pop(*stack);
       continue;
     }
@@ -127,7 +127,7 @@ Token tstack_next(TokenStreamStack* stack) {
     Token token = ts_next(stream);
 
     if (stream->is_consumed) {
-      stream_free(stream);
+      ts_free(stream);
       vec_pop(*stack);
     }
 
@@ -143,7 +143,7 @@ Token tstack_next(TokenStreamStack* stack) {
 
 void tstack_free(TokenStreamStack* ts) {
   for (size_t i = 0; i < ts->n; i++)
-    stream_free(&ts->get[i]);
+    ts_free(&ts->get[i]);
 
   vec_destroy(*ts);
 }

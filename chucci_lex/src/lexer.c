@@ -1,5 +1,6 @@
 #include "chucci_lex/lexer.h"
 #include "chucci_lex/token.h"
+#include "chucci_lex/token_stream.h"
 #include "core/clexer_utils.h"
 #include "core/scanner.h"
 #include "core/span.h"
@@ -9,14 +10,16 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static InternID keyword_ids[__keyword_count];
 
-Lexer lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner) {
-  Lexer lexer = {0};
-  lexer.sman = sman;
-  lexer.scanner = scanner_new(sman, srcid);
-  lexer.interner = interner;
+TokenStream lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner) {
+  Lexer* lexer = malloc(sizeof(Lexer));
+  *lexer = (Lexer){0};
+  lexer->sman = sman;
+  lexer->scanner = scanner_new(sman, srcid);
+  lexer->interner = interner;
 
 // TODO: Relative caching (instead of kind, do (kind - first keyword), so that order doesnt matter)
 // (see token.h for the minor problem with current approach)
@@ -24,14 +27,14 @@ Lexer lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner) {
   KEYWORDS(X)
 #undef X
 
-  return lexer;
+  return ts_from_func(lexer, lexer_next, lexer_peek, lexer_free);
 }
 
-Token lex_op_sep(Lexer* lexer, int ch) {
-  Span span = span_begin(&lexer->scanner);
+Token lex_op_sep(Lexer* l, int ch) {
+  Span span = span_begin(&l->scanner);
 #define X(kind, str, ch1)                                                                          \
-  if (ch1 == ch && match_str(&lexer->scanner, str)) {                                              \
-    span_end(&span, &lexer->scanner);                                                              \
+  if (ch1 == ch && match_str(&l->scanner, str)) {                                                  \
+    span_end(&span, &l->scanner);                                                                  \
     return token_new(span, kind);                                                                  \
   }
   OPERATORS(X)
@@ -72,14 +75,14 @@ void skip_unwanted(SrcScanner* scanner) {
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-Token lex_ident(Lexer* lexer, int ch) {
-  Span span = span_begin(&lexer->scanner);
+Token lex_ident(Lexer* l, int ch) {
+  Span span = span_begin(&l->scanner);
   while (isalnum(ch) || ch == '_') {
-    nextch(&lexer->scanner);
-    ch = peekch(&lexer->scanner);
+    chucci_nextch(&l->scanner);
+    ch = peekch(&l->scanner);
   }
-  span_end(&span, &lexer->scanner);
-  InternID id = intern(span_sv(lexer->sman, span), lexer->interner);
+  span_end(&span, &l->scanner);
+  InternID id = intern(span_sv(l->sman, span), l->interner);
 
   // keyword checking
   // 'i' here is not only an index, but also the
@@ -94,80 +97,91 @@ Token lex_ident(Lexer* lexer, int ch) {
   return token_new_ident(span, TOK_IDENT, id);
 }
 
-Token lexer_next(Lexer* lexer) {
-  skip_unwanted(&lexer->scanner);
-  int ch = peekch(&lexer->scanner);
+Token lexer_next(void* ctx) {
+  Lexer* l = ctx;
+  skip_unwanted(&l->scanner);
+  int ch = peekch(&l->scanner);
 
   if (ch == EOF)
     return EOF_TOKEN;
 
   if (isdigit(ch)) {
-    Span span = span_begin(&lexer->scanner);
+    Span span = span_begin(&l->scanner);
     while (isalnum(ch) || ch == '.') {
-      nextch(&lexer->scanner);
-      ch = peekch(&lexer->scanner);
+      chucci_nextch(&l->scanner);
+      ch = peekch(&l->scanner);
     }
-    span_end(&span, &lexer->scanner); // FIX: Added missing span_end!
+    span_end(&span, &l->scanner); // FIX: Added missing span_end!
     return token_new(span, TOK_VAL);
   }
 
   if (isalpha(ch) || ch == '_')
-    return lex_ident(lexer, ch);
+    return lex_ident(l, ch);
 
   if (ch == '<') {
-    Span span = span_begin(&lexer->scanner);
-    nextch(&lexer->scanner); // <
+    Span span = span_begin(&l->scanner);
+    chucci_nextch(&l->scanner); // <
 
     // try to lex the <....> string
     while (ch != '\n' && ch != '>') {
-      nextch(&lexer->scanner);
-      ch = peekch(&lexer->scanner);
+      chucci_nextch(&l->scanner);
+      ch = peekch(&l->scanner);
     }
 
     if (ch == '>') {
-      span_end(&span, &lexer->scanner);
-      nextch(&lexer->scanner); // >
-      span.offset++;           // skip the first <
+      span_end(&span, &l->scanner);
+      chucci_nextch(&l->scanner); // >
+      span.offset++;              // skip the first <
       span.len--;
       return token_new(span, TOK_ANGLE);
     }
 
     // rewind if failed
-    scanner_rewind(&lexer->scanner, span);
-    ch = peekch(&lexer->scanner);
+    scanner_rewind(&l->scanner, span);
+    ch = peekch(&l->scanner);
   }
 
   if (is_op(ch) || is_sep(ch))
-    return lex_op_sep(lexer, ch);
+    return lex_op_sep(l, ch);
 
   if (ch == '\"') {
-    Span span = span_begin(&lexer->scanner);
-    int res = lex_cstr(&lexer->scanner);
+    Span span = span_begin(&l->scanner);
+    int res = lex_cstr(&l->scanner);
     if (res < 0)
       assert(false);
-    span_end(&span, &lexer->scanner);
+    span_end(&span, &l->scanner);
     return token_new(span, TOK_STR);
   }
 
   if (ch == '\'') {
-    Span span = span_begin(&lexer->scanner);
+    Span span = span_begin(&l->scanner);
 
-    nextch(&lexer->scanner); // '\''
+    chucci_nextch(&l->scanner); // '\''
 
-    ch = peekch(&lexer->scanner);
+    ch = peekch(&l->scanner);
     if (ch == '\\') {
-      nextch(&lexer->scanner); // '\'
-      nextch(&lexer->scanner); // escaped character
+      chucci_nextch(&l->scanner); // '\'
+      chucci_nextch(&l->scanner); // escaped character
     } else if (ch != '\'')
-      nextch(&lexer->scanner); // normal character
+      chucci_nextch(&l->scanner); // normal character
 
-    assert(peekch(&lexer->scanner) == '\'');
+    assert(peekch(&l->scanner) == '\'');
 
-    nextch(&lexer->scanner); // Consume the closing '\''
+    chucci_nextch(&l->scanner); // Consume the closing '\''
 
-    span_end(&span, &lexer->scanner);
+    span_end(&span, &l->scanner);
     return token_new(span, TOK_VAL);
   }
 
   assert(false);
 }
+
+Token lexer_peek(void* ctx) {
+  Lexer* lexer = ctx;
+  Span checkpoint = span_begin(&lexer->scanner);
+  Token token = lexer_next(ctx);
+  scanner_rewind(&lexer->scanner, checkpoint);
+  return token;
+}
+
+void lexer_free(void* lexer) { free(lexer); }
