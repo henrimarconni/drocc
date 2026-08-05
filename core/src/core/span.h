@@ -37,9 +37,4 @@ bool span_str_cmp(SourceManager* sman, const Span span, bstr str);
 */
 bstr dup_span_buf(SourceManager* man, Span span, bstr buf, size_t size);
 
-/**
-  Helps prevent repetitive printf("%.*s", (int)span.len, span.str);
-*/
-#define span_fmt(span) (int)(span).len, (span).str
-
 #endif
