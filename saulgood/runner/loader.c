@@ -2,7 +2,7 @@
 #include "loader.h"
 #include "platf_loader.h"
 
-int sg_load(SGTestLib* lib, bstr name) {
+int sg_load(SGTestLib* lib, bstr name, bool show_output) {
   void* handle = sgdl_load(name, RTLD_LAZY);
   if (!handle)
     return -1;
@@ -20,6 +20,7 @@ int sg_load(SGTestLib* lib, bstr name) {
   saulg->capture_begin = capture_begin;
   saulg->capture_end = capture_end;
   saulg->capture_discard = capture_discard;
+  saulg->verbose = show_output;
 
   lib->name = name;
   lib->handle = handle;

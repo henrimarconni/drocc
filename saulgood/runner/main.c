@@ -29,15 +29,21 @@ int main(int argc, char** argv) {
   ce_addopt("help", 'h', 0, "Print help");
   ce_addopt("run-fn", 'g', 's', "Runs a test from a specific library and exits");
   ce_addopt("jobs", 'j', 'd', "Specify maximum concurrent jobs");
+  ce_addopt("show-output", 'p', 0, "Print the test output without capturing it");
 
   char ch;
   ParsedOpt popt;
   int max_jobs = DEFAULT_MAX_JOBS;
+  bool show_output = false;
 
   while (ce_getopt(&ch, &popt)) {
     switch (ch) {
     case CE_PLAIN_VALUE:
-      sg_test_lib(popt.s, runner_exe, max_jobs);
+      return sg_test_lib(popt.s, runner_exe, max_jobs, show_output);
+      break;
+
+    case 'o':
+      show_output = true;
       break;
 
     case 'j':
@@ -54,7 +60,7 @@ int main(int argc, char** argv) {
       int test_id;
       parse_test_info(popt.s, &test_id, &name);
 
-      SGRunnerState rs = sg_new_runner(name, runner_exe);
+      SGRunnerState rs = sg_new_runner(name, runner_exe, show_output);
       sg_run_test(&rs, test_id);
       break;
     }

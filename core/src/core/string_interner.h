@@ -20,7 +20,7 @@ typedef struct InternEntry {
   /// first char of string for faster comparisons
   uint64_t char1 : 8;
   uint64_t is_full : 1;
-  uint32_t intern_id : 32;
+  uint64_t intern_id : 32;
 } InternEntry;
 
 typedef vec(InternEntry) InternEntryVec;

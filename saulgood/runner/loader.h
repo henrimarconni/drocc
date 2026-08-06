@@ -15,7 +15,7 @@ typedef struct {
 } SGTestLib;
 
 /// Loads dynamic library and returns -1 on error
-int sg_load(SGTestLib* lib, bstr name);
+int sg_load(SGTestLib* lib, bstr name, bool show_output);
 void sg_unload(SGTestLib* lib);
 
 

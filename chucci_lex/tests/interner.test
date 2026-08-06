@@ -1,7 +1,7 @@
 $c {
 #include "core/span.h"
-#include "core/stringdef.h"
 #include "core/string_interner.h"
+#include "core/stringdef.h"
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <stddef.h>
@@ -51,26 +51,33 @@ $test "Interner Test" : core(interner) {
 }
 
 $test "Interner Resize Test" : core(interner_resize) {
-  VMEMArena* arena = vmarena_new(128 * 1024);
+  VMEMArena* arena = vmarena_new(1024 * 1024);
   StringInterner* interner = interner_new(arena);
 
-  char buf[3] = {0};
+  char buf[4] = {0};
 
   StringView strv;
   strv.str = buf;
+  size_t i = 0;
+  size_t max_cap = 65535;
 
   for (size_t n = 1; n < sizeof(buf) - 1; n++) {
+    if (i > max_cap)
+      break;
     strv.len = n;
-    size_t i = 0;
     memset(buf, 0, sizeof(buf));
     do {
       InternID id = intern(strv, interner);
-      printf("%d == %zu for `%s`\n", id, i, buf);
+      if (saulg.verbose)
+        printf("%d == %zu for `%.*s` with len = %d\n", id, i, strv.len, strv.str, strv.len);
       fflush(stdout);
       assert(i++ == id);
+      if (i > max_cap)
+        break;
     } while (interner_fuzz(buf, n));
   }
 
   interner_free(interner);
   vmarena_free(arena);
+  // assert(false);
 }

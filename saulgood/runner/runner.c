@@ -15,14 +15,15 @@
 #include <string.h>
 
 /// Create the state
-SGRunnerState sg_new_runner(bstr name, bstr runner_exe) {
+SGRunnerState sg_new_runner(bstr name, bstr runner_exe, bool show_output) {
   SGTestLib lib;
-  if (sg_load(&lib, name) < 0)
+  if (sg_load(&lib, name, show_output) < 0)
     clid_throw_diag(CLID_ERROR, SGRE_CANT_OPEN_LIB, "Cannot open library: %s", name);
 
   SGRunnerState rs;
   rs.runner_exe = runner_exe;
   rs.lib = lib;
+  rs.show_output = show_output;
   return rs;
 }
 
@@ -72,8 +73,13 @@ static SGTestCtx new_test_ctx(size_t id, struct SGTest* test, SGRunnerState* rs)
 static bool start_new_job(SGTestCtx* ctx) {
   char buf[1024];
   snprintf(buf, sizeof(buf), "%s:%zu", ctx->rs->lib.name, ctx->id);
-  ctx->proc = sg_spawn_proc(ctx->rs->runner_exe, (char*[]){ctx->rs->runner_exe, "-g", buf, NULL},
-                            SGPROC_CAPTURE_STDERR | SGPROC_CAPTURE_STDOUT);
+  if (ctx->rs->show_output) {
+    ctx->proc = sg_spawn_proc(ctx->rs->runner_exe,
+                              (char*[]){ctx->rs->runner_exe, "-o", "-g", buf, NULL}, 0);
+  } else {
+    ctx->proc = sg_spawn_proc(ctx->rs->runner_exe, (char*[]){ctx->rs->runner_exe, "-g", buf, NULL},
+                              SGPROC_CAPTURE_STDERR | SGPROC_CAPTURE_STDOUT);
+  }
   return ctx->proc != NULL;
 }
 
@@ -90,18 +96,22 @@ bool print_test(int fmt_width, SGTestCtx* ctx) {
     passed = true;
   } else {
     printf("FAIL (%d:%d)\n", status.state, status.code);
-    ostr err = sg_proc_take_stderr(ctx->proc);
-    ostr out = sg_proc_take_stdout(ctx->proc);
+    // print captured output only when --show-output isnt set and theres a failure
+    // else it prints everything automatically
+    if (!ctx->rs->show_output) {
+      ostr err = sg_proc_take_stderr(ctx->proc);
+      ostr out = sg_proc_take_stdout(ctx->proc);
 
-    if (err && strlen(err) > 0)
-      printf("stderr:\n%s\n", err);
-    if (out && strlen(out) > 0)
-      printf("stdout:\n%s\n", out);
+      if (err && strlen(err) > 0)
+        printf("stderr:\n%s\n", err);
+      if (out && strlen(out) > 0)
+        printf("stdout:\n%s\n", out);
 
-    if (err)
-      free(err);
-    if (out)
-      free(out);
+      if (err)
+        free(err);
+      if (out)
+        free(out);
+    }
   }
 
   return passed;
@@ -109,13 +119,13 @@ bool print_test(int fmt_width, SGTestCtx* ctx) {
 
 /// Run the full test library parallely
 /// Runs child processes underneath for isolation
-void sg_test_lib(bstr name, bstr runner_exe, size_t max_jobs) {
+int sg_test_lib(bstr name, bstr runner_exe, size_t max_jobs, bool show_output) {
 
   // Initialise
   size_t passed = 0;
   size_t failed = 0;
 
-  SGRunnerState rs = sg_new_runner(name, runner_exe);
+  SGRunnerState rs = sg_new_runner(name, runner_exe, show_output);
   SGJScheduler sched = sgjs_new(max_jobs);
 
   // Print heading
@@ -168,4 +178,9 @@ void sg_test_lib(bstr name, bstr runner_exe, size_t max_jobs) {
   sgjs_free(&sched);
   print_summary(&rs.lib, failed, passed);
   vmarena_free(arena);
+
+  if (failed > 0)
+    return 1; // failed
+  else
+    return 0; // passed
 }
