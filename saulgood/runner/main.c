@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
   ce_addopt("run-fn", 'g', 's', "Runs a test from a specific library and exits");
   ce_addopt("jobs", 'j', 'd', "Specify maximum concurrent jobs");
   ce_addopt("show-output", 'p', 0, "Print the test output without capturing it");
+  ce_addopt("timeout-ms", 't', 'd', "Set maximum timeout (in milliseconds)");
 
   char ch;
   ParsedOpt popt;
@@ -51,6 +52,10 @@ int main(int argc, char** argv) {
 
     case 'o':
       rs.show_output = true;
+      break;
+
+    case 't':
+      rs.timeout = popt.d;
       break;
 
     case 'j':
