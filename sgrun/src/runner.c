@@ -81,11 +81,6 @@ void print_failed_output(SGTestCtx* ctx) {
       printf("stderr:\n%s\n", err);
     if (out && strlen(out) > 0)
       printf("stdout:\n%s\n", out);
-
-    if (err)
-      vec_destroy(ctx->err);
-    if (out)
-      vec_destroy(ctx->out);
   }
 }
 

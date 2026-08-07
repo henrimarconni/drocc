@@ -73,6 +73,8 @@ bool poll_test_ctx(void* ctx) {
 
     print_test(&status, testctx);
     sg_free_proc(testctx->proc);
+    vec_destroy(testctx->err);
+    vec_destroy(testctx->out);
     return false;
   }
 
@@ -81,6 +83,8 @@ bool poll_test_ctx(void* ctx) {
     SGProcessStatus status = sg_proc_status(testctx->proc);
     print_test(&status, testctx);
     sg_free_proc(testctx->proc);
+    vec_destroy(testctx->err);
+    vec_destroy(testctx->out);
     return false;
   }
 
