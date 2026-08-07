@@ -1,8 +1,8 @@
 // NOTE: This is ripped-off code, please test this if you are on windows
 
 #include "core/vec.h"
-#include "process.h"
-#include "win_proc.h"
+#include "sgrun/process.h"
+#include "sgrun/win_proc.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,32 +139,44 @@ int win_trywait_proc(SGProcess* proc) {
   return 0;
 }
 
-static ostr take_pipe_handle(HANDLE* h) {
-  if (!*h)
-    return NULL;
+static bool pump_pipe_handle(HANDLE* h, StringBuilder* b) {
+  if (!*h || *h == INVALID_HANDLE_VALUE)
+    return false;
 
-  vec(char) out = {0};
-  char buf[4096];
-  DWORD bytes_read = 0;
+  while (true) {
+    DWORD bytes_avail = 0;
 
-  while (ReadFile(*h, buf, sizeof(buf), &bytes_read, NULL) && bytes_read > 0) {
-    while (out.n + (size_t)bytes_read + 1 > out.m)
-      vec_grow(out);
+    if (!PeekNamedPipe(*h, NULL, 0, NULL, &bytes_avail, NULL)) {
+      close_handle_safe(h);
+      return false;
+    }
 
-    memcpy(out.get + out.n, buf, (size_t)bytes_read);
-    out.n += (size_t)bytes_read;
+    if (bytes_avail == 0) {
+      return true;
+    }
+
+    char buf[4096];
+    DWORD bytes_read = 0;
+
+    DWORD to_read = bytes_avail < sizeof(buf) ? bytes_avail : (DWORD)sizeof(buf);
+
+    if (!ReadFile(*h, buf, to_read, &bytes_read, NULL) || bytes_read == 0) {
+      close_handle_safe(h);
+      return false;
+    }
+
+    StringView sv = {.str = buf, .len = (size_t)bytes_read};
+    append_sv(b, sv);
   }
-
-  CloseHandle(*h);
-  *h = NULL;
-
-  vec_push(out, '\0');
-  return out.get;
 }
 
-ostr win_proc_take_stdout(SGProcess* proc) { return take_pipe_handle(&proc->stdout_handle); }
+bool win_proc_pump_stdout(SGProcess* proc, StringBuilder* b) {
+  return pump_pipe_handle(&proc->stdout_handle, b);
+}
 
-ostr win_proc_take_stderr(SGProcess* proc) { return take_pipe_handle(&proc->stderr_handle); }
+bool win_proc_pump_stderr(SGProcess* proc, StringBuilder* b) {
+  return pump_pipe_handle(&proc->stderr_handle, b);
+}
 
 int win_kill_proc(SGProcess* proc) { return TerminateProcess(proc->pi.hProcess, 1) ? 1 : 0; }
 

@@ -2,7 +2,8 @@
 #include "core/cli_diag.h"
 #include "core/stringdef.h"
 #include "core/strutils.h"
-#include "runner.h"
+#include "sgrun/loader.h"
+#include "sgrun/runner.h"
 #include <assert.h>
 
 static void parse_test_info(bstr str, int* tests_len, bstr* name) {
@@ -21,6 +22,7 @@ static void parse_test_info(bstr str, int* tests_len, bstr* name) {
 }
 
 const int DEFAULT_MAX_JOBS = 2;
+const size_t DEFAULT_MAX_TIMEOUT_MS = 10000;
 
 int main(int argc, char** argv) {
   bstr runner_exe = argv[0];
@@ -30,25 +32,35 @@ int main(int argc, char** argv) {
   ce_addopt("run-fn", 'g', 's', "Runs a test from a specific library and exits");
   ce_addopt("jobs", 'j', 'd', "Specify maximum concurrent jobs");
   ce_addopt("show-output", 'p', 0, "Print the test output without capturing it");
+  ce_addopt("timeout-ms", 't', 'd', "Set maximum timeout (in milliseconds)");
 
   char ch;
   ParsedOpt popt;
-  int max_jobs = DEFAULT_MAX_JOBS;
-  bool show_output = false;
+  SGRunnerOptions rs = {0};
+  rs.max_jobs = DEFAULT_MAX_JOBS;
+  rs.show_output = false;
+  rs.runner_exe = argv[0];
+  rs.timeout = DEFAULT_MAX_TIMEOUT_MS;
 
   while (ce_getopt(&ch, &popt)) {
     switch (ch) {
     case CE_PLAIN_VALUE:
-      return sg_test_lib(popt.s, runner_exe, max_jobs, show_output);
-      break;
+      sg_load(&rs, popt.s);
+      int res = sg_test_lib(&rs);
+      sg_unload(&rs.lib);
+      return res;
 
     case 'o':
-      show_output = true;
+      rs.show_output = true;
+      break;
+
+    case 't':
+      rs.timeout = popt.d;
       break;
 
     case 'j':
       if (popt.d > 0)
-        max_jobs = popt.d;
+        rs.max_jobs = popt.d;
       break;
 
     case 'h':
@@ -59,10 +71,10 @@ int main(int argc, char** argv) {
       bstr name;
       int test_id;
       parse_test_info(popt.s, &test_id, &name);
-
-      SGRunnerState rs = sg_new_runner(name, runner_exe, show_output);
+      sg_load(&rs, popt.s);
       sg_run_test(&rs, test_id);
-      break;
+      sg_unload(&rs.lib);
+      return 0;
     }
     default:
       clid_throw_diag(CLID_ERROR, SGRE_INVALID_ARG, "Invalid argument provided.");

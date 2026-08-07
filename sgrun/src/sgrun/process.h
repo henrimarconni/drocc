@@ -12,7 +12,8 @@ typedef enum {
   SGPROC_RUNNING,
   SGPROC_EXITED,
   SGPROC_SIGNAL,
-  SGPROC_STOPPED
+  SGPROC_STOPPED,
+  SGPROC_TIMEOUT
 } SGProcessState;
 
 typedef struct {

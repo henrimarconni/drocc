@@ -1,6 +1,9 @@
-#include "core/vec.h"
-#include "posix_proc.h"
-#include "process.h"
+#include "core/stringbuilder.h"
+#include "sgrun/posix_proc.h"
+#include "sgrun/process.h"
+#include <asm-generic/errno.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -42,6 +45,10 @@ static void parent_capture(unsigned flags, unsigned flag, int fds[2], int* out_f
 
   close(fds[1]);
   *out_fd = fds[0];
+
+  // Set the read end of the pipe to non-blocking mode!
+  int current_flags = fcntl(*out_fd, F_GETFL, 0);
+  fcntl(*out_fd, F_SETFL, current_flags | O_NONBLOCK);
 }
 
 static void close_capture(int fds[2]) {
@@ -114,33 +121,34 @@ int posix_trywait_proc(SGProcess* proc) {
   return res;
 }
 
-static ostr take_pipe(int* fd) {
+static bool pump_pipe(int* fd, StringBuilder* b) {
   if (*fd == -1)
-    return NULL;
-
-  vec(char) out = {0};
+    return false;
 
   char buf[4096];
   ssize_t n;
 
   while ((n = read(*fd, buf, sizeof(buf))) > 0) {
-    while (out.n + (size_t)n + 1 > out.m)
-      vec_grow(out);
+    StringView sv = {.str = buf, .len = (size_t)n};
+    append_sv(b, sv);
+  }
 
-    memcpy(out.get + out.n, buf, (size_t)n);
-    out.n += (size_t)n;
+  if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+    return true;
   }
 
   close(*fd);
   *fd = -1;
-
-  vec_push(out, '\0');
-  return out.get;
+  return false;
 }
 
-ostr posix_proc_take_stdout(SGProcess* proc) { return take_pipe(&proc->stdout_fd); }
+bool posix_proc_pump_stdout(SGProcess* proc, StringBuilder* b) {
+  return pump_pipe(&proc->stdout_fd, b);
+}
 
-ostr posix_proc_take_stderr(SGProcess* proc) { return take_pipe(&proc->stderr_fd); }
+bool posix_proc_pump_stderr(SGProcess* proc, StringBuilder* b) {
+  return pump_pipe(&proc->stderr_fd, b);
+}
 
 int posix_kill_proc(SGProcess* proc) { return kill(proc->pid, SIGKILL); }
 
