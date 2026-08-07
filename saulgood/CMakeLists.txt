@@ -34,6 +34,7 @@ add_executable(
   runner/sg_fmt.c
   runner/runner.c
   runner/sg_scheduler.c
+  runner/testctx.c
 )
 
 if(WIN32)
