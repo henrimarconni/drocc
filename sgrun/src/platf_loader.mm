@@ -11,14 +11,14 @@ $interface SGDll as Static {
 }
 
 $impl WinDll as SGDll {
-  $header     = "windl.h"
+  $header     = "sgrun/windl.h"
   sgdl_load   = windl_load
   sgdl_unload = windl_unload
   sgdl_get    = windl_get
 }
 
 $impl PosixDll as SGDll {
-  $header     = "posixdl.h"
+  $header     = "sgrun/posixdl.h"
   sgdl_load   = posixdl_load
   sgdl_unload = posixdl_unload
   sgdl_get    = posixdl_get

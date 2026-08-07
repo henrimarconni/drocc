@@ -21,6 +21,7 @@ add_subdirectory(core)
 add_subdirectory(amalgamator)
 add_subdirectory(macromancer)
 add_subdirectory(saulgood)
+add_subdirectory(sgrun)
 add_subdirectory(chucci_lex)
 
 # add_subdirectory(core/tests)

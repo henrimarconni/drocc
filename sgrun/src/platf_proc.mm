@@ -29,7 +29,7 @@ $interface SGProc as Static {
 }
 
 $impl WinProc as SGProc {
-  $header         = "win_proc.h"
+  $header         = "sgrun/win_proc.h"
   sg_spawn_proc   = win_spawn_proc  
   sg_wait_proc    = win_wait_proc  
   sg_trywait_proc = win_trywait_proc  
@@ -41,7 +41,7 @@ $impl WinProc as SGProc {
 }
 
 $impl PosixProc as SGProc {
-  $header         = "posix_proc.h"
+  $header         = "sgrun/posix_proc.h"
   sg_spawn_proc   = posix_spawn_proc
   sg_wait_proc    = posix_wait_proc
   sg_trywait_proc = posix_trywait_proc

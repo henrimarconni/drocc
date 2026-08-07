@@ -1,8 +1,8 @@
 // NOTE: This is ripped-off code, please test this if you are on windows
 
 #include "core/vec.h"
-#include "process.h"
-#include "win_proc.h"
+#include "sgrun/process.h"
+#include "sgrun/win_proc.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>

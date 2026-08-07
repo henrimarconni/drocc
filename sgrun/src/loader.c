@@ -1,8 +1,8 @@
-#include "capture.h"
 #include "core/cli_diag.h"
-#include "loader.h"
 #include "platf_loader.h"
-#include "runner.h"
+#include "sgrun/capture.h"
+#include "sgrun/loader.h"
+#include "sgrun/runner.h"
 
 void sg_load(SGRunnerOptions* rs, bstr name) {
   void* handle = sgdl_load(name);

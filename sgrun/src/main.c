@@ -2,8 +2,8 @@
 #include "core/cli_diag.h"
 #include "core/stringdef.h"
 #include "core/strutils.h"
-#include "loader.h"
-#include "runner.h"
+#include "sgrun/loader.h"
+#include "sgrun/runner.h"
 #include <assert.h>
 
 static void parse_test_info(bstr str, int* tests_len, bstr* name) {

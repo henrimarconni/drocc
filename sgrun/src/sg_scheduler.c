@@ -1,6 +1,6 @@
 #include "core/vec.h"
-#include "sg_scheduler.h"
-#include "sg_sleep.h"
+#include "sgrun/sg_scheduler.h"
+#include "sgrun/sg_sleep.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

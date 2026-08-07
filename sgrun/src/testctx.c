@@ -1,11 +1,11 @@
-#include "loader.h"
 #include "platf_proc.h"
 #include "platf_time.h"
-#include "process.h"
-#include "runner.h"
-#include "sg_api.h"
-#include "sg_sleep.h"
-#include "testctx.h"
+#include "sgrun/loader.h"
+#include "sgrun/process.h"
+#include "sgrun/runner.h"
+#include "sgrun/sg_api.h"
+#include "sgrun/sg_sleep.h"
+#include "sgrun/testctx.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -13,8 +13,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-SGTestCtx new_test_ctx(size_t id, struct SGTest* test, SGRunnerOptions* rs, size_t* passed,
-                       size_t* failed, int fmt_width) {
+SGTestCtx new_test_ctx(
+    size_t id,
+    struct SGTest* test,
+    SGRunnerOptions* rs,
+    size_t* passed,
+    size_t* failed,
+    int fmt_width) {
   SGTestCtx ctx = {0};
   ctx.test = test;
   ctx.id = id;
@@ -32,14 +37,15 @@ bool start_new_test_ctx(void* ctx) {
 
   // run in verbose mode
   if (testctx->rs->show_output) {
-    testctx->proc = sg_spawn_proc(testctx->rs->runner_exe,
-                                  (char*[]){testctx->rs->runner_exe, "-o", "-g", buf, NULL}, 0);
+    testctx->proc = sg_spawn_proc(
+        testctx->rs->runner_exe, (char*[]){testctx->rs->runner_exe, "-o", "-g", buf, NULL}, 0);
   }
   // run in normal mode
   else {
-    testctx->proc =
-        sg_spawn_proc(testctx->rs->runner_exe, (char*[]){testctx->rs->runner_exe, "-g", buf, NULL},
-                      SGPROC_CAPTURE_STDERR | SGPROC_CAPTURE_STDOUT);
+    testctx->proc = sg_spawn_proc(
+        testctx->rs->runner_exe,
+        (char*[]){testctx->rs->runner_exe, "-g", buf, NULL},
+        SGPROC_CAPTURE_STDERR | SGPROC_CAPTURE_STDOUT);
   }
 
   testctx->time = sgtime();

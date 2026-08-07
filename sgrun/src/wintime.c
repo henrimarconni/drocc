@@ -1,5 +1,5 @@
-#include "sg_time.h"
-#include "windows,h"
+#include "sgrun/sg_time.h"
+#include "windows.h"
 
 double sg_wintime() {
   LARGE_INTEGER frequency;

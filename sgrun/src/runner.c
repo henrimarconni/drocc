@@ -1,12 +1,12 @@
 #include "core/vec.h"
 #include "core/vmem_arena.h"
-#include "loader.h"
-#include "process.h"
-#include "runner.h"
-#include "sg_api.h"
-#include "sg_fmt.h"
-#include "sg_scheduler.h"
-#include "testctx.h"
+#include "sgrun/loader.h"
+#include "sgrun/process.h"
+#include "sgrun/runner.h"
+#include "sgrun/sg_api.h"
+#include "sgrun/sg_fmt.h"
+#include "sgrun/sg_scheduler.h"
+#include "sgrun/testctx.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -90,8 +90,13 @@ void print_failed_output(SGTestCtx* ctx) {
 }
 
 void print_test(SGProcessStatus* status, SGTestCtx* ctx) {
-  printf("[%*zu/%*d] %-40s", ctx->fmt_width, ctx->id + 1, ctx->fmt_width, ctx->rs->lib.tests_len,
-         ctx->test->name);
+  printf(
+      "[%*zu/%*d] %-40s",
+      ctx->fmt_width,
+      ctx->id + 1,
+      ctx->fmt_width,
+      ctx->rs->lib.tests_len,
+      ctx->test->name);
 
   if (status->state == SGPROC_TIMEOUT) {
     (*ctx->failed)++;

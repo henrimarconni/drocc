@@ -1,7 +1,7 @@
 /// This file is conditionally included by cmake only on windows platform
 // TODO: This is ripped-off code, please verify
 
-#include "windl.h"
+#include "sgrun/windl.h"
 #include <windows.h>
 
 void* windl_load(bstr name) { return (void*)LoadLibraryA(name); }

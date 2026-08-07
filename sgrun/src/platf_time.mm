@@ -5,11 +5,11 @@ $interface SGTime as Static {
 }
 
 $impl WinTime as SGTime {
-  $header = "sg_time.h"
+  $header = "sgrun/sg_time.h"
   sgtime = sg_wintime
 }
 
 $impl PosixTime as SGTime {
-  $header = "sg_time.h"
+  $header = "sgrun/sg_time.h"
   sgtime = sg_posixtime
 }

@@ -2,7 +2,7 @@
 #define SG_POSIX_PROC_H
 
 #include "core/stringbuilder.h"
-#include "process.h"
+#include "sgrun/process.h"
 
 SGProcess* posix_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags);
 int posix_wait_proc(SGProcess*);

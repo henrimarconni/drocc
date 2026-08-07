@@ -1,4 +1,4 @@
-#include "posixdl.h"
+#include "sgrun/posixdl.h"
 #include <dlfcn.h>
 
 void* posixdl_load(bstr name) { return dlopen(name, RTLD_LAZY); }
