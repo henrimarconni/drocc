@@ -22,7 +22,6 @@ void sg_load(SGRunnerOptions* rs, bstr name) {
   saulg->capture_begin = capture_begin;
   saulg->capture_end = capture_end;
   saulg->capture_discard = capture_discard;
-  saulg->verbose = rs->show_output;
 
   rs->lib.name = name;
   rs->lib.handle = handle;

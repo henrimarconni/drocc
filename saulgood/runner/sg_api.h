@@ -20,7 +20,6 @@ typedef struct {
   void (*capture_begin)(SGCapture* cap, FILE* stream);
   char* (*capture_end)(SGCapture* cap);
   void (*capture_discard)(SGCapture* cap);
-  bool verbose;
 } SGRuntime;
 
 #ifndef SG_RUNNER_DEV

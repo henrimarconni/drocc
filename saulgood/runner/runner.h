@@ -11,6 +11,7 @@ typedef struct SGRunnerOptions {
   bstr runner_exe;
   bool show_output;
   size_t max_jobs;
+  size_t timeout;
 } SGRunnerOptions;
 
 

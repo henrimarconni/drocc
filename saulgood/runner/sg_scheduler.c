@@ -1,16 +1,9 @@
 #include "core/vec.h"
 #include "sg_scheduler.h"
+#include "sg_sleep.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#define sleep_ms(ms) Sleep(ms)
-#else
-#include <unistd.h>
-#define sleep_ms(ms) usleep((ms) * 1000) // usleep uses microseconds
-#endif
 
 #define SGJS_FPS 240
 

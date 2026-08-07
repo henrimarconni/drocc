@@ -1,11 +1,13 @@
 #include "core/vmem_arena.h"
 #include "loader.h"
 #include "platf_proc.h"
+#include "platf_time.h"
 #include "process.h"
 #include "runner.h"
 #include "sg_api.h"
 #include "sg_fmt.h"
 #include "sg_scheduler.h"
+#include "sg_sleep.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -47,6 +49,7 @@ typedef struct {
   size_t* passed;
   size_t* failed;
   int fmt_width;
+  size_t time;
 } SGTestCtx;
 
 static SGTestCtx new_test_ctx(size_t id, struct SGTest* test, SGRunnerOptions* rs, size_t* passed,
@@ -65,39 +68,60 @@ static bool start_new_job(void* ctx) {
   SGTestCtx* testctx = ctx;
   char buf[1024];
   snprintf(buf, sizeof(buf), "%s:%zu", testctx->rs->lib.name, testctx->id);
+
+  // run in verbose mode
   if (testctx->rs->show_output) {
     testctx->proc = sg_spawn_proc(testctx->rs->runner_exe,
                                   (char*[]){testctx->rs->runner_exe, "-o", "-g", buf, NULL}, 0);
-  } else {
+  }
+  // run in normal mode
+  else {
     testctx->proc =
         sg_spawn_proc(testctx->rs->runner_exe, (char*[]){testctx->rs->runner_exe, "-g", buf, NULL},
                       SGPROC_CAPTURE_STDERR | SGPROC_CAPTURE_STDOUT);
   }
+
+  testctx->time = sgtime();
   return testctx->proc != NULL;
 }
 
 /// Print test status after test has finished and increase passed/failed number
-void print_test(SGTestCtx* ctx);
+void print_test(SGProcessStatus* status, SGTestCtx* ctx);
 
 bool poll(void* ctx) {
   SGTestCtx* testctx = ctx;
-  if (sg_trywait_proc(testctx->proc)) {
-    print_test(testctx);
+
+  // Timeout: Kill the process and mark it as failed
+  if (sgtime() - testctx->time > testctx->rs->timeout) {
+    sg_kill_proc(testctx->proc);
+    sleep_ms(500);
+    SGProcessStatus status = sg_proc_status(testctx->proc);
+    status.state = SGPROC_TIMEOUT;
+
+    print_test(&status, testctx);
     sg_free_proc(testctx->proc);
     return false;
   }
+
+  // Process stopped
+  if (sg_trywait_proc(testctx->proc)) {
+    SGProcessStatus status = sg_proc_status(testctx->proc);
+    print_test(&status, testctx);
+    sg_free_proc(testctx->proc);
+    return false;
+  }
+
+  // continue
   return true;
 }
 
 /// Run the full test library parallely
 /// Runs child processes underneath for isolation
 int sg_test_lib(SGRunnerOptions* rs) {
-  // Initialise
   size_t passed = 0;
   size_t failed = 0;
   SGJScheduler sched = sgjs_new(rs->max_jobs);
 
-  // Print heading
   print_heading('=', "Test Library: %s", rs->lib.name);
   printf("| Tests    |%6d |\n", rs->lib.tests_len);
   printf("| Max Jobs |%6zu |\n", rs->max_jobs);
@@ -122,34 +146,39 @@ int sg_test_lib(SGRunnerOptions* rs) {
   return failed > 0;
 }
 
-void print_test(SGTestCtx* ctx) {
+void print_failed_output(SGTestCtx* ctx) {
+  // print captured output only when --show-output isnt set and theres a failure
+  // else it prints everything automatically
+  if (!ctx->rs->show_output) {
+    ostr err = sg_proc_take_stderr(ctx->proc);
+    ostr out = sg_proc_take_stdout(ctx->proc);
+
+    if (err && strlen(err) > 0)
+      printf("stderr:\n%s\n", err);
+    if (out && strlen(out) > 0)
+      printf("stdout:\n%s\n", out);
+
+    if (err)
+      free(err);
+    if (out)
+      free(out);
+  }
+}
+
+void print_test(SGProcessStatus* status, SGTestCtx* ctx) {
   printf("[%*zu/%*d] %-40s", ctx->fmt_width, ctx->id + 1, ctx->fmt_width, ctx->rs->lib.tests_len,
          ctx->test->name);
 
-  SGProcessStatus status = sg_proc_status(ctx->proc);
-
-  if (status.state == SGPROC_EXITED && status.code == 0) {
+  if (status->state == SGPROC_TIMEOUT) {
+    (*ctx->failed)++;
+    printf("KILLED (timeout)\n");
+    print_failed_output(ctx);
+  } else if (status->state == SGPROC_EXITED && status->code == 0) {
     printf("PASS\n");
     (*ctx->passed)++;
   } else {
-    printf("FAIL (%d:%d)\n", status.state, status.code);
     (*ctx->failed)++;
-
-    // print captured output only when --show-output isnt set and theres a failure
-    // else it prints everything automatically
-    if (!ctx->rs->show_output) {
-      ostr err = sg_proc_take_stderr(ctx->proc);
-      ostr out = sg_proc_take_stdout(ctx->proc);
-
-      if (err && strlen(err) > 0)
-        printf("stderr:\n%s\n", err);
-      if (out && strlen(out) > 0)
-        printf("stdout:\n%s\n", out);
-
-      if (err)
-        free(err);
-      if (out)
-        free(out);
-    }
+    printf("FAIL (%d:%d)\n", status->state, status->code);
+    print_failed_output(ctx);
   }
 }

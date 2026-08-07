@@ -22,6 +22,7 @@ static void parse_test_info(bstr str, int* tests_len, bstr* name) {
 }
 
 const int DEFAULT_MAX_JOBS = 2;
+const size_t DEFAULT_MAX_TIMEOUT_MS = 10000;
 
 int main(int argc, char** argv) {
   bstr runner_exe = argv[0];
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
   rs.max_jobs = DEFAULT_MAX_JOBS;
   rs.show_output = false;
   rs.runner_exe = argv[0];
+  rs.timeout = DEFAULT_MAX_TIMEOUT_MS;
 
   while (ce_getopt(&ch, &popt)) {
     switch (ch) {
