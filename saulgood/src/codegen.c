@@ -74,7 +74,7 @@ void declare_test_list(SGCodegen* c, ParserState* state) {
 
 // #embed doesnt null terminate
 char runner_api_code[] = {
-#embed SG_RUNNER_API
+#include "sg_api_data.inc"
     , '\0'};
 
 void generate_code(SGCodegen* c, ParserState* state) {
