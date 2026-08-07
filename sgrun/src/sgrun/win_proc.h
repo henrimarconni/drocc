@@ -4,7 +4,7 @@
 #include "core/stringbuilder.h"
 #include "process.h"
 
-SGProcess* win_spawn_proc(bstr exe_path, bstr const* argv);
+SGProcess* win_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags);
 int  win_wait_proc(SGProcess*);
 int  win_trywait_proc(SGProcess*);
 int  win_kill_proc(SGProcess*);

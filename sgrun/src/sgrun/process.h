@@ -4,6 +4,11 @@
 typedef struct SGProcess SGProcess;
 
 typedef enum {
+  SGPROC_CAPTURE_STDOUT = 1 << 0,
+  SGPROC_CAPTURE_STDERR = 1 << 1,
+} SGProcessFlags;
+
+typedef enum {
   SGPROC_RUNNING,
   SGPROC_EXITED,
   SGPROC_SIGNAL,

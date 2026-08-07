@@ -16,9 +16,12 @@ struct SGProcess {
   HANDLE stderr_handle;
 };
 
-static int setup_capture(HANDLE* rd, HANDLE* wr) {
+static int setup_capture(unsigned flags, unsigned flag, HANDLE* rd, HANDLE* wr) {
   *rd = NULL;
   *wr = NULL;
+
+  if (!(flags & flag))
+    return 0;
 
   SECURITY_ATTRIBUTES saAttr;
   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -44,14 +47,14 @@ static void close_handle_safe(HANDLE* h) {
   }
 }
 
-SGProcess* win_spawn_proc(bstr exe_path, bstr const* argv) {
+SGProcess* win_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags) {
   HANDLE stdout_rd = NULL, stdout_wr = NULL;
   HANDLE stderr_rd = NULL, stderr_wr = NULL;
 
-  if (setup_capture(&stdout_rd, &stdout_wr) < 0)
+  if (setup_capture(flags, SGPROC_CAPTURE_STDOUT, &stdout_rd, &stdout_wr) < 0)
     return NULL;
 
-  if (setup_capture(&stderr_rd, &stderr_wr) < 0) {
+  if (setup_capture(flags, SGPROC_CAPTURE_STDERR, &stderr_rd, &stderr_wr) < 0) {
     close_handle_safe(&stdout_rd);
     close_handle_safe(&stdout_wr);
     return NULL;
@@ -74,10 +77,12 @@ SGProcess* win_spawn_proc(bstr exe_path, bstr const* argv) {
   ZeroMemory(&si, sizeof(si));
   si.cb = sizeof(si);
 
-  si.dwFlags |= STARTF_USESTDHANDLES;
-  si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
-  si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-  si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+  if (flags & (SGPROC_CAPTURE_STDOUT | SGPROC_CAPTURE_STDERR)) {
+    si.dwFlags |= STARTF_USESTDHANDLES;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = (flags & SGPROC_CAPTURE_STDOUT) ? stdout_wr : GetStdHandle(STD_OUTPUT_HANDLE);
+    si.hStdError = (flags & SGPROC_CAPTURE_STDERR) ? stderr_wr : GetStdHandle(STD_ERROR_HANDLE);
+  }
 
   PROCESS_INFORMATION pi;
   ZeroMemory(&pi, sizeof(pi));
