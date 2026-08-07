@@ -4,11 +4,12 @@
 #include "core/stringbuilder.h"
 #include "process.h"
 
-SGProcess* win_spawn_proc(bstr exe_path, bstr const* argv);
+SGProcess* win_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags);
 int  win_wait_proc(SGProcess*);
 int  win_trywait_proc(SGProcess*);
 int  win_kill_proc(SGProcess*);
 void win_free_proc(SGProcess*);
+SGProcessStatus win_proc_status(SGProcess* proc);
 bool win_proc_pump_stdout(SGProcess* proc, StringBuilder* b);
 bool win_proc_pump_stderr(SGProcess* proc, StringBuilder* b);
 

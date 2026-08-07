@@ -57,5 +57,5 @@ jobs:
 
           # Loop through and execute every test library found
           for lib in "${TEST_LIBS[@]}"; do
-            ./build/sgrun${{ matrix.exe_ext }} "$lib"
+            ./build/sgrun/sgrun${{ matrix.exe_ext }} "$lib"
           done
