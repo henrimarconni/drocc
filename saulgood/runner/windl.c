@@ -4,8 +4,6 @@
 #include "windl.h"
 #include <windows.h>
 
-#include <windows.h>
-
 void* windl_load(bstr name) { return (void*)LoadLibraryA(name); }
 
 void windl_unload(void* handle) {

@@ -1,11 +1,13 @@
 #include "capture.h"
+#include "core/cli_diag.h"
 #include "loader.h"
 #include "platf_loader.h"
+#include "runner.h"
 
-int sg_load(SGTestLib* lib, bstr name, bool show_output) {
-  void* handle = sgdl_load(name, RTLD_LAZY);
+void sg_load(SGRunnerOptions* rs, bstr name) {
+  void* handle = sgdl_load(name);
   if (!handle)
-    return -1;
+    goto throw;
 
   SGRuntime* saulg = sgdl_get(handle, "saulg");
 
@@ -14,20 +16,22 @@ int sg_load(SGTestLib* lib, bstr name, bool show_output) {
 
   if (!tests || !saulg || !tests_len) {
     sgdl_unload(handle);
-    return -1;
+    goto throw;
   }
 
   saulg->capture_begin = capture_begin;
   saulg->capture_end = capture_end;
   saulg->capture_discard = capture_discard;
-  saulg->verbose = show_output;
+  saulg->verbose = rs->show_output;
 
-  lib->name = name;
-  lib->handle = handle;
-  lib->saulg = saulg;
-  lib->tests = tests;
-  lib->tests_len = *tests_len;
-  return 0;
+  rs->lib.name = name;
+  rs->lib.handle = handle;
+  rs->lib.saulg = saulg;
+  rs->lib.tests = tests;
+  rs->lib.tests_len = *tests_len;
+  return;
+
+  throw : clid_throw_diag(CLID_ERROR, SGRE_CANT_OPEN_LIB, "Cannot open test library %s", name);
 }
 
 void sg_unload(SGTestLib* lib) { sgdl_unload(lib->handle); }

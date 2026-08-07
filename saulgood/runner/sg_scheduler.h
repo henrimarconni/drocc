@@ -5,20 +5,18 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef enum {
-  SGJS_RUNNING,
-  SGJS_STOPPING,
-  SGJS_STARTING,
-} SGJobState;
+typedef bool(*PollFutFn)(void*);
+typedef bool(*StartFutFn)(void*);
 
 typedef struct {
-  void* data;
-  SGJobState state;
-} SGJob;
+  void* ctx;
+  PollFutFn poll;
+  StartFutFn start;
+} SGFuture;
 
 typedef struct {
-  vec(SGJob) pending;
-  vec(SGJob) executing;
+  vec(SGFuture) pending;
+  vec(SGFuture) executing;
   size_t max_jobs;
   /// id of current job
   size_t curr;
@@ -26,20 +24,13 @@ typedef struct {
 
 
 SGJScheduler sgjs_new(size_t max_jobs);
-/**
-  Poll through the jobs, and populate the  SGJSEvent* event
-  @return pointer to a job if there are jobs left, else return NULL
-*/
-SGJob* sgjs_poll(SGJScheduler* sched);
 
-/**
-  Marks the job as SGJS_STOPPING and then, pops it the next time it is polled,
-  replacing it with another job from the pending queue
-*/
-void sgjs_stop(SGJScheduler* sched, SGJob* job);
+/// Await all the jobs added, blocks till all jobs are completed
+void sgjs_await(SGJScheduler* sched);
 
 /// Pushes the job to pending queue
-void sgjs_submit(SGJScheduler* sched, SGJob job);
+void sgjs_submit(SGJScheduler* sched, void* ctx, PollFutFn poll, StartFutFn start);
+
 
 /// Free the scheduler
 void sgjs_free(SGJScheduler* sched);

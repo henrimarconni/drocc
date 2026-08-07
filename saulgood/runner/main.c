@@ -2,6 +2,7 @@
 #include "core/cli_diag.h"
 #include "core/stringdef.h"
 #include "core/strutils.h"
+#include "loader.h"
 #include "runner.h"
 #include <assert.h>
 
@@ -33,22 +34,26 @@ int main(int argc, char** argv) {
 
   char ch;
   ParsedOpt popt;
-  int max_jobs = DEFAULT_MAX_JOBS;
-  bool show_output = false;
+  SGRunnerOptions rs = {0};
+  rs.max_jobs = DEFAULT_MAX_JOBS;
+  rs.show_output = false;
+  rs.runner_exe = argv[0];
 
   while (ce_getopt(&ch, &popt)) {
     switch (ch) {
     case CE_PLAIN_VALUE:
-      return sg_test_lib(popt.s, runner_exe, max_jobs, show_output);
-      break;
+      sg_load(&rs, popt.s);
+      int res = sg_test_lib(&rs);
+      sg_unload(&rs.lib);
+      return res;
 
     case 'o':
-      show_output = true;
+      rs.show_output = true;
       break;
 
     case 'j':
       if (popt.d > 0)
-        max_jobs = popt.d;
+        rs.max_jobs = popt.d;
       break;
 
     case 'h':
@@ -59,10 +64,10 @@ int main(int argc, char** argv) {
       bstr name;
       int test_id;
       parse_test_info(popt.s, &test_id, &name);
-
-      SGRunnerState rs = sg_new_runner(name, runner_exe, show_output);
+      sg_load(&rs, popt.s);
       sg_run_test(&rs, test_id);
-      break;
+      sg_unload(&rs.lib);
+      return 0;
     }
     default:
       clid_throw_diag(CLID_ERROR, SGRE_INVALID_ARG, "Invalid argument provided.");

@@ -2,6 +2,7 @@
 #define SG_LOADER_H
 
 #include "core/stringdef.h"
+
 #define SG_RUNNER_DEV
 #include "sg_api.h"
 
@@ -14,8 +15,10 @@ typedef struct {
   bstr name;
 } SGTestLib;
 
-/// Loads dynamic library and returns -1 on error
-int sg_load(SGTestLib* lib, bstr name, bool show_output);
+typedef struct SGRunnerOptions SGRunnerOptions;
+
+/// Loads dynamic library and uses clid_throw on error
+void sg_load(SGRunnerOptions* rs, bstr name);
 void sg_unload(SGTestLib* lib);
 
 

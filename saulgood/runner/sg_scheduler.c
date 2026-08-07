@@ -4,6 +4,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#define sleep_ms(ms) Sleep(ms)
+#else
+#include <unistd.h>
+#define sleep_ms(ms) usleep((ms) * 1000) // usleep uses microseconds
+#endif
+
+#define SGJS_FPS 240
+
 SGJScheduler sgjs_new(size_t max_jobs) {
   SGJScheduler sgjs = {0};
   sgjs.max_jobs = max_jobs;
@@ -11,58 +21,52 @@ SGJScheduler sgjs_new(size_t max_jobs) {
   return sgjs;
 }
 
-SGJob* sgjs_poll(SGJScheduler* sched) {
-  // Advance the state of the previously yielded job from STARTING to RUNNING
-  if (sched->executing.n > 0) {
-    size_t prev_curr = (sched->curr == 0) ? sched->executing.n - 1 : sched->curr - 1;
-    if (sched->executing.get[prev_curr].state == SGJS_STARTING) {
-      sched->executing.get[prev_curr].state = SGJS_RUNNING;
-    }
-  }
-
-  while (true) {
-    // Populate the sched->executing ring buffer
+void sgjs_await(SGJScheduler* sched) {
+  while (sched->executing.n > 0 || sched->pending.n > 0) {
+    // fill the executing queue up to max_jobs
     while (sched->executing.n < sched->max_jobs && sched->pending.n > 0) {
-      vec_push(sched->executing, vec_pop(sched->pending));
-      sched->executing.get[sched->executing.n - 1].state = SGJS_STARTING;
+      SGFuture new_task = vec_pop(sched->pending);
+
+      if (new_task.start(new_task.ctx))
+        vec_push(sched->executing, new_task);
+      else
+        printf("Failed to start job\n");
     }
 
-    // If theres no more job to execute
-    if (sched->executing.n == 0)
-      return NULL;
+    // poll all executing jobs
+    for (size_t i = 0; i < sched->executing.n; i++) {
+      SGFuture* future = &sched->executing.get[i];
+      bool running = future->poll(future->ctx);
 
-    sched->curr %= sched->executing.n;
+      if (!running) {
+        // remove and swap the last element into this spot
+        vec_remove_swap(sched->executing, i);
 
-    SGJob* job = &sched->executing.get[sched->curr];
-
-    if (job->state != SGJS_STOPPING) {
-      // Advance ring buffer
-      sched->curr = (sched->curr + 1) % sched->executing.n;
-      return job;
+        // go again for this future, because last element of the queue was swapped with the current
+        // (stopped) one and we want to poll it
+        i--;
+      }
     }
 
-    // If the job is stopping and there are other pending tasks
-    // then replace the job
-    if (sched->pending.n > 0) {
-      *job = vec_pop(sched->pending);
-      job->state = SGJS_STARTING;
-      sched->curr = (sched->curr + 1) % sched->executing.n;
-      return job;
-    }
-
-    // if there are no more pending jobs but a job is stopping
-    // then remove it
-    vec_remove_swap(sched->executing, sched->curr);
-
-    if (sched->curr >= sched->executing.n)
-      sched->curr = 0;
+    sleep_ms(1000 / SGJS_FPS);
   }
 }
-
-void sgjs_stop(SGJScheduler* sched, SGJob* job) { job->state = SGJS_STOPPING; }
-void sgjs_submit(SGJScheduler* sched, SGJob job) { vec_push(sched->pending, job); }
 
 void sgjs_free(SGJScheduler* sched) {
   vec_destroy(sched->executing);
   vec_destroy(sched->pending);
+}
+
+void sgjs_submit(SGJScheduler* sched, void* ctx, PollFutFn poll, StartFutFn start) {
+  SGFuture future = {0};
+  future.poll = poll;
+  future.start = start;
+  future.ctx = ctx;
+
+  if (sched->executing.n < sched->max_jobs) {
+    if (!start(ctx))
+      return;
+    vec_push(sched->executing, future);
+  } else
+    vec_push(sched->pending, future);
 }

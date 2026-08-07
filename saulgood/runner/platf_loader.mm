@@ -18,10 +18,8 @@ $impl WinDll as SGDll {
 }
 
 $impl PosixDll as SGDll {
-  $header     = "dlfcn.h"
-  sgdl_load   = dlopen
-  sgdl_unload = dlclose
-  sgdl_get    = dlsym
+  $header     = "posixdl.h"
+  sgdl_load   = posixdl_load
+  sgdl_unload = posixdl_unload
+  sgdl_get    = posixdl_get
 }
-
-# $export SGDll as PosixDll

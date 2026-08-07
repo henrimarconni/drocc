@@ -37,7 +37,7 @@ add_executable(
 )
 
 if(WIN32)
-  target_sources(sgrun PRIVATE runner/windl.c runner/win_proc.c)
+  target_sources(sgrun PRIVATE runner/windl.c runner/wintime.c runner/win_proc.c)
   macromancer_generate(
     TARGET sgrun
     INPUT "runner/platf_loader.mm"
@@ -48,8 +48,13 @@ if(WIN32)
     INPUT "runner/platf_proc.mm"
     FLAGS -e "SGProc=WinProc"
   )
+  macromancer_generate(
+    TARGET sgrun
+    INPUT "runner/platf_time.mm"
+    FLAGS -e "SGTime=WinTime"
+  )
 else()
-  target_sources(sgrun PRIVATE runner/posix_proc.c)
+  target_sources(sgrun PRIVATE runner/posixdl.c runner/posixtime.c runner/posix_proc.c)
   macromancer_generate(
     TARGET sgrun
     INPUT "runner/platf_loader.mm"
@@ -59,6 +64,11 @@ else()
     TARGET sgrun
     INPUT "runner/platf_proc.mm"
     FLAGS -e "SGProc=PosixProc"
+  )
+  macromancer_generate(
+    TARGET sgrun
+    INPUT "runner/platf_time.mm"
+    FLAGS -e "SGTime=PosixTime"
   )
 endif()
 

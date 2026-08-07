@@ -9,7 +9,7 @@
 #include "core/stringdef.h"
 
 void* windl_load(bstr name);
-void* windl_unload(void* handle);
+void windl_unload(void* handle);
 void* windl_get(void* handle, bstr name);
 
 
