@@ -1,3 +1,5 @@
+#include "core/stringbuilder.h"
+#include "core/vec.h"
 #include "core/vmem_arena.h"
 #include "loader.h"
 #include "platf_proc.h"
@@ -48,6 +50,8 @@ typedef struct {
   SGRunnerOptions* rs;
   size_t* passed;
   size_t* failed;
+  StringBuilder err;
+  StringBuilder out;
   int fmt_width;
   size_t time;
 } SGTestCtx;
@@ -90,6 +94,12 @@ void print_test(SGProcessStatus* status, SGTestCtx* ctx);
 
 bool poll(void* ctx) {
   SGTestCtx* testctx = ctx;
+
+  // Pump the pipes
+  if (!testctx->rs->show_output) {
+    sg_proc_pump_stderr(testctx->proc, &testctx->err);
+    sg_proc_pump_stdout(testctx->proc, &testctx->out);
+  }
 
   // Timeout: Kill the process and mark it as failed
   if (sgtime() - testctx->time > testctx->rs->timeout) {
@@ -150,8 +160,8 @@ void print_failed_output(SGTestCtx* ctx) {
   // print captured output only when --show-output isnt set and theres a failure
   // else it prints everything automatically
   if (!ctx->rs->show_output) {
-    ostr err = sg_proc_take_stderr(ctx->proc);
-    ostr out = sg_proc_take_stdout(ctx->proc);
+    ostr err = ctx->err.get;
+    ostr out = ctx->out.get;
 
     if (err && strlen(err) > 0)
       printf("stderr:\n%s\n", err);
@@ -159,9 +169,9 @@ void print_failed_output(SGTestCtx* ctx) {
       printf("stdout:\n%s\n", out);
 
     if (err)
-      free(err);
+      vec_destroy(ctx->err);
     if (out)
-      free(out);
+      vec_destroy(ctx->out);
   }
 }
 

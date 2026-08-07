@@ -21,11 +21,11 @@ $interface SGProc as Static {
 # SGProcessStatus sg_proc_status(SGProcess*);
   sg_proc_status
 
-  # ostr posix_proc_take_stdout(SGProcess*);
-  sg_proc_take_stdout
+  # bool posix_proc_pump_stdout(StringBuilder* b, SGProcess*);
+  sg_proc_pump_stdout
 
-  # ostr posix_proc_take_stderr(SGProcess*);
-  sg_proc_take_stderr
+  # bool posix_proc_pump_stderr(StringBuilder* b, SGProcess*);
+  sg_proc_pump_stderr
 }
 
 $impl WinProc as SGProc {
@@ -36,8 +36,8 @@ $impl WinProc as SGProc {
   sg_kill_proc    = win_kill_proc  
   sg_free_proc    = win_free_proc  
   sg_proc_status  = win_proc_status
-  sg_proc_take_stdout = win_proc_take_stdout
-  sg_proc_take_stderr = win_proc_take_stderr
+  sg_proc_pump_stdout = win_proc_pump_stdout
+  sg_proc_pump_stderr = win_proc_pump_stderr
 }
 
 $impl PosixProc as SGProc {
@@ -48,7 +48,7 @@ $impl PosixProc as SGProc {
   sg_kill_proc    = posix_kill_proc
   sg_free_proc    = posix_free_proc
   sg_proc_status  = posix_proc_status
-  sg_proc_take_stdout = posix_proc_take_stdout
-  sg_proc_take_stderr = posix_proc_take_stderr
+  sg_proc_pump_stdout = posix_proc_pump_stdout
+  sg_proc_pump_stderr = posix_proc_pump_stderr
 }
 

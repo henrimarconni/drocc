@@ -68,8 +68,7 @@ $test "Interner Resize Test" : core(interner_resize) {
     memset(buf, 0, sizeof(buf));
     do {
       InternID id = intern(strv, interner);
-      if (saulg.verbose)
-        printf("%d == %zu for `%.*s` with len = %d\n", id, i, strv.len, strv.str, strv.len);
+      printf("%d == %zu for `%.*s` with len = %d\n", id, i, strv.len, strv.str, strv.len);
       fflush(stdout);
       assert(i++ == id);
       if (i > max_cap)
@@ -79,5 +78,4 @@ $test "Interner Resize Test" : core(interner_resize) {
 
   interner_free(interner);
   vmarena_free(arena);
-  // assert(false);
 }
