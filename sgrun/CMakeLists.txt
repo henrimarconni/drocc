@@ -9,12 +9,6 @@ add_executable(
   src/testctx.c
 )
 
-target_link_libraries(
-  sgrun
-  PRIVATE
-  tomlc17
-)
-
 if(WIN32)
   target_sources(sgrun PRIVATE src/windl.c src/wintime.c src/win_proc.c)
   macromancer_generate(

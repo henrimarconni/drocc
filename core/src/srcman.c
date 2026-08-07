@@ -55,7 +55,7 @@ SrcID sman_str(SourceManager* man, bstr name, bstr contents, size_t len) {
   vec_push(source.offsets, 0);
   for (bstr curr = contents; curr < contents + len; curr++) {
     if (*curr == '\n')
-      vec_push(source.offsets, offset);
+      vec_push(source.offsets, offset + 1);
     offset++;
   }
 
@@ -73,7 +73,7 @@ SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
       return i;
   }
 
-  FILE* file = fopen(name, "r");
+  FILE* file = fopen(name, "rb");
   if (!file)
     return INVALID_SRC_ID;
 
@@ -115,7 +115,7 @@ SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
   dup[pathlen] = '\0';
   contents[file_size] = '\0';
 
-  return sman_str(man, name, contents, file_size);
+  return sman_str(man, dup, contents, file_size);
 }
 
 void sman_free(SourceManager* sman) { vec_destroy(sman->sources); }
