@@ -4,7 +4,7 @@
 #include "core/stringbuilder.h"
 #include "sgrun/process.h"
 
-SGProcess* posix_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags);
+SGProcess* posix_spawn_proc(bstr exe_path, bstr const* argv);
 int posix_wait_proc(SGProcess*);
 int posix_trywait_proc(SGProcess*);
 int posix_kill_proc(SGProcess*);

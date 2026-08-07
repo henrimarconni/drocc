@@ -38,14 +38,12 @@ bool start_new_test_ctx(void* ctx) {
   // run in verbose mode
   if (testctx->rs->show_output) {
     testctx->proc = sg_spawn_proc(
-        testctx->rs->runner_exe, (char*[]){testctx->rs->runner_exe, "-o", "-g", buf, NULL}, 0);
+        testctx->rs->runner_exe, (char*[]){testctx->rs->runner_exe, "-o", "-g", buf, NULL});
   }
   // run in normal mode
   else {
-    testctx->proc = sg_spawn_proc(
-        testctx->rs->runner_exe,
-        (char*[]){testctx->rs->runner_exe, "-g", buf, NULL},
-        SGPROC_CAPTURE_STDERR | SGPROC_CAPTURE_STDOUT);
+    testctx->proc =
+        sg_spawn_proc(testctx->rs->runner_exe, (char*[]){testctx->rs->runner_exe, "-g", buf, NULL});
   }
 
   testctx->time = sgtime();

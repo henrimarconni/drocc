@@ -18,29 +18,19 @@ struct SGProcess {
   int stderr_fd;
 };
 
-static int setup_capture(unsigned flags, unsigned flag, int fds[2]) {
+static int setup_capture(int fds[2]) {
   fds[0] = fds[1] = -1;
-
-  if (!(flags & flag))
-    return 0;
-
   return pipe(fds);
 }
 
-static void child_capture(unsigned flags, unsigned flag, int fds[2], int target_fd) {
-  if (!(flags & flag))
-    return;
-
+static void child_capture(int fds[2], int target_fd) {
   close(fds[0]);
   dup2(fds[1], target_fd);
   close(fds[1]);
 }
 
-static void parent_capture(unsigned flags, unsigned flag, int fds[2], int* out_fd) {
+static void parent_capture(int fds[2], int* out_fd) {
   *out_fd = -1;
-
-  if (!(flags & flag))
-    return;
 
   close(fds[1]);
   *out_fd = fds[0];
@@ -57,14 +47,14 @@ static void close_capture(int fds[2]) {
     close(fds[1]);
 }
 
-SGProcess* posix_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags) {
+SGProcess* posix_spawn_proc(bstr exe_path, bstr const* argv) {
   int stdout_fds[2];
   int stderr_fds[2];
 
-  if (setup_capture(flags, SGPROC_CAPTURE_STDOUT, stdout_fds) < 0)
+  if (setup_capture(stdout_fds) < 0)
     return NULL;
 
-  if (setup_capture(flags, SGPROC_CAPTURE_STDERR, stderr_fds) < 0) {
+  if (setup_capture(stderr_fds) < 0) {
     close_capture(stdout_fds);
     return NULL;
   }
@@ -77,8 +67,8 @@ SGProcess* posix_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags) {
   }
 
   if (pid == 0) {
-    child_capture(flags, SGPROC_CAPTURE_STDOUT, stdout_fds, STDOUT_FILENO);
-    child_capture(flags, SGPROC_CAPTURE_STDERR, stderr_fds, STDERR_FILENO);
+    child_capture(stdout_fds, STDOUT_FILENO);
+    child_capture(stderr_fds, STDERR_FILENO);
 
     execvp(exe_path, argv);
     _exit(127);
@@ -91,8 +81,8 @@ SGProcess* posix_spawn_proc(bstr exe_path, bstr const* argv, unsigned flags) {
     return NULL;
   }
 
-  parent_capture(flags, SGPROC_CAPTURE_STDOUT, stdout_fds, &proc->stdout_fd);
-  parent_capture(flags, SGPROC_CAPTURE_STDERR, stderr_fds, &proc->stderr_fd);
+  parent_capture(stdout_fds, &proc->stdout_fd);
+  parent_capture(stderr_fds, &proc->stderr_fd);
 
   proc->pid = pid;
   proc->status = 0;
