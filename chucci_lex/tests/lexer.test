@@ -11,7 +11,7 @@ $c {
 
   void test_generate_token_array(TokenStream* ts, size_t len) {
     char buf[32];
-    int offset = snprintf(buf, sizeof(buf), "%d", len);
+    int offset = snprintf(buf, sizeof(buf), "%zu", len);
 
     printf("Token tokens[] = {\n");
     Token token = ts_next(ts);

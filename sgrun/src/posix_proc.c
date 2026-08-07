@@ -1,7 +1,6 @@
 #include "core/stringbuilder.h"
 #include "sgrun/posix_proc.h"
 #include "sgrun/process.h"
-#include <asm-generic/errno.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
