@@ -1,0 +1,60 @@
+name: Cross-Platform CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build & Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false # If Windows fails, let Linux keep running so you see all errors
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+        # This defines the exact file extensions and prefixes for each OS
+        include:
+          - os: ubuntu-latest
+            exe_ext: ""
+            lib_prefix: "lib"
+            lib_ext: ".so"
+          - os: windows-latest
+            exe_ext: ".exe"
+            lib_prefix: ""
+            lib_ext: ".dll"
+          - os: macos-latest
+            exe_ext: ""
+            lib_prefix: "lib"
+            lib_ext: ".dylib"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Project
+        run: cmake --build build
+
+      - name: Run sgrun Tests
+        shell: bash 
+        run: |
+          shopt -s nullglob
+          
+          # Find any dynamic library inside any folder ending in _tests
+          TEST_LIBS=(build/*_tests/*${{ matrix.lib_ext }})
+          
+          if [ ${#TEST_LIBS[@]} -eq 0 ]; then
+            echo "Error: No test libraries found"
+            exit 1
+          fi
+
+          # Loop through and execute every test library found
+          for lib in "${TEST_LIBS[@]}"; do
+            ./build/sgrun${{ matrix.exe_ext }} "$lib"
+          done
