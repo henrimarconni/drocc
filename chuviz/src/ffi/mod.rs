@@ -8,6 +8,8 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
+use crate::ffi::c::sman_info;
+
 // Adjust this path if your bindings.rs is generated somewhere else
 #[allow(warnings)]
 pub mod c {
@@ -78,6 +80,9 @@ impl SourceManager {
                 Ok(srcid)
             }
         }
+    }
+    pub fn info(&mut self, span: c::Span) -> c::SMSpanInfo {
+        unsafe { sman_info(self.as_raw_mut(), span) }
     }
 }
 

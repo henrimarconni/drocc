@@ -6,3 +6,7 @@ edition = "2024"
 [build-dependencies]
 bindgen = "0.72.1"
 
+[dependencies]
+crossterm = "0.29.0"
+ratatui = "0.30.2"
+
