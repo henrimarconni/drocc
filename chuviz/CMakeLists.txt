@@ -1,21 +1,19 @@
-include(FetchContent)
 
-FetchContent_Declare(
-  Corrosion
-  GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
-  GIT_TAG v0.6.1
-)
-FetchContent_MakeAvailable(Corrosion)
-corrosion_import_crate(MANIFEST_PATH Cargo.toml)
-
-corrosion_link_libraries(
+add_executable(
   chuviz
-  chucci_lex
-  core
+  src/main.c
+  src/render.c
 )
 
-corrosion_add_target_local_rustflags(
-  chuviz 
-  "-Clink-arg=-B/usr/bin"
-  "-Clink-arg=-fuse-ld=mold"
+target_include_directories(
+  chuviz
+  PUBLIC
+  src/chuviz
+)
+
+target_link_libraries(
+  chuviz
+  PUBLIC
+  core
+  chucci_lex
 )
