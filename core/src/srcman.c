@@ -43,11 +43,12 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   return info;
 }
 
-SrcID sman_str(SourceManager* man, bstr name, bstr contents, size_t len) {
-  SMSource source = {0};
-  source.len = len;
-  source.name = name;
-  source.contents = contents;
+SrcID sman_str(SourceManager* man, const bstr name, const bstr contents, size_t len) {
+  SMSource source = {
+    .len = len,
+    .name = name,
+    .contents = contents,
+  };
 
   // Calculate offsets
   size_t offset = 0;

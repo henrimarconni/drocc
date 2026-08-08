@@ -9,7 +9,6 @@
 
 extern const bool is_op_table[256];
 extern const bool is_sep_table[256];
-extern const char* tok_to_str[];
 
 #define is_op(ch) (is_op_table[ch])
 #define is_sep(ch) (is_sep_table[ch])
@@ -114,13 +113,13 @@ __keyword_count,
   __token_kind_count,
 } TokenKind;
 
+extern const char* tok_to_str[__token_kind_count];
+
 typedef struct {
   Span span;
   TokenKind kind;
-  union {
-    /// for identifiers
-    InternID ident;
-  };
+  /// for identifiers
+  InternID ident;
 } Token;
 
 // NOTE: Change this if you change the token struct
