@@ -13,6 +13,7 @@ typedef struct {
   vec(Token) tokens; // flattened TokenStream
   size_t selected; // selected token
   SrcID srcid;
+  int percentage1;
 } LexerTab;
 
 

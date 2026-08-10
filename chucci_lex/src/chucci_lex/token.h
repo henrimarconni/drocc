@@ -82,6 +82,7 @@ extern const bool is_sep_table[256];
   X(KW_TYPEDEF, "typedef")                                                                         \
   X(KW_CONST, "const")                                                                             \
   X(KW_STATIC, "static")                                                                           \
+  X(KW_INLINE, "inline")                                                                           \
   X(KW_VOID, "void")                                                                               \
   X(KW_INT, "int")                                                                                 \
   X(KW_FLOAT, "float")                                                                             \

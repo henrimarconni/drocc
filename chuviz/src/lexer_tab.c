@@ -70,6 +70,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
     uint32_t force_bg = 0x1A1829;
 
     if (i == ctx->tab->selected) {
+      ctx->is_pp_cmd = false;
       rect_printf(
           ctx->srcctx,
           TB_DEFAULT,
@@ -128,7 +129,7 @@ void render_lexert(LexerTab* tab) {
 
   SMSource* file = &tab->sman->sources.get[tab->srcid];
 
-  vdivide_rect(window, panes, 2, (int[]){60, 40});
+  vdivide_rect(window, panes, 2, (int[]){tab->percentage1, 100 - tab->percentage1});
 
   // setup divided panes
   BoxOverlayText srcpane = {0};
@@ -158,11 +159,17 @@ void render_lexert(LexerTab* tab) {
 }
 
 void lexertab_input(LexerTab* tab, struct tb_event* event) {
-  if ((event->key == TB_KEY_ARROW_LEFT || event->key == TB_KEY_ARROW_UP) && tab->selected > 0)
-    tab->selected -= 1;
-  if (event->key == TB_KEY_ARROW_RIGHT || event->key == TB_KEY_ARROW_DOWN)
-    tab->selected += 1;
+  if (event->mod == TB_MOD_SHIFT && event->key == TB_KEY_ARROW_RIGHT && tab->percentage1 < 80)
+    tab->percentage1 += 5;
+  if (event->mod == TB_MOD_SHIFT && event->key == TB_KEY_ARROW_LEFT && tab->percentage1 > 20)
+    tab->percentage1 -= 5;
 
+  if (event->mod != TB_MOD_SHIFT &&
+      (event->key == TB_KEY_ARROW_LEFT || event->key == TB_KEY_ARROW_UP) && tab->selected > 0)
+    tab->selected -= 1;
+  if (event->mod != TB_MOD_SHIFT &&
+      (event->key == TB_KEY_ARROW_RIGHT || event->key == TB_KEY_ARROW_DOWN))
+    tab->selected += 1;
   tab->selected %= tab->tokens.n;
 }
 
@@ -171,6 +178,7 @@ LexerTab lexertab_init(SourceManager* sman, StringInterner* interner, SrcID srci
   tab.interner = interner;
   tab.srcid = srcid;
   tab.sman = sman;
+  tab.percentage1 = 60;
 
   TokenStream ts = lexer_new(sman, srcid, interner);
   Token token = ts_next(&ts);
