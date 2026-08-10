@@ -43,24 +43,23 @@ Token lex_op_sep(Lexer* l, int ch) {
   assert(false);
 }
 
-static int chucci_nextch(SrcScanner* scanner) {
+int chucci_nextch(SrcScanner* scanner) {
   int ch = nextch(scanner);
   if (ch == '\\') {
     int lookahead = peekch(scanner);
     // unix \n
     if (lookahead == '\n') {
       nextch(scanner);
-      return chucci_nextch(scanner);
+      return nextch(scanner);
     }
     // windows \r\n
     if (lookahead == '\r') {
       nextch(scanner);
       if (peekch(scanner) == '\n')
         nextch(scanner);
-      return chucci_nextch(scanner);
+      return nextch(scanner);
     }
   }
-
   return ch;
 }
 
@@ -72,6 +71,35 @@ void skip_unwanted(SrcScanner* scanner) {
     if (res < 0)
       assert(false);
     skip_space(scanner);
+  } while (scanner->id != last_id && peekch(scanner) != EOF);
+}
+
+void skip_unwanted_except_newline(SrcScanner* scanner) {
+  int last_id;
+  do {
+    last_id = scanner->id;
+    if (skip_c_comments(scanner) < 0)
+      assert(false);
+
+    int ch;
+    while ((ch = peekch(scanner)) != EOF) {
+      if (isspace(ch) && ch != '\n')
+        nextch(scanner);
+      else if (ch == '\\') {
+        int lookahead = peeknextch(scanner);
+        if (lookahead == '\n') {
+          nextch(scanner);
+          nextch(scanner);
+        } else if (lookahead == '\r') {
+          nextch(scanner);
+          nextch(scanner);
+          if (peekch(scanner) == '\n')
+            nextch(scanner);
+        } else
+          break;
+      } else
+        break;
+    }
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
@@ -99,11 +127,27 @@ Token lex_ident(Lexer* l, int ch) {
 
 Token lexer_next(void* ctx) {
   Lexer* l = ctx;
-  skip_unwanted(&l->scanner);
+  if (l->in_pp_directive)
+    skip_unwanted_except_newline(&l->scanner);
+  else
+    skip_unwanted(&l->scanner);
+
   int ch = peekch(&l->scanner);
 
   if (ch == EOF)
     return EOF_TOKEN;
+
+  if (ch == '#')
+    l->in_pp_directive = true;
+
+  if (ch == '\n') {
+    assert(l->in_pp_directive);
+    l->in_pp_directive = false;
+    Span span = span_begin(&l->scanner);
+    chucci_nextch(&l->scanner);
+    span_end(&span, &l->scanner);
+    return token_new(span, SEP_NEWLINE);
+  }
 
   if (isdigit(ch)) {
     Span span = span_begin(&l->scanner);
@@ -172,6 +216,9 @@ Token lexer_next(void* ctx) {
     span_end(&span, &l->scanner);
     return token_new(span, TOK_VAL);
   }
+
+  highlight_span(l->sman, span_begin(&l->scanner));
+  fflush(stdout);
 
   assert(false);
 }

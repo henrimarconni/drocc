@@ -28,5 +28,8 @@ Aiming to be a highly modular and efficient C compiler built on a stream-based (
 *   `chucci_codegen`
 *   `chucci_asm`
 
-### 4. Amalgamator
+### 4. chuviz: chucci visualizer
+A TUI app to interactively see the stages of chucci compiler in real-time. (windows support thanks to libterm)
+
+### 5. Amalgamator
 A small command-line tool that concatenates multiple C source files and expands #include "..." chains to produce a single C source file. This is useful for shipping a single-file library, static analysis, or compiling for constrained toolchains.
