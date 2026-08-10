@@ -8,6 +8,7 @@
 
 #include "core/srcman.h"
 #include "core/stringdef.h"
+#include <stdbool.h>
 #include <stddef.h>
 #define EOF (-1)
 

@@ -72,6 +72,19 @@ static inline void print_src(PrintSrcCtx* ctx) {
         rect_printf(ctx->srcctx, LT_DEFAULT, LT_DEFAULT, " ");
     }
 
+    // if (token->kind == SEP_NEWLINE)
+    //   continue;
+
+    if (token->kind == SEP_NEWLINE && i == ctx->tab->selected) {
+      ctx->is_pp_cmd = false;
+      rect_printf(
+          ctx->srcctx, token_color(token->kind) | LT_REVERSE, LT_DEFAULT | LT_REVERSE, "#newline");
+      continue;
+    } else if (token->kind == SEP_NEWLINE) {
+      rect_printf(ctx->srcctx, token_color(token->kind), LT_DEFAULT, "#newline");
+      continue;
+    }
+
     // If the current token is selected, write the line
     // to cursor_line
     if (i == ctx->tab->selected) {
@@ -116,7 +129,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
   }
 }
 
-void print_token_info(RectPrintCtx* ctx, Token* token) {
+void print_token_info(RectPrintCtx* ctx, Token* token, SMSpanInfo info) {
   char buf[16] = {0};
   memset(buf, ' ', TAB_WIDTH);
   rect_printf(
@@ -131,9 +144,42 @@ void print_token_info(RectPrintCtx* ctx, Token* token) {
       buf,
       token->span.srcid);
 
-  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `%s`\n", tok_to_str[token->kind]);
+  if (token->kind == SEP_NEWLINE)
+    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `NEWLINE`\n");
+  else
+    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `%s`\n", tok_to_str[token->kind]);
+
   if (token->kind == TOK_IDENT)
     rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.ident = %d\n\n", token->ident);
+  else
+    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "\n\n");
+
+  rect_printf(
+      ctx,
+      LT_DEFAULT,
+      LT_DEFAULT,
+      "SMSpanInfo = \n%s.row = %d\n%s.col = %d\n",
+      buf,
+      info.row,
+      buf,
+      info.col);
+
+  if (token->kind == SEP_NEWLINE)
+    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%s.sv = `\\n`\n", buf);
+  else
+    rect_printf(
+        ctx, LT_DEFAULT, LT_DEFAULT, "%s.sv = `%.*s`\n", buf, (int)info.sv.len, info.sv.str);
+
+  // print highlighted line
+  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "In line %d: \n", info.row);
+  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%.*s", info.col, info.sv.str - info.col);
+  rect_printf(
+      ctx, token_color(token->kind) | LT_BOLD, LT_DEFAULT, "%.*s", info.sv.len, info.sv.str);
+
+  size_t id = info.sv.len;
+  while (info.sv.str[id] && info.sv.str[id] != '\n')
+    id++;
+  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%.*s\n", id - info.sv.len, info.sv.str + info.sv.len);
 }
 
 void render_lexert(LexerTab* tab) {
@@ -160,7 +206,7 @@ void render_lexert(LexerTab* tab) {
   Token* active_token = &tab->tokens.get[tab->selected];
   SMSpanInfo info = sman_info(tab->sman, active_token->span);
 
-  size_t pane_height = srcpane.rect.h;
+  size_t pane_height = panes[0].h;
   size_t top_margin = pane_height / 5;          // 20% threshold
   size_t bottom_margin = (pane_height * 4) / 5; // 80% threshold
 
@@ -178,9 +224,8 @@ void render_lexert(LexerTab* tab) {
     if (file->offsets.n > pane_height) {
       if (tab->scroll_y > file->offsets.n - pane_height)
         tab->scroll_y = file->offsets.n - pane_height;
-    } else {
+    } else
       tab->scroll_y = 0;
-    }
   }
 
   PrintSrcCtx ctx = {0};
@@ -192,25 +237,32 @@ void render_lexert(LexerTab* tab) {
   print_src(&ctx);
 
   RectPrintCtx tokctx = rect_print_init(&panes[1]);
-  print_token_info(&tokctx, active_token);
+  print_token_info(&tokctx, active_token, info);
 
   render_boxovtext(tokeninfo, LT_DEFAULT);
   render_boxovtext(srcpane, LT_DEFAULT);
 }
 
 void lexertab_input(LexerTab* tab, struct lt_event* event) {
-  if (event->mod == LT_MOD_SHIFT && event->key == LT_KEY_ARROW_RIGHT && tab->percentage1 < 80)
-    tab->percentage1 += 5;
-  if (event->mod == LT_MOD_SHIFT && event->key == LT_KEY_ARROW_LEFT && tab->percentage1 > 20)
-    tab->percentage1 -= 5;
+  // pane resizing
+  if (event->mod == LT_MOD_SHIFT) {
+    if (event->key == LT_KEY_ARROW_RIGHT && tab->percentage1 < 80)
+      tab->percentage1 += 5;
+    else if (event->key == LT_KEY_ARROW_LEFT && tab->percentage1 > 20)
+      tab->percentage1 -= 5;
 
-  if (event->mod != LT_MOD_SHIFT &&
-      (event->key == LT_KEY_ARROW_LEFT || event->key == LT_KEY_ARROW_UP) && tab->selected > 0)
-    tab->selected -= 1;
-  if (event->mod != LT_MOD_SHIFT &&
-      (event->key == LT_KEY_ARROW_RIGHT || event->key == LT_KEY_ARROW_DOWN))
-    tab->selected += 1;
-  tab->selected %= tab->tokens.n;
+    return;
+  }
+
+  // token navigation
+  if (event->key == LT_KEY_ARROW_LEFT || event->key == LT_KEY_ARROW_UP || event->ch == 'h') {
+    if (tab->selected > 0)
+      tab->selected -= 1;
+  } else if (
+      event->key == LT_KEY_ARROW_RIGHT || event->key == LT_KEY_ARROW_DOWN || event->ch == 'l') {
+    if (tab->selected + 1 < tab->tokens.n)
+      tab->selected += 1;
+  }
 }
 
 LexerTab lexertab_init(SourceManager* sman, StringInterner* interner, SrcID srcid) {
@@ -224,6 +276,7 @@ LexerTab lexertab_init(SourceManager* sman, StringInterner* interner, SrcID srci
   Token token = ts_next(&ts);
 
   while (token.kind != TOK_EOF) {
+    // if (token.kind != SEP_NEWLINE)
     vec_push(tab.tokens, token);
     token = ts_next(&ts);
   }
