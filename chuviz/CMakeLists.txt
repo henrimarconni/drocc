@@ -2,13 +2,14 @@
 add_executable(
   chuviz
   src/main.c
+  src/lexer_tab.c
   src/render.c
 )
 
 target_include_directories(
   chuviz
   PUBLIC
-  src/chuviz
+  src
 )
 
 target_link_libraries(

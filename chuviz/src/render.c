@@ -1,8 +1,11 @@
 #include "chuviz/render.h"
 #include "thirdparty/termbox2.h"
+#include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
-void render_rect(Rect rect, uint16_t border_fg) {
+void render_rect(Rect rect, uint64_t border_fg) {
   if (rect.w < 2 || rect.h < 2)
     return;
 
@@ -28,13 +31,8 @@ void render_rect(Rect rect, uint16_t border_fg) {
   }
 }
 
-void render_boxedtext(BoxedText boxtext, uint16_t border_fg) {
+void render_boxedtext(BoxedText boxtext, uint64_t border_fg) {
   render_rect(boxtext.rect, border_fg);
-
-  if (!boxtext.str) {
-    tb_printf(0, 0, border_fg, TB_DEFAULT, "oye hoye sugma");
-    return;
-  }
 
   int len = strlen(boxtext.str);
   int center_x = boxtext.rect.start.x + (boxtext.rect.w - len) / 2;
@@ -43,15 +41,14 @@ void render_boxedtext(BoxedText boxtext, uint16_t border_fg) {
   tb_printf(center_x, center_y, border_fg | TB_BOLD, TB_DEFAULT, "%s", boxtext.str);
 }
 
-void render_boxovtext(BoxOverlayText boxov, uint16_t border_fg) {
+void render_boxovtext(BoxOverlayText boxov, uint64_t border_fg) {
   render_rect(boxov.rect, border_fg);
 
   if (!boxov.str)
     return;
 
   // Print over the top-left edge, offset by 2 cells (┌─text)
-  tb_printf(
-      boxov.rect.start.x + 2, boxov.rect.start.y, border_fg | TB_BOLD, TB_DEFAULT, "%s", boxov.str);
+  tb_printf(boxov.rect.start.x + 2, boxov.rect.start.y, border_fg, TB_DEFAULT, "%s", boxov.str);
 }
 
 Rect get_window_rect() {
@@ -83,4 +80,64 @@ void render_cursor(Cursor* c) {
     struct tb_cell* cell = tb_cell_buffer() + (c->pos.y * tw + c->pos.x);
     cell->fg |= TB_REVERSE;
   }
+}
+
+void vdivide_rect(Rect rect, Rect* panes, size_t count, int* percentage) {
+  Vec2 start = rect.start;
+  for (size_t i = 0; i < count; i++) {
+    Rect* curr = &panes[i];
+    curr->start = start;
+    curr->h = rect.h;
+    curr->w = rect.w * percentage[i] / 100;
+    start.x += rect.w * percentage[i] / 100;
+
+    assert(start.x <= rect.start.x + rect.w);
+  }
+}
+
+RectPrintCtx rect_print_init(Rect* rect) {
+  RectPrintCtx ctx = {0};
+  ctx.rect = rect;
+  ctx.pos = rect->start;
+  return ctx;
+}
+
+void rect_printf(RectPrintCtx* ctx, uint64_t fg, uint64_t bg, const char* fmt, ...) {
+  char buf[4096];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  size_t i = 0;
+  while (buf[i]) {
+    if (buf[i] == '\n') {
+      ctx->pos.y++;
+      ctx->pos.x = ctx->rect->start.x;
+      i++;
+      continue;
+    }
+
+    if (ctx->pos.x >= ctx->rect->start.x + ctx->rect->w) {
+      ctx->pos.y++;
+      ctx->pos.x = ctx->rect->start.x;
+    }
+
+    if (ctx->pos.y >= ctx->rect->start.y + ctx->rect->h)
+      break;
+
+    tb_set_cell(ctx->pos.x, ctx->pos.y, buf[i], fg, bg);
+
+    ctx->pos.x++;
+    i++;
+  }
+}
+
+Rect bordered_rect(Rect rect) {
+  assert(rect.w > 2 && rect.h > 2);
+  rect.h -= 2;
+  rect.w -= 2;
+  rect.start.x += 1;
+  rect.start.y += 1;
+  return rect;
 }

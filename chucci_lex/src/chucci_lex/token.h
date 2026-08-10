@@ -74,6 +74,7 @@ extern const bool is_sep_table[256];
   X(KW_WHILE, "while")                                                                             \
   X(KW_FOR, "for")                                                                                 \
   X(KW_RETURN, "return")                                                                           \
+  X(KW_DO, "do")\
   X(KW_BREAK, "break")                                                                             \
   X(KW_CONTINUE, "continue")                                                                       \
   X(KW_STRUCT, "struct")                                                                           \
@@ -105,6 +106,7 @@ __keyword_count,
 #undef X
 // end
 
+  __op_sep_end,
   TOK_EOF,   //< End-of-File
   TOK_IDENT, //< Variable/Function/... names
   TOK_STR,   //< String literals

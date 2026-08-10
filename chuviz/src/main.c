@@ -1,11 +1,16 @@
-#include "render.h"
-#include <signal.h>
-#include <unistd.h>
+#define TB_OPT_ATTR_W 64
 #define TB_IMPL
+#include "thirdparty/termbox2.h"
+#undef TB_IMPL
+#include "chuviz/lexer_tab.h"
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
-#include "thirdparty/termbox2.h"
+#include "core/srcman.h"
+#include "core/string_interner.h"
+#include "core/vmem_arena.h"
+#include <signal.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void cleanup_and_exit(int sig) {
   tb_shutdown();
@@ -39,48 +44,24 @@ void parse_args(int argc, char** argv, bstr* file) {
     clid_throw_diag(CLID_ERROR, -1, "Please specify the file :P");
 }
 
-void event_loop() {
+void event_loop(LexerTab* tab) {
   tb_init();
+  tb_set_output_mode(TB_OUTPUT_TRUECOLOR);
 
   signal(SIGINT, cleanup_and_exit);
   signal(SIGTERM, cleanup_and_exit);
   signal(SIGSEGV, cleanup_and_exit);
 
-  Cursor c = {0};
   while (true) {
-    Rect window = get_window_rect();
-    BoxOverlayText titlebar = {0};
-    titlebar.rect = window;
-    titlebar.rect.h = 3;
-    titlebar.str = " chuviz: chucci visualizer ";
-    window.start.y += 3;
-    window.h -= 3;
-    c.bounds = window;
-    c.bounds.start.x++;
-    c.bounds.start.y++;
-    c.bounds.w -= 2;
-    c.bounds.h -= 2;
-
     tb_clear();
-    render_boxovtext(titlebar, TB_DEFAULT);
-    render_rect(window, TB_DEFAULT);
-    render_cursor(&c);
+    render_lexert(tab);
     tb_present();
 
     struct tb_event ev;
     tb_poll_event(&ev);
-    if (ev.type == TB_EVENT_KEY) {
-      if (ev.key == TB_KEY_ARROW_RIGHT || ev.ch == 'l')
-        c.pos.x += 1;
-      if (ev.key == TB_KEY_ARROW_LEFT && c.pos.x > 0 || ev.ch == 'h')
-        c.pos.x -= 1;
-      if (ev.key == TB_KEY_ARROW_UP && c.pos.y > 0 || ev.ch == 'k')
-        c.pos.y -= 1;
-      if (ev.key == TB_KEY_ARROW_DOWN || ev.ch == 'j')
-        c.pos.y += 1;
-      if (ev.key == TB_KEY_ESC || ev.ch == 'q')
-        break;
-    }
+    lexertab_input(tab, &ev);
+    if (ev.key == TB_KEY_ESC || ev.ch == 'q')
+      break;
   }
 
   tb_shutdown();
@@ -89,6 +70,20 @@ void event_loop() {
 int main(int argc, char** argv) {
   bstr file = NULL;
   parse_args(argc, argv, &file);
-  event_loop();
+
+  SourceManager sman = sman_new();
+  VMEMArena* arena = vmarena_new(128 * 1024);
+  SrcID srcid = sman_open(&sman, file, arena);
+
+  if (srcid == INVALID_SRC_ID) {
+    vmarena_free(arena);
+    sman_free(&sman);
+    clid_throw_diag(CLID_ERROR, -1, "Cannot open file: %s", file);
+  }
+
+  StringInterner* interner = interner_new(arena);
+  LexerTab tab = lexertab_init(&sman, interner, srcid);
+  event_loop(&tab);
+
   return 0;
 }

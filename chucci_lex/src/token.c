@@ -19,6 +19,7 @@ const char* tok_to_str[__token_kind_count] = {
         SEPARATORS(X)
 #undef X
     // NOTE: Update this if you add more token types
+    "__op_sep_end",
     "eof",
     "ident",
     "string",
