@@ -6,7 +6,6 @@
 #include "chuviz/theme.h"
 #include "core/srcman.h"
 #include "core/vec.h"
-#include "thirdparty/termbox2.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -15,12 +14,12 @@
 #define TAB_WIDTH 2
 
 static inline void print_line_start(RectPrintCtx* srcctx, int max_line_size, size_t line_start) {
-  rect_printf(srcctx, TB_DEFAULT, TB_DEFAULT, "%*zu  ", max_line_size, line_start + 1);
+  rect_printf(srcctx, LT_DEFAULT, LT_DEFAULT, "%*zu  ", max_line_size, line_start + 1);
 }
 
 uint64_t token_color(TokenKind kind) {
   if (kind < _keyword_count)
-    return THEME_CATPPUCCIN.keyword_fg | TB_BOLD;
+    return THEME_CATPPUCCIN.keyword_fg | LT_BOLD;
   if (kind < _op_sep_end)
     return THEME_CATPPUCCIN.op_sep_fg;
   if (kind == TOK_STR || kind == TOK_ANGLE)
@@ -64,12 +63,12 @@ static inline void print_src(PrintSrcCtx* ctx) {
     while (line_start + 1 < ctx->file->offsets.n &&
            token->span.offset >= ctx->file->offsets.get[line_start + 1]) {
       line_start++;
-      rect_printf(ctx->srcctx, TB_DEFAULT, TB_DEFAULT, "\n");
+      rect_printf(ctx->srcctx, LT_DEFAULT, LT_DEFAULT, "\n");
       print_line_start(ctx->srcctx, max_line_size, line_start);
 
       int spaces = ctx->scope_level * TAB_WIDTH;
       while (spaces--)
-        rect_printf(ctx->srcctx, TB_DEFAULT, TB_DEFAULT, " ");
+        rect_printf(ctx->srcctx, LT_DEFAULT, LT_DEFAULT, " ");
     }
 
     // If the current token is selected, write the line
@@ -79,7 +78,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
       rect_printf(
           ctx->srcctx,
           token_color(token->kind),
-          TB_WHITE,
+          LT_WHITE,
           "%.*s",
           token->span.len,
           ctx->file->contents + token->span.offset);
@@ -91,7 +90,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
       rect_printf(
           ctx->srcctx,
           token_color(token->kind),
-          TB_DEFAULT,
+          LT_DEFAULT,
           "%.*s",
           token->span.len,
           ctx->file->contents + token->span.offset);
@@ -103,7 +102,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
       rect_printf(
           ctx->srcctx,
           token_color(OP_PREPROCESS),
-          TB_DEFAULT,
+          LT_DEFAULT,
           "%.*s",
           token->span.len,
           ctx->file->contents + token->span.offset);
@@ -112,7 +111,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
     if (token->kind == OP_PREPROCESS)
       ctx->is_pp_cmd = true;
     else
-      rect_printf(ctx->srcctx, TB_DEFAULT, TB_DEFAULT, " ");
+      rect_printf(ctx->srcctx, LT_DEFAULT, LT_DEFAULT, " ");
   }
 }
 
@@ -121,8 +120,8 @@ void print_token_info(RectPrintCtx* ctx, Token* token) {
   memset(buf, ' ', TAB_WIDTH);
   rect_printf(
       ctx,
-      TB_DEFAULT,
-      TB_DEFAULT,
+      LT_DEFAULT,
+      LT_DEFAULT,
       "token.span = \n%s.offset = %d\n%s.len = %d\n%s.srcid = %d\n\n",
       buf,
       token->span.offset,
@@ -131,9 +130,9 @@ void print_token_info(RectPrintCtx* ctx, Token* token) {
       buf,
       token->span.srcid);
 
-  rect_printf(ctx, TB_DEFAULT, TB_DEFAULT, "token.kind = `%s`\n", tok_to_str[token->kind]);
+  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `%s`\n", tok_to_str[token->kind]);
   if (token->kind == TOK_IDENT)
-    rect_printf(ctx, TB_DEFAULT, TB_DEFAULT, "token.ident = %d\n\n", token->ident);
+    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.ident = %d\n\n", token->ident);
 }
 
 void render_lexert(LexerTab* tab) {
@@ -194,21 +193,21 @@ void render_lexert(LexerTab* tab) {
   RectPrintCtx tokctx = rect_print_init(&panes[1]);
   print_token_info(&tokctx, active_token);
 
-  render_boxovtext(tokeninfo, TB_DEFAULT);
-  render_boxovtext(srcpane, TB_DEFAULT);
+  render_boxovtext(tokeninfo, LT_DEFAULT);
+  render_boxovtext(srcpane, LT_DEFAULT);
 }
 
-void lexertab_input(LexerTab* tab, struct tb_event* event) {
-  if (event->mod == TB_MOD_SHIFT && event->key == TB_KEY_ARROW_RIGHT && tab->percentage1 < 80)
+void lexertab_input(LexerTab* tab, struct lt_event* event) {
+  if (event->mod == LT_MOD_SHIFT && event->key == LT_KEY_ARROW_RIGHT && tab->percentage1 < 80)
     tab->percentage1 += 5;
-  if (event->mod == TB_MOD_SHIFT && event->key == TB_KEY_ARROW_LEFT && tab->percentage1 > 20)
+  if (event->mod == LT_MOD_SHIFT && event->key == LT_KEY_ARROW_LEFT && tab->percentage1 > 20)
     tab->percentage1 -= 5;
 
-  if (event->mod != TB_MOD_SHIFT &&
-      (event->key == TB_KEY_ARROW_LEFT || event->key == TB_KEY_ARROW_UP) && tab->selected > 0)
+  if (event->mod != LT_MOD_SHIFT &&
+      (event->key == LT_KEY_ARROW_LEFT || event->key == LT_KEY_ARROW_UP) && tab->selected > 0)
     tab->selected -= 1;
-  if (event->mod != TB_MOD_SHIFT &&
-      (event->key == TB_KEY_ARROW_RIGHT || event->key == TB_KEY_ARROW_DOWN))
+  if (event->mod != LT_MOD_SHIFT &&
+      (event->key == LT_KEY_ARROW_RIGHT || event->key == LT_KEY_ARROW_DOWN))
     tab->selected += 1;
   tab->selected %= tab->tokens.n;
 }

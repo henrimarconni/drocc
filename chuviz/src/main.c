@@ -1,19 +1,16 @@
-#define TB_OPT_ATTR_W 64
-#define TB_IMPL
-#include "thirdparty/termbox2.h"
-#undef TB_IMPL
 #include "chuviz/lexer_tab.h"
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
+#include "libterm/libterm.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 void cleanup_and_exit(int sig) {
-  tb_shutdown();
+  lt_shutdown();
   exit(sig);
 }
 
@@ -45,26 +42,26 @@ void parse_args(int argc, char** argv, bstr* file) {
 }
 
 void event_loop(LexerTab* tab) {
-  tb_init();
-  tb_set_output_mode(TB_OUTPUT_TRUECOLOR);
+  lt_init();
+  lt_set_output_mode(LT_OUTPUT_TRUECOLOR);
 
   signal(SIGINT, cleanup_and_exit);
   signal(SIGTERM, cleanup_and_exit);
   signal(SIGSEGV, cleanup_and_exit);
 
   while (true) {
-    tb_clear();
+    lt_clear();
     render_lexert(tab);
-    tb_present();
+    lt_present();
 
-    struct tb_event ev;
-    tb_poll_event(&ev);
+    struct lt_event ev;
+    lt_poll_event(&ev);
     lexertab_input(tab, &ev);
-    if (ev.key == TB_KEY_ESC || ev.ch == 'q')
+    if (ev.key == LT_KEY_ESC || ev.ch == 'q')
       break;
   }
 
-  tb_shutdown();
+  lt_shutdown();
 }
 
 int main(int argc, char** argv) {

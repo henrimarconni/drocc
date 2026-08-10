@@ -5,7 +5,7 @@
 #include "core/srcman.h"
 #include "core/string_interner.h"
 #include "core/vec.h"
-#include "thirdparty/termbox2.h"
+#include "libterm/libterm.h"
 #include <stddef.h>
 
 typedef struct {
@@ -20,7 +20,7 @@ typedef struct {
 
 
 LexerTab lexertab_init(SourceManager* sman, StringInterner* interner, SrcID srcid);
-void lexertab_input(LexerTab* tab, struct tb_event* event);
+void lexertab_input(LexerTab* tab, struct lt_event* event);
 void render_lexert(LexerTab* tab);
 
 

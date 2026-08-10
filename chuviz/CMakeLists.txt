@@ -1,4 +1,13 @@
 
+include(FetchContent)
+FetchContent_Declare(
+  libterm
+  GIT_REPOSITORY https://github.com/rizukirr/libterm
+  GIT_TAG        v0.1.2
+)
+FetchContent_MakeAvailable(libterm)
+
+
 add_executable(
   chuviz
   src/main.c
@@ -17,4 +26,5 @@ target_link_libraries(
   PUBLIC
   core
   chucci_lex
+  Libterm::libterm
 )

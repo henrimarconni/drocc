@@ -2,6 +2,7 @@
 #define RENDER_H_
 
 #include "core/stringdef.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -44,12 +45,6 @@ typedef struct {
 
 typedef struct {
   Vec2 pos;
-  Rect bounds;
-  bool hidden;
-} Cursor;
-
-typedef struct {
-  Vec2 pos;
   Rect* rect;
 } RectPrintCtx;
 
@@ -65,7 +60,5 @@ void rect_printf(RectPrintCtx* ctx, uint64_t fg, uint64_t bg, const char* fmt, .
 
 Rect get_window_rect();
 Rect bordered_rect(Rect rect);
-
-void render_cursor(Cursor* c);
 
 #endif
