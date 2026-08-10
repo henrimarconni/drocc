@@ -98,7 +98,7 @@ typedef enum TokenKind {
 #define X(a, b) a,
   KEYWORDS(X)
 #undef X
-__keyword_count,
+_keyword_count,
 #define X(a, b, c) a,
       OPERATORS(X)
 #undef X
@@ -107,16 +107,16 @@ __keyword_count,
 #undef X
 // end
 
-  __op_sep_end,
+  _op_sep_end,
   TOK_EOF,   //< End-of-File
   TOK_IDENT, //< Variable/Function/... names
   TOK_STR,   //< String literals
   TOK_VAL,   //< Numerical value
   TOK_ANGLE, //< Preprocessor Angle strings <>
-  __token_kind_count,
+  _token_kind_count,
 } TokenKind;
 
-extern const char* tok_to_str[__token_kind_count];
+extern const char* tok_to_str[_token_kind_count];
 
 typedef struct {
   Span span;

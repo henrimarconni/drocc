@@ -18,9 +18,9 @@ static inline void print_line_start(RectPrintCtx* srcctx, int max_line_size, siz
 }
 
 uint64_t token_color(TokenKind kind) {
-  if (kind < __keyword_count)
+  if (kind < _keyword_count)
     return THEME_CATPPUCCIN.keyword_fg | TB_BOLD;
-  if (kind < __op_sep_end)
+  if (kind < _op_sep_end)
     return THEME_CATPPUCCIN.op_sep_fg;
   if (kind == TOK_STR || kind == TOK_ANGLE)
     return THEME_CATPPUCCIN.string_fg;

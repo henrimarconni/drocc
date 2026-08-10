@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static InternID keyword_ids[__keyword_count];
+static InternID keyword_ids[_keyword_count];
 
 TokenStream lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner) {
   Lexer* lexer = malloc(sizeof(Lexer));
@@ -88,7 +88,7 @@ Token lex_ident(Lexer* l, int ch) {
   // 'i' here is not only an index, but also the
   // NOTE: you gotta change this if you change the logic to use relative ordering
   // instead of depending on the KEYWORDS being the first thing in the enum
-  size_t i = __keyword_count;
+  size_t i = _keyword_count;
   while (i--) {
     if (keyword_ids[i] == id)
       return token_new(span, i);
