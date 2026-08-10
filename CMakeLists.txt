@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.32)
 project(drocc)
 
 enable_testing()
@@ -17,6 +17,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
 add_compile_options(-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=)
 
+# Libraries
+
 add_subdirectory(core)
 add_subdirectory(amalgamator)
 add_subdirectory(macromancer)
@@ -24,8 +26,10 @@ add_subdirectory(saulgood)
 add_subdirectory(sgrun)
 add_subdirectory(chucci_lex)
 
-# add_subdirectory(core/tests)
-# add_subdirectory(amalgamator/tests)
+# chuviz
+add_subdirectory(chuviz)
+
+# Tests
+
 add_subdirectory(macromancer/tests macromancer_tests)
-# add_subdirectory(saulgood/tests)
 add_subdirectory(chucci_lex/tests chucci_lex_tests)

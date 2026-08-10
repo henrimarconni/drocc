@@ -7,11 +7,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
-const char* tok_to_str[__token_kind_count] = {
+const char* tok_to_str[_token_kind_count] = {
 #define X(a, b) b,
     KEYWORDS(X)
 #undef X
-        "__keyword_count",
+        "_keyword_count",
 #define X(a, b, c) b,
     OPERATORS(X)
 #undef X
@@ -19,6 +19,7 @@ const char* tok_to_str[__token_kind_count] = {
         SEPARATORS(X)
 #undef X
     // NOTE: Update this if you add more token types
+    "_op_sep_end",
     "eof",
     "ident",
     "string",

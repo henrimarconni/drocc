@@ -3,3 +3,5 @@ docs
 .cache
 compile_commands.json
 run.sh
+chuviz/Cargo.lock
+chuviz/target

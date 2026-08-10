@@ -56,13 +56,13 @@ void sman_free(SourceManager* sman);
   Open a file and allocate the contents in arena
   @return INVALID_SRC_ID if file cannot be opened, else the valid SrcID
 */
-SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena);
+SrcID sman_open(SourceManager* man, bstr const name, VMEMArena* arena);
 
 /**
   Consider a string as a file
   @note This doesnt allocate memory, so the contents you provide must live till the SourceManager
 */
-SrcID sman_str(SourceManager* man, bstr name, bstr contents, size_t len);
+SrcID sman_str(SourceManager* man, bstr const name, bstr const contents, size_t len);
 
 /// Get information about the span
 SMSpanInfo sman_info(SourceManager* sman, Span span);

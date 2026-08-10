@@ -9,7 +9,6 @@
 
 extern const bool is_op_table[256];
 extern const bool is_sep_table[256];
-extern const char* tok_to_str[];
 
 #define is_op(ch) (is_op_table[ch])
 #define is_sep(ch) (is_sep_table[ch])
@@ -75,6 +74,7 @@ extern const char* tok_to_str[];
   X(KW_WHILE, "while")                                                                             \
   X(KW_FOR, "for")                                                                                 \
   X(KW_RETURN, "return")                                                                           \
+  X(KW_DO, "do")\
   X(KW_BREAK, "break")                                                                             \
   X(KW_CONTINUE, "continue")                                                                       \
   X(KW_STRUCT, "struct")                                                                           \
@@ -82,6 +82,7 @@ extern const char* tok_to_str[];
   X(KW_TYPEDEF, "typedef")                                                                         \
   X(KW_CONST, "const")                                                                             \
   X(KW_STATIC, "static")                                                                           \
+  X(KW_INLINE, "inline")                                                                           \
   X(KW_VOID, "void")                                                                               \
   X(KW_INT, "int")                                                                                 \
   X(KW_FLOAT, "float")                                                                             \
@@ -97,7 +98,7 @@ typedef enum TokenKind {
 #define X(a, b) a,
   KEYWORDS(X)
 #undef X
-__keyword_count,
+_keyword_count,
 #define X(a, b, c) a,
       OPERATORS(X)
 #undef X
@@ -106,21 +107,22 @@ __keyword_count,
 #undef X
 // end
 
+  _op_sep_end,
   TOK_EOF,   //< End-of-File
   TOK_IDENT, //< Variable/Function/... names
   TOK_STR,   //< String literals
   TOK_VAL,   //< Numerical value
   TOK_ANGLE, //< Preprocessor Angle strings <>
-  __token_kind_count,
+  _token_kind_count,
 } TokenKind;
+
+extern const char* tok_to_str[_token_kind_count];
 
 typedef struct {
   Span span;
   TokenKind kind;
-  union {
-    /// for identifiers
-    InternID ident;
-  };
+  /// for identifiers
+  InternID ident;
 } Token;
 
 // NOTE: Change this if you change the token struct
