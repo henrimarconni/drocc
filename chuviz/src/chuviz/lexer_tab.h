@@ -6,6 +6,7 @@
 #include "core/string_interner.h"
 #include "core/vec.h"
 #include "thirdparty/termbox2.h"
+#include <stddef.h>
 
 typedef struct {
   SourceManager* sman;
@@ -14,6 +15,7 @@ typedef struct {
   size_t selected; // selected token
   SrcID srcid;
   int percentage1;
+  size_t scroll_y;
 } LexerTab;
 
 

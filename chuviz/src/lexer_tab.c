@@ -8,6 +8,7 @@
 #include "core/vec.h"
 #include "thirdparty/termbox2.h"
 #include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -39,15 +40,25 @@ typedef struct {
   bool is_pp_cmd;
 } PrintSrcCtx;
 
+/// Print the source
 static inline void print_src(PrintSrcCtx* ctx) {
   char tmp[16];
   int max_line_size = snprintf(tmp, sizeof(tmp), "%zu", ctx->file->offsets.n);
 
-  size_t line_start = 0;
+  size_t line_start = ctx->tab->scroll_y;
   print_line_start(ctx->srcctx, max_line_size, line_start);
 
+  // loop through all tokens
   for (size_t i = 0; i < ctx->tab->tokens.n; i++) {
     Token* token = &ctx->tab->tokens.get[i];
+    if (token->span.offset < ctx->file->offsets.get[ctx->tab->scroll_y])
+      continue;
+
+    // Formatting
+    if (token->kind == SEP_LCURLY)
+      ctx->scope_level++;
+    if (token->kind == SEP_RCURLY && ctx->scope_level > 0)
+      ctx->scope_level--;
 
     // if newline, print line start
     while (line_start + 1 < ctx->file->offsets.n &&
@@ -61,24 +72,22 @@ static inline void print_src(PrintSrcCtx* ctx) {
         rect_printf(ctx->srcctx, TB_DEFAULT, TB_DEFAULT, " ");
     }
 
-    if (token->kind == SEP_LCURLY)
-      ctx->scope_level++;
-
-    if (token->kind == SEP_RCURLY && ctx->scope_level > 0)
-      ctx->scope_level--;
-    uint32_t force_fg = 0x39FF14;
-    uint32_t force_bg = 0x1A1829;
-
+    // If the current token is selected, write the line
+    // to cursor_line
     if (i == ctx->tab->selected) {
       ctx->is_pp_cmd = false;
       rect_printf(
           ctx->srcctx,
-          TB_DEFAULT,
+          token_color(token->kind),
           TB_WHITE,
           "%.*s",
           token->span.len,
           ctx->file->contents + token->span.offset);
-    } else if (!ctx->is_pp_cmd) {
+    }
+    // if we see #, mark the next token as pp_cmd
+    // so that it gets the same highlighting as #
+    // instead of ident highlighting
+    else if (!ctx->is_pp_cmd) {
       rect_printf(
           ctx->srcctx,
           token_color(token->kind),
@@ -86,7 +95,10 @@ static inline void print_src(PrintSrcCtx* ctx) {
           "%.*s",
           token->span.len,
           ctx->file->contents + token->span.offset);
-    } else {
+    }
+    // found the marked pp_cmd token, highlight
+    // it with same color as #
+    else {
       ctx->is_pp_cmd = false;
       rect_printf(
           ctx->srcctx,
@@ -118,6 +130,7 @@ void print_token_info(RectPrintCtx* ctx, Token* token) {
       token->span.len,
       buf,
       token->span.srcid);
+
   rect_printf(ctx, TB_DEFAULT, TB_DEFAULT, "token.kind = `%s`\n", tok_to_str[token->kind]);
   if (token->kind == TOK_IDENT)
     rect_printf(ctx, TB_DEFAULT, TB_DEFAULT, "token.ident = %d\n\n", token->ident);
@@ -144,15 +157,42 @@ void render_lexert(LexerTab* tab) {
   panes[0] = bordered_rect(panes[0]);
   panes[1] = bordered_rect(panes[1]);
 
+  Token* active_token = &tab->tokens.get[tab->selected];
+  SMSpanInfo info = sman_info(tab->sman, active_token->span);
+
+  size_t pane_height = srcpane.rect.h;
+  size_t top_margin = pane_height / 5;          // 20% threshold
+  size_t bottom_margin = (pane_height * 4) / 5; // 80% threshold
+
+  // Push the camera UP if the token is too high
+  if (info.row < tab->scroll_y + top_margin) {
+    if (info.row > top_margin)
+      tab->scroll_y = info.row - top_margin;
+    else
+      tab->scroll_y = 0;
+  }
+  // Push the camera DOWN if the token is too low
+  else if (info.row > tab->scroll_y + bottom_margin) {
+    tab->scroll_y = info.row - bottom_margin;
+
+    if (file->offsets.n > pane_height) {
+      if (tab->scroll_y > file->offsets.n - pane_height)
+        tab->scroll_y = file->offsets.n - pane_height;
+    } else {
+      tab->scroll_y = 0;
+    }
+  }
+
   PrintSrcCtx ctx = {0};
   RectPrintCtx srcctx = rect_print_init(&panes[0]);
   ctx.srcctx = &srcctx;
   ctx.file = file;
   ctx.tab = tab;
+
   print_src(&ctx);
 
   RectPrintCtx tokctx = rect_print_init(&panes[1]);
-  print_token_info(&tokctx, &tab->tokens.get[tab->selected]);
+  print_token_info(&tokctx, active_token);
 
   render_boxovtext(tokeninfo, TB_DEFAULT);
   render_boxovtext(srcpane, TB_DEFAULT);
