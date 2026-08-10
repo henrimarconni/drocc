@@ -6,6 +6,7 @@
 #include "chuviz/theme.h"
 #include "core/srcman.h"
 #include "core/vec.h"
+#include "libterm/libterm.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -77,8 +78,8 @@ static inline void print_src(PrintSrcCtx* ctx) {
       ctx->is_pp_cmd = false;
       rect_printf(
           ctx->srcctx,
-          token_color(token->kind),
-          LT_WHITE,
+          token_color(token->kind) | LT_REVERSE,
+          LT_DEFAULT | LT_REVERSE,
           "%.*s",
           token->span.len,
           ctx->file->contents + token->span.offset);
