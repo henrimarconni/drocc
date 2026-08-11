@@ -25,6 +25,7 @@ add_subdirectory(macromancer)
 add_subdirectory(saulgood)
 add_subdirectory(sgrun)
 add_subdirectory(chucci_lex)
+add_subdirectory(chucci_parse)
 
 # chuviz
 add_subdirectory(chuviz)

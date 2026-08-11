@@ -3,6 +3,7 @@
 #include "core/vmem_arena.h"
 #include "thirdparty/wyhash.h"
 #include <assert.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -50,12 +51,12 @@ static inline InternEntry* find_entry(StringInterner* interner, bstr str, size_t
     return entry;
 
   // Already interned
-  if (str[0] == entry->char1 && strncmp(str + 1, entry_str(entry, interner) + 1, len - 1) == 0)
+  if (str[0] == entry->char1 && memcmp(str + 1, entry_str(entry, interner) + 1, len - 1) == 0)
     return entry;
 
   // linear probing
   while (entry->is_full) {
-    if (str[0] == entry->char1 && strncmp(str + 1, entry_str(entry, interner) + 1, len - 1) == 0)
+    if (str[0] == entry->char1 && memcmp(str + 1, entry_str(entry, interner) + 1, len - 1) == 0)
       return entry;
 
     id = wrap_around(id + 1, interner->cap);
@@ -89,7 +90,7 @@ void resize(StringInterner* interner) {
 InternID intern(StringView strv, StringInterner* interner) {
   assert(strv.len > 0);
 
-  if ((float)interner->len / (float)interner->cap >= DEFAULT_INTERNER_RESIZE_RATIO)
+  if (interner->len >= DEFAULT_INTERNER_RESIZE_RATIO * interner->cap)
     resize(interner);
 
   InternEntry* entry = find_entry(interner, strv.str, strv.len);
