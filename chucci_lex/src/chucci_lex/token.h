@@ -93,6 +93,7 @@ extern const bool is_sep_table[256];
   X(KW_SIGNED, "signed")                                                                           \
   X(KW_DOUBLE, "double")                                                                           \
   X(KW_FLOAT, "float")                                                                             \
+  X(KW_BOOL, "bool")                                                                               \
   X(KW_CHAR, "char")
 
 #define is_tok_op_or_sep(token) (token.kind < TOK_EOF && token.kind > KW_SIZEOF)
