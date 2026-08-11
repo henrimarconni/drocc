@@ -71,10 +71,10 @@ extern const bool is_sep_table[256];
 #define KEYWORDS(X)                                                                                \
   X(KW_IF, "if")                                                                                   \
   X(KW_ELSE, "else")                                                                               \
+  X(KW_DO, "do")                                                                                   \
   X(KW_WHILE, "while")                                                                             \
   X(KW_FOR, "for")                                                                                 \
   X(KW_RETURN, "return")                                                                           \
-  X(KW_DO, "do")\
   X(KW_BREAK, "break")                                                                             \
   X(KW_CONTINUE, "continue")                                                                       \
   X(KW_STRUCT, "struct")                                                                           \
@@ -83,12 +83,17 @@ extern const bool is_sep_table[256];
   X(KW_CONST, "const")                                                                             \
   X(KW_STATIC, "static")                                                                           \
   X(KW_INLINE, "inline")                                                                           \
+  X(KW_EXTERN, "extern")                                                                           \
+  X(KW_SIZEOF, "sizeof")                                                                           \
+  /* Primitive types */                                                                            \
   X(KW_VOID, "void")                                                                               \
+  X(KW_LONG, "long")                                                                               \
   X(KW_INT, "int")                                                                                 \
+  X(KW_UNSIGNED, "unsigned")                                                                       \
+  X(KW_SIGNED, "signed")                                                                           \
+  X(KW_DOUBLE, "double")                                                                           \
   X(KW_FLOAT, "float")                                                                             \
-  X(KW_CHAR, "char")                                                                               \
-  X(KW_EXTERN, "extern")\
-  X(KW_SIZEOF, "sizeof")
+  X(KW_CHAR, "char")
 
 #define is_tok_op_or_sep(token) (token.kind < TOK_EOF && token.kind > KW_SIZEOF)
 
@@ -99,14 +104,14 @@ typedef enum TokenKind {
 #define X(a, b) a,
   KEYWORDS(X)
 #undef X
-_keyword_count,
+      _keyword_count,
 #define X(a, b, c) a,
-      OPERATORS(X)
+  OPERATORS(X)
 #undef X
 #define X(a, b, c) a,
-          SEPARATORS(X)
+      SEPARATORS(X)
 #undef X
-// end
+  // end
 
   _op_sep_end,
   TOK_EOF,   //< End-of-File

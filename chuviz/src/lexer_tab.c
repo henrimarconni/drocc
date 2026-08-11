@@ -145,7 +145,7 @@ void print_token_info(RectPrintCtx* ctx, Token* token, SMSpanInfo info) {
       token->span.srcid);
 
   if (token->kind == SEP_NEWLINE)
-    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `NEWLINE`\n");
+    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `newline`\n");
   else
     rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `%s`\n", tok_to_str[token->kind]);
 
@@ -172,12 +172,16 @@ void print_token_info(RectPrintCtx* ctx, Token* token, SMSpanInfo info) {
 
   // print highlighted line
   rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "In line %d: \n", info.row);
-  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%.*s", info.col, info.sv.str - info.col);
+
+  // before the span
+  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%.*s", info.col - 1, info.sv.str - info.col + 1);
+  // span
   rect_printf(
       ctx, token_color(token->kind) | LT_BOLD, LT_DEFAULT, "%.*s", info.sv.len, info.sv.str);
 
+  // after the span
   size_t id = info.sv.len;
-  while (info.sv.str[id] && info.sv.str[id] != '\n')
+  while (token->kind != SEP_NEWLINE && info.sv.str[id] && info.sv.str[id] != '\n')
     id++;
   rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%.*s\n", id - info.sv.len, info.sv.str + info.sv.len);
 }
