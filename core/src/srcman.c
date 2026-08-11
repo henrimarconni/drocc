@@ -38,16 +38,16 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   }
 
   info.row = row + 1;
-  info.col = info.id - src->offsets.get[row];
+  info.col = info.id - src->offsets.get[row] + 1;
 
   return info;
 }
 
 SrcID sman_str(SourceManager* man, const bstr name, const bstr contents, size_t len) {
   SMSource source = {
-    .len = len,
-    .name = name,
-    .contents = contents,
+      .len = len,
+      .name = name,
+      .contents = contents,
   };
 
   // Calculate offsets
