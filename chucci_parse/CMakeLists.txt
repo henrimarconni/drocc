@@ -3,6 +3,9 @@ add_library(
   chucci_parse
   STATIC
   src/parser.c
+  src/decl_spec.c
+  src/declarator.c
+  src/type.c
   src/typeinterner.c
 )
 
@@ -15,6 +18,5 @@ target_include_directories(
 target_link_libraries(
   chucci_parse
   PUBLIC
-  core
   chucci_lex
 )
