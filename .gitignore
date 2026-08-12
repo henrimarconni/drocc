@@ -1,5 +1,6 @@
 build
 docs
 .cache
+chutest
 compile_commands.json
 run.sh
