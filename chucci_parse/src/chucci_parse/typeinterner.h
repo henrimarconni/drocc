@@ -8,27 +8,22 @@
 
 typedef uint32_t TypeID;
 
-static_assert(
-    _type_kind_count < 32,
-    "There cannot be more than 31 unique typekinds, or else the TypeInterner will break"
-    "(modify it yourself if you want)");
+typedef struct Type Type;
 
-typedef struct {
-  uint32_t typeid : 27;
-  uint32_t kind : 5;
-} TypeIntrnEntry;
+typedef vec(TypeID) TypeIDVec;
 
-typedef vec(TypeIntrnEntry) TypeIntrnEntryVec;
-
-typedef struct {
+typedef struct TypeInterner {
   TypeID len;
   TypeID cap;
-  TypeIntrnEntryVec entries;
+  TypeIDVec  entries;
   vec(Type) types;
+  vec(uint32_t) payloads;
 } TypeInterner;
 
 TypeInterner* ty_interner_new();
-TypeID ty_intern(TypeInterner* interner, Type* type);
+TypeID ty_intern(TypeInterner* interner, TyQualifier qual, uint32_t* payload, uint32_t count);
+
 Type ty_fetch(TypeInterner* interner, TypeID id);
+void* ty_payload_base(TypeInterner* interner, uint32_t offset);
 
 #endif

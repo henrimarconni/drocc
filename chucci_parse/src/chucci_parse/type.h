@@ -1,17 +1,23 @@
 #ifndef TYPE_H_
 #define TYPE_H_
 
-#include "core/slice.h"
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 
+typedef uint32_t TypeID;
+typedef struct TypeInterner TypeInterner;
 
 typedef enum {
   TY_FUNCTION,
   TY_POINTER,
   TY_ARRAY,
+  TY_INCOMPLETE_ARRAY,
 
   // Primitives
+  TY_VOID,
+  TY_BOOL,
+
   TY_I8,
   TY_U8, // char,  unsigned char
   TY_I16,
@@ -35,20 +41,28 @@ typedef enum {
   _type_kind_count
 } TypeKind;
 
+static_assert(
+    _type_kind_count < 32,
+    "You must change struct Type's and TypeInterner's bitfields if you extend the TypeKinds beyond "
+    "32 members");
+
 typedef struct Type Type;
 
-static_assert(_type_kind_count < 32, "You must change struct Type's bitfields if you extend the TypeKinds beyond 32 members");
-typedef struct Type {
-  MemSlice payload;
-  // qualifiers
-  struct {
-    uint8_t is_volatile : 1;
-    uint8_t is_const : 1;
+typedef struct {
+  uint32_t offset;
+  uint32_t len;
+} TyPayload;
 
-    /// for pointers only
-    uint8_t is_restrict : 1;
-    uint8_t kind : 5;
-  };
+typedef struct {
+  uint8_t is_volatile : 1;
+  uint8_t is_const : 1;
+  uint8_t is_restrict : 1;
+  TypeKind kind : 5;
+} TyQualifier;
+
+typedef struct Type {
+  TyPayload payload;
+  TyQualifier qual;
 } Type;
 
 /// Storage class associated with a specific variable/function declaration/definition
@@ -60,5 +74,9 @@ typedef enum {
   SC_REGISTER,
   // SC_AUTO // DEPRECATED
 } StorageClass;
+
+
+TyQualifier tyqual(TypeKind kind, bool is_const, bool is_volatile, bool is_restrict);
+void print_type(TypeID type, TypeInterner* tyint);
 
 #endif
