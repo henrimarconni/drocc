@@ -34,3 +34,9 @@ add_subdirectory(chuviz)
 
 add_subdirectory(macromancer/tests macromancer_tests)
 add_subdirectory(chucci_lex/tests chucci_lex_tests)
+add_subdirectory(chucci_parse/tests chucci_parse_tests)
+
+if (IS_DIRECTORY "chutest")
+message(STATUS "Found chutest directory")
+add_subdirectory(chutest chutest)
+endif()
