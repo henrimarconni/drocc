@@ -50,7 +50,7 @@ typedef struct {
 } SMSpanInfo;
 
 
-SourceManager sman_new();
+SourceManager* sman_new();
 void sman_free(SourceManager* sman);
 /**
   Open a file and allocate the contents in arena

@@ -8,8 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-SourceManager sman_new() {
-  SourceManager sman = {0};
+SourceManager* sman_new() {
+  SourceManager* sman = malloc(sizeof(SourceManager));
+  *sman = (SourceManager){0};
   return sman;
 }
 
@@ -119,4 +120,9 @@ SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
   return sman_str(man, dup, contents, file_size);
 }
 
-void sman_free(SourceManager* sman) { vec_destroy(sman->sources); }
+void sman_free(SourceManager* sman) {
+  for (size_t i = 0; i < sman->sources.n; i++)
+    vec_destroy(sman->sources.get[i].offsets);
+  vec_destroy(sman->sources);
+  free(sman);
+}

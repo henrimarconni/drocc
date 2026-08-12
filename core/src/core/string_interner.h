@@ -26,6 +26,7 @@ typedef struct StringInterner {
 
 StringInterner* interner_new(VMEMArena *arena);
 InternID intern(StringView span, StringInterner *interner);
+StringView interner_fetch_sv(StringInterner* interner, InternID id);
 void interner_free(StringInterner *interner);
 
 #endif

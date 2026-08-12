@@ -5,11 +5,14 @@
 #include "chuviz/render.h"
 #include "chuviz/theme.h"
 #include "core/srcman.h"
+#include "core/string_interner.h"
 #include "core/vec.h"
+#include "core/vmem_arena.h"
 #include "libterm/libterm.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define TAB_WIDTH 2
@@ -48,9 +51,10 @@ static inline void print_src(PrintSrcCtx* ctx) {
   size_t line_start = ctx->tab->scroll_y;
   print_line_start(ctx->srcctx, max_line_size, line_start);
 
-  // loop through all tokens
+  // loop through all tokens and print only the required ones
   for (size_t i = 0; i < ctx->tab->tokens.n; i++) {
     Token* token = &ctx->tab->tokens.get[i];
+
     if (token->span.offset < ctx->file->offsets.get[ctx->tab->scroll_y])
       continue;
 
@@ -72,15 +76,15 @@ static inline void print_src(PrintSrcCtx* ctx) {
         rect_printf(ctx->srcctx, LT_DEFAULT, LT_DEFAULT, " ");
     }
 
-    // if (token->kind == SEP_NEWLINE)
-    //   continue;
-
+    // print highlighted #newline if its selected
     if (token->kind == SEP_NEWLINE && i == ctx->tab->selected) {
       ctx->is_pp_cmd = false;
       rect_printf(
           ctx->srcctx, token_color(token->kind) | LT_REVERSE, LT_DEFAULT | LT_REVERSE, "#newline");
       continue;
-    } else if (token->kind == SEP_NEWLINE) {
+    }
+    // else print #newline
+    else if (token->kind == SEP_NEWLINE) {
       rect_printf(ctx->srcctx, token_color(token->kind), LT_DEFAULT, "#newline");
       continue;
     }
@@ -88,7 +92,13 @@ static inline void print_src(PrintSrcCtx* ctx) {
     // If the current token is selected, write the line
     // to cursor_line
     if (i == ctx->tab->selected) {
+
+      // if the selected token is the one which was marked as pp_cmd
+      // this will cause a visual bug where the next token gets highlighted
+      // as pp_cmd
+      // To prevent it, we set it pre-emptively
       ctx->is_pp_cmd = false;
+
       rect_printf(
           ctx->srcctx,
           token_color(token->kind) | LT_REVERSE,
@@ -130,56 +140,64 @@ static inline void print_src(PrintSrcCtx* ctx) {
 }
 
 void print_token_info(RectPrintCtx* ctx, Token* token, SMSpanInfo info) {
-  char buf[16] = {0};
-  memset(buf, ' ', TAB_WIDTH);
+  char tabs[16] = {0};
+  static_assert(sizeof(tabs) > TAB_WIDTH, "Make the tabs[16] buffer larger for TAB_WIDTH >= 16");
+  memset(tabs, ' ', TAB_WIDTH);
+
+  // token.span
   rect_printf(
       ctx,
       LT_DEFAULT,
       LT_DEFAULT,
       "token.span = \n%s.offset = %d\n%s.len = %d\n%s.srcid = %d\n\n",
-      buf,
+      tabs,
       token->span.offset,
-      buf,
+      tabs,
       token->span.len,
-      buf,
+      tabs,
       token->span.srcid);
 
+  // token.kind
   if (token->kind == SEP_NEWLINE)
     rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `newline`\n");
   else
     rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.kind = `%s`\n", tok_to_str[token->kind]);
 
+  // token.ident only if it is ident
   if (token->kind == TOK_IDENT)
     rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "token.ident = %d\n\n", token->ident);
   else
     rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "\n\n");
 
+  // SMSpanInfo
   rect_printf(
       ctx,
       LT_DEFAULT,
       LT_DEFAULT,
       "SMSpanInfo = \n%s.row = %d\n%s.col = %d\n",
-      buf,
+      tabs,
       info.row,
-      buf,
+      tabs,
       info.col);
 
+  // print '\n' instead of a literal newline
   if (token->kind == SEP_NEWLINE)
-    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%s.sv = `\\n`\n", buf);
+    rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%s.sv = `\\n`\n", tabs);
+
+  // print the StringView of the token
   else
     rect_printf(
-        ctx, LT_DEFAULT, LT_DEFAULT, "%s.sv = `%.*s`\n", buf, (int)info.sv.len, info.sv.str);
+        ctx, LT_DEFAULT, LT_DEFAULT, "%s.sv = `%.*s`\n", tabs, (int)info.sv.len, info.sv.str);
 
-  // print highlighted line
+  // print the line where the token is
   rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "In line %d: \n", info.row);
 
-  // before the span
+  // part of the line before the span
   rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%.*s", info.col - 1, info.sv.str - info.col + 1);
-  // span
+  // highlighted span
   rect_printf(
       ctx, token_color(token->kind) | LT_BOLD, LT_DEFAULT, "%.*s", info.sv.len, info.sv.str);
-
-  // after the span
+  // part of the line after the span
   size_t id = info.sv.len;
   while (token->kind != SEP_NEWLINE && info.sv.str[id] && info.sv.str[id] != '\n')
     id++;
@@ -269,22 +287,49 @@ void lexertab_input(LexerTab* tab, struct lt_event* event) {
   }
 }
 
-LexerTab lexertab_init(SourceManager* sman, StringInterner* interner, SrcID srcid) {
-  LexerTab tab = {0};
-  tab.interner = interner;
-  tab.srcid = srcid;
-  tab.sman = sman;
-  tab.percentage1 = 60;
+LexerTab* lexertab_init(bstr file) {
+  // init
+  SourceManager* sman = sman_new();
+  VMEMArena* arena = vmarena_new(128 * 1024);
+  SrcID srcid = sman_open(sman, file, arena);
+
+  if (srcid == INVALID_SRC_ID) {
+    vmarena_free(arena);
+    sman_free(sman);
+    return NULL;
+  }
+
+  StringInterner* interner = interner_new(arena);
+
+  LexerTab* tab = malloc(sizeof(LexerTab));
+  tab->tokens = (TokenVec){0};
+  tab->interner = interner;
+  tab->sman = sman;
+  tab->arena = arena;
+
+  tab->srcid = srcid;
+  tab->percentage1 = 60;
+  tab->percentage1 = 50;
+  tab->scroll_y = 0;
+  tab->selected = 0;
+  tab->srcid = srcid;
 
   TokenStream ts = lexer_new(sman, srcid, interner);
   Token token = ts_next(&ts);
 
   while (token.kind != TOK_EOF) {
-    // if (token.kind != SEP_NEWLINE)
-    vec_push(tab.tokens, token);
+    vec_push(tab->tokens, token);
     token = ts_next(&ts);
   }
 
   ts_free(&ts);
   return tab;
+}
+
+void lexertab_free(LexerTab* tab) {
+  vec_destroy(tab->tokens);
+  interner_free(tab->interner);
+  sman_free(tab->sman);
+  vmarena_free(tab->arena);
+  free(tab);
 }

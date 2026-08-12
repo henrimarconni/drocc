@@ -1,9 +1,6 @@
 #include "chuviz/lexer_tab.h"
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
-#include "core/srcman.h"
-#include "core/string_interner.h"
-#include "core/vmem_arena.h"
 #include "libterm/libterm.h"
 #include <signal.h>
 #include <stdlib.h>
@@ -68,19 +65,12 @@ int main(int argc, char** argv) {
   bstr file = NULL;
   parse_args(argc, argv, &file);
 
-  SourceManager sman = sman_new();
-  VMEMArena* arena = vmarena_new(128 * 1024);
-  SrcID srcid = sman_open(&sman, file, arena);
-
-  if (srcid == INVALID_SRC_ID) {
-    vmarena_free(arena);
-    sman_free(&sman);
+  LexerTab* tab = lexertab_init(file);
+  if (!tab)
     clid_throw_diag(CLID_ERROR, -1, "Cannot open file: %s", file);
-  }
 
-  StringInterner* interner = interner_new(arena);
-  LexerTab tab = lexertab_init(&sman, interner, srcid);
-  event_loop(&tab);
+  event_loop(tab);
 
+  lexertab_free(tab);
   return 0;
 }

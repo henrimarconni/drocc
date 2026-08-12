@@ -26,19 +26,21 @@ int emit_output(bstr output_path, MMCodegen* c) {
 }
 
 int main(int argc, char** argv) {
+  // Argument parsing
   bstr confpath = NULL;
   bstr output_path = NULL;
   ExportOverrideVec export_overrides = {};
-
   parse_arg(argc, argv, &output_path, &confpath, &export_overrides);
 
+  // Setup
   jmp_buf onerror;
   MMParser p;
-  SourceManager sman = sman_new();
-  VMEMArena* arena = vmarena_new(1024 * 128); // max size is 128 kb
+  SourceManager* sman = sman_new();
+  VMEMArena* arena = vmarena_new(1024 * 128);
 
+  // Parse
   if (setjmp(onerror) == 0)
-    read_conf(&p, &sman, arena, confpath, &export_overrides, &onerror);
+    read_conf(&p, sman, arena, confpath, &export_overrides, &onerror);
   else {
     vec_destroy(export_overrides);
     parser_destroy(&p);
@@ -50,6 +52,8 @@ int main(int argc, char** argv) {
   generate_code(&c, &p);
 
   int res = emit_output(output_path, &c);
+
+  // Cleanup
   vec_destroy(export_overrides);
   codegen_destroy(&c);
   parser_destroy(&p);

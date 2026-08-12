@@ -103,6 +103,12 @@ InternID intern(StringView strv, StringInterner* interner) {
   return populate(entry, interner, strv.str, strv.len);
 }
 
+StringView interner_fetch_sv(StringInterner* interner, InternID id) {
+  assert(id != 0);
+  assert(id < interner->strings.n);
+  return interner->strings.get[id];
+}
+
 void interner_free(StringInterner* interner) {
   vec_destroy(interner->strings);
   vec_destroy(interner->entries);
