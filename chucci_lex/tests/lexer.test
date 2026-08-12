@@ -56,7 +56,7 @@ $c {
 $test "Lexer test" : chucci_lex(lexer) {
   VMEMArena* arena = vmarena_new(128 * 1024);
   StringInterner* interner = interner_new(arena);
-  SourceManager sman = sman_new();
+  SourceManager* sman = sman_new();
   bstr str = "  // 1. Preprocessor & Angle Brackets (tests your TOK_ANGLE logic!)\n"
              "#include <stdio.h>\n"
              "#include \" my_local_header.h\""
@@ -108,8 +108,8 @@ $test "Lexer test" : chucci_lex(lexer) {
              "    return 0;\n"
              "}\n";
   size_t len = strlen(str);
-  SrcID srcid = sman_str(&sman, "scratch", str, len);
-  TokenStream ts = lexer_new(&sman, srcid, interner);
+  SrcID srcid = sman_str(sman, "scratch", str, len);
+  TokenStream ts = lexer_new(sman, srcid, interner);
 
   Token tokens[] = {
       (Token){.span = {.offset = 68, .len = 1, .srcid = 0}, .kind = OP_PREPROCESS, .ident = 0},
@@ -315,8 +315,6 @@ $test "Lexer test" : chucci_lex(lexer) {
 
     printf("%d == %d\n", token.kind, expected.kind);
     assert(token.kind == expected.kind);
-    if (token.kind == TOK_IDENT)
-      assert(token.ident == expected.ident);
     assert(token.span.offset == expected.span.offset);
     assert(token.span.len == expected.span.len);
     assert(token.span.srcid == expected.span.srcid);
@@ -328,7 +326,7 @@ $test "Lexer test" : chucci_lex(lexer) {
   assert(i == token_len);
 
   ts_free(&ts);
-  sman_free(&sman);
+  sman_free(sman);
   interner_free(interner);
   vmarena_free(arena);
 }

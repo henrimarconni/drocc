@@ -11,24 +11,16 @@
 typedef uint32_t InternID;
 
 typedef struct InternEntry {
-  /**
-    As we assume max size needed by arena will be less than 1 MiB, that is
-    1024*1024 = 2^20.
-    Offset to InternedStr in arena
-  */
-  uint64_t offset : 23;
-  /// first char of string for faster comparisons
-  uint64_t char1 : 8;
-  uint64_t is_full : 1;
-  uint64_t intern_id : 32;
+  uint32_t intern_id;
 } InternEntry;
 
 typedef vec(InternEntry) InternEntryVec;
 
 typedef struct StringInterner {
   InternEntryVec entries;
-  size_t cap; // power of 2
-  size_t len;
+  vec(StringView) strings; 
+  InternID cap; // power of 2
+  InternID len;
   VMEMArena *arena;
 } StringInterner;
 
