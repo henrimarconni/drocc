@@ -7,7 +7,6 @@
 #include "chucci_parse/typeinterner.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
-#include "core/vec.h"
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <stdint.h>
@@ -44,13 +43,13 @@ typedef struct {
 /// Top level node abstract-syntax-tree stream
 typedef struct {
   /// contigous symbol storage
-  SymbolStorage symbols;
+  infvec(SymbolData) symbols;
 
   ///  Mapping InternID to SymbolID
-  vec(SymbolID) symbolids;
+  infvec(SymbolID) ident_to_symid;
 
   /// Mapping InternID to SymbolID specifically for struct/enum/union without any typedef
-  vec(SymbolID) tagged_symbolids;
+  infvec(SymbolID) ident_to_symid_tagged;
 
   /// Type interner
   TypeInterner* ty_int;

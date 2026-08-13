@@ -4,7 +4,6 @@
 #include "chucci_parse/type.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
-#include "core/vec.h"
 
 typedef uint32_t SymbolID;
 
@@ -22,7 +21,5 @@ typedef struct SymbolData {
   Type type;
   SymbolKind kind;
 } SymbolData;
-
-typedef vec(SymbolData) SymbolStorage;
 
 #endif

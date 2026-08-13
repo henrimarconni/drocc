@@ -40,7 +40,7 @@ static SrcScanner include(Amalgamator* a, bstr fname) {
 
   size_t len = strlen(fname);
   bstr path = vmarena_alloc(a->arena, len + 1);
-  mempcpy(path, fname, len);
+  memcpy(path, fname, len);
   path[len] = '\0';
 
   // sman_open fname must not get modified
