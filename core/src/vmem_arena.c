@@ -20,6 +20,8 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
+#define COMMIT_SIZE 4096
+
 void* os_mmap_file(const char* filepath, size_t* out_size) {
 #if defined(__unix__) || defined(__APPLE__)
   int fd = open(filepath, O_RDONLY);
@@ -80,25 +82,27 @@ void os_unmap_file(void* data, size_t size) {
 #define ALIGN_UP(n, a) (((n) + (a) - 1) & ~((a) - 1))
 #define DEFAULT_ALIGNMENT 8
 
-void* os_demand_alloc(size_t size) {
-  void* data = NULL;
-#if defined(__unix__) || defined(__APPLE__)
-  data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  assert(data != MAP_FAILED);
-#elif defined(_WIN32)
-  data = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-  assert(data);
+void* os_vm_reserve(size_t size) {
+#if defined(_WIN32)
+  return VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_NOACCESS);
+#else
+  return mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
-  return data;
 }
 
-void os_demand_free(void* data, size_t size) {
-  if (!data)
-    return;
-#if defined(__unix__) || defined(__APPLE__)
-  assert(munmap(data, size) != -1);
-#elif defined(_WIN32)
-  assert(VirtualFree(data, 0, MEM_RELEASE) != 0);
+void os_vm_commit(void* ptr, size_t size) {
+#if defined(_WIN32)
+  VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
+#else
+  mprotect(ptr, size, PROT_READ | PROT_WRITE);
+#endif
+}
+
+void os_vm_free(void* ptr, size_t size) {
+#if defined(_WIN32)
+  VirtualFree(ptr, 0, MEM_RELEASE);
+#else
+  munmap(ptr, size);
 #endif
 }
 
@@ -106,12 +110,20 @@ VMEMArena* vmarena_new(size_t cap) {
   VMEMArena* arena = malloc(sizeof(VMEMArena));
   arena->pos = 0;
   arena->cap = cap;
-  arena->data = os_demand_alloc(cap);
+  arena->data = os_vm_reserve(cap);
+  arena->committed_len = 0;
   return arena;
 }
 
 void* _vmarena_alloc(VMEMArena* arena, size_t size) {
   arena->pos = ALIGN_UP(arena->pos, DEFAULT_ALIGNMENT);
+
+  while (arena->pos + size > arena->committed_len) {
+    void* commit_ptr = (char*)arena->data + arena->committed_len;
+    os_vm_commit(commit_ptr, COMMIT_SIZE);
+    arena->committed_len += COMMIT_SIZE;
+  }
+
   assert(arena->cap - arena->pos >= size && arena->data);
   arena->pos += size;
   return arena->data + arena->pos - size;
@@ -143,6 +155,6 @@ void vmarena_mark_reset(VMEMArena* arena, VMEMArenaMark mark) { arena->pos = mar
 VMEMArenaMark vmarena_mark(VMEMArena* arena) { return (VMEMArenaMark){.pos = arena->pos}; }
 
 void vmarena_free(VMEMArena* arena) {
-  os_demand_free(arena->data, arena->cap);
+  os_vm_free(arena->data, arena->cap);
   free(arena);
 }

@@ -15,7 +15,9 @@
 
 typedef struct VMEMArena {
   uint8_t *data;
-  size_t pos, cap;
+  size_t pos;
+  size_t cap;
+  size_t committed_len;
 } VMEMArena;
 
 typedef struct VMEMArenaMark {
@@ -67,9 +69,11 @@ void vmarena_free(VMEMArena *arena);
 #define vmarena_realloc(arena, ptr, old_size, size) _vmarena_realloc(arena, ptr, old_size, size) 
 #endif
 
-void* os_demand_alloc(size_t size);
-void os_demand_free(void* data, size_t size);
 void* os_mmap_file(const char* filepath, size_t* out_size);
 void os_unmap_file(void* data, size_t size);
+
+void* os_vm_reserve(size_t size);
+void os_vm_commit(void* ptr, size_t size);
+void os_vm_free(void* ptr, size_t size);
 
 #endif

@@ -19,10 +19,7 @@ int nextch(SrcScanner* scanner) {
     return EOF;
 
   int ch = file.b_contents[scanner->id++];
-  if (ch == '\0') {
-    scanner->id--;
-    return EOF;
-  }
+
   if (ch == '\n')
     vec_push(scanner->sman->sources.get[scanner->srcid].offsets, scanner->id);
 
