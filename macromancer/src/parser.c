@@ -218,11 +218,8 @@ void read_conf(
   p->sman = sman;
   p->engine = new_engine(mm_diaginfos, __mm_diagtype_len, p->sman, onerror);
 
-  SrcID srcid = sman_open(p->sman, file, p->arena);
-  if (srcid == INVALID_SRC_ID)
+  if (!sman_open(&p->scanner, p->sman, file))
     throw_diag(&p->engine, NULL_SPAN, MM_ERR_CANT_OPEN_FILE, file);
-
-  p->scanner = scanner_new(p->sman, srcid);
 
   parse_conf(p);
 

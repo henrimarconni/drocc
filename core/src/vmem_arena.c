@@ -6,7 +6,10 @@
 #include <string.h>
 
 #if defined(__unix__) || defined(__APPLE__)
+#include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #elif defined(_WIN32)
 #include <windows.h>
 #else
@@ -16,6 +19,63 @@
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
+
+void* os_mmap_file(const char* filepath, size_t* out_size) {
+#if defined(__unix__) || defined(__APPLE__)
+  int fd = open(filepath, O_RDONLY);
+  assert(fd != -1);
+
+  struct stat sb;
+  assert(fstat(fd, &sb) != -1);
+  *out_size = sb.st_size;
+
+  if (*out_size == 0) {
+    close(fd);
+    return NULL;
+  }
+
+  // Map the file into virtual memory
+  void* data = mmap(NULL, *out_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  assert(data != MAP_FAILED);
+
+  close(fd);
+  return data;
+
+#elif defined(_WIN32)
+  HANDLE hFile = CreateFileA(
+      filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  assert(hFile != INVALID_HANDLE_VALUE);
+
+  LARGE_INTEGER size;
+  GetFileSizeEx(hFile, &size);
+  *out_size = size.QuadPart;
+
+  if (*out_size == 0) {
+    CloseHandle(hFile);
+    return NULL;
+  }
+
+  HANDLE hMap = CreateFileMappingA(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+  assert(hMap != NULL);
+
+  void* data = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
+  assert(data != NULL);
+
+  CloseHandle(hMap);
+  CloseHandle(hFile);
+  return data;
+#endif
+}
+
+void os_unmap_file(void* data, size_t size) {
+  if (!data)
+    return;
+#if defined(__unix__) || defined(__APPLE__)
+  munmap(data, size);
+#elif defined(_WIN32)
+  UnmapViewOfFile(data);
+#endif
+}
 
 #define ALIGN_UP(n, a) (((n) + (a) - 1) & ~((a) - 1))
 #define DEFAULT_ALIGNMENT 8

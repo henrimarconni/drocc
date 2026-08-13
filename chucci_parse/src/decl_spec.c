@@ -2,7 +2,9 @@
 #include "chucci_parse/parser.h"
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
+#include "core/srcman.h"
 #include <assert.h>
+#include <stdio.h>
 
 static TypeKind resolve_decl_spec_primitive(DeclSpecBuilder* dsb) {
   assert(dsb->num_signed == 0 || dsb->num_unsigned == 0);

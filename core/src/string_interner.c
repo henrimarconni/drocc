@@ -12,7 +12,7 @@
 #include <string.h>
 
 #define EMPTY_INTERNID 0
-#define DEFAULT_SIZE 1024 * 1024 * 1024
+#define DEFAULT_SIZE 1024 * 1024
 
 #define hash_str(bytes, len) wyhash((bytes), (len), 0, _wyp)
 #define is_pow_2(n) ((n & (n - 1)) == 0)

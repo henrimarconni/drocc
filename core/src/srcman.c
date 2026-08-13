@@ -1,3 +1,4 @@
+#include "core/scanner.h"
 #include "core/span.h"
 #include "core/srcman.h"
 #include "core/vec.h"
@@ -5,7 +6,6 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 SourceManager* sman_new() {
@@ -22,6 +22,12 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   info.id = span.offset;
   info.sv = span_sv(sman, span);
   info.file = src;
+
+  if (src->offsets.n == 0) {
+    info.row = 1;
+    info.col = span.offset;
+    return info;
+  }
 
   size_t start = 0;
   size_t end = src->offsets.n - 1;
@@ -44,85 +50,61 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   return info;
 }
 
-SrcID sman_str(SourceManager* man, const bstr name, const bstr contents, size_t len) {
-  SMSource source = {
-      .len = len,
-      .name = name,
-      .contents = contents,
-  };
-
-  // Calculate offsets
-  size_t offset = 0;
-  // first line
-  vec_push(source.offsets, 0);
-  for (bstr curr = contents; curr < contents + len; curr++) {
-    if (*curr == '\n')
-      vec_push(source.offsets, offset + 1);
-    offset++;
-  }
-
-  // Push to vector
-  SrcID srcid = man->sources.n;
-  vec_push(man->sources, source);
-
-  return srcid;
-}
-
-SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
+SrcScanner sman_str(SourceManager* man, const bstr name, const bstr contents, size_t len) {
   // check if file is already loaded
   for (size_t i = 0; i < man->sources.n; i++) {
     if (strcmp(man->sources.get[i].name, name) == 0)
-      return i;
+      return scanner_new(man, i);
   }
 
-  FILE* file = fopen(name, "rb");
-  if (!file)
-    return INVALID_SRC_ID;
+  SMSource source = {
+      .len = len, .name = name, .b_contents = contents, .is_mmaped = false, .offsets = {0}};
 
-  if (fseek(file, 0, SEEK_END) != 0) {
-    fclose(file);
-    return INVALID_SRC_ID;
+  // line 1
+  vec_push(source.offsets, 0);
+
+  SrcID srcid = man->sources.n;
+  vec_push(man->sources, source);
+
+  return scanner_new(man, srcid);
+}
+
+bool sman_open(SrcScanner* out_scanner, SourceManager* man, bstr name) {
+  // check if file is already loaded
+  for (size_t i = 0; i < man->sources.n; i++) {
+    if (strcmp(man->sources.get[i].name, name) == 0) {
+      *out_scanner = scanner_new(man, i);
+      return true;
+    }
   }
 
-  long file_size = ftell(file);
-  if (file_size < 0) {
-    fclose(file);
-    return INVALID_SRC_ID;
-  }
-  rewind(file);
+  // load the file
+  size_t file_size;
+  ostr contents = os_mmap_file(name, &file_size);
 
-  VMEMArenaMark mark = vmarena_mark(arena);
+  // add it to the list
+  SMSource source = {
+      .len = file_size, .name = name, .b_contents = contents, .is_mmaped = true, .offsets = {0}};
 
-  size_t pathlen = strlen(name);
-  bstr dup = vmarena_alloc(arena, pathlen + 1);
-  char* contents = vmarena_alloc(arena, file_size + 1);
+  // line 1
+  vec_push(source.offsets, 0);
 
-  if (!dup || !contents) {
-    vmarena_mark_reset(arena, mark);
-    fclose(file);
-    return INVALID_SRC_ID;
-  }
+  SrcID srcid = man->sources.n;
+  vec_push(man->sources, source);
 
-  // Read data
-  size_t n = fread(contents, 1, file_size, file);
-  fclose(file);
+  *out_scanner = sman_str(man, name, contents, file_size);
+  man->sources.get[out_scanner->id].is_mmaped = true;
 
-  if (n != (size_t)file_size) {
-    vmarena_mark_reset(arena, mark);
-    return INVALID_SRC_ID;
-  }
-
-  // Finalize string copies and initialize struct
-  memcpy(dup, name, pathlen);
-  dup[pathlen] = '\0';
-  contents[file_size] = '\0';
-
-  return sman_str(man, dup, contents, file_size);
+  return true;
 }
 
 void sman_free(SourceManager* sman) {
-  for (size_t i = 0; i < sman->sources.n; i++)
-    vec_destroy(sman->sources.get[i].offsets);
+  for (size_t i = 0; i < sman->sources.n; i++) {
+    SMSource* src = &sman->sources.get[i];
+    vec_destroy(src->offsets);
+    if (src->is_mmaped)
+      os_unmap_file(src->o_contents, src->len);
+  }
   vec_destroy(sman->sources);
   free(sman);
 }

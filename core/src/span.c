@@ -11,7 +11,7 @@
 #define TAB_WIDTH 4
 
 static inline bstr span_str(SourceManager* man, Span span) {
-  return &man->sources.get[span.srcid].contents[span.offset];
+  return &man->sources.get[span.srcid].b_contents[span.offset];
 }
 
 StringView span_sv(SourceManager* man, Span span) {

@@ -105,7 +105,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
           LT_DEFAULT | LT_REVERSE,
           "%.*s",
           token->span.len,
-          ctx->file->contents + token->span.offset);
+          ctx->file->b_contents + token->span.offset);
     }
     // if we see #, mark the next token as pp_cmd
     // so that it gets the same highlighting as #
@@ -117,7 +117,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
           LT_DEFAULT,
           "%.*s",
           token->span.len,
-          ctx->file->contents + token->span.offset);
+          ctx->file->b_contents + token->span.offset);
     }
     // found the marked pp_cmd token, highlight
     // it with same color as #
@@ -129,7 +129,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
           LT_DEFAULT,
           "%.*s",
           token->span.len,
-          ctx->file->contents + token->span.offset);
+          ctx->file->b_contents + token->span.offset);
     }
 
     if (token->kind == OP_PREPROCESS)
@@ -291,9 +291,9 @@ LexerTab* lexertab_init(bstr file) {
   // init
   SourceManager* sman = sman_new();
   VMEMArena* arena = vmarena_new(128 * 1024);
-  SrcID srcid = sman_open(sman, file, arena);
+  SrcScanner scanner;
 
-  if (srcid == INVALID_SRC_ID) {
+  if (!sman_open(&scanner, sman, file)) {
     vmarena_free(arena);
     sman_free(sman);
     return NULL;
@@ -307,14 +307,13 @@ LexerTab* lexertab_init(bstr file) {
   tab->sman = sman;
   tab->arena = arena;
 
-  tab->srcid = srcid;
+  tab->srcid = scanner.srcid;
   tab->percentage1 = 60;
   tab->percentage1 = 50;
   tab->scroll_y = 0;
   tab->selected = 0;
-  tab->srcid = srcid;
 
-  TokenStream ts = lexer_new(sman, srcid, interner);
+  TokenStream ts = lexer_new(sman, scanner, interner);
   Token token = ts_next(&ts);
 
   while (token.kind != TOK_EOF) {

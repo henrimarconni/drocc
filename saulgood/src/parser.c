@@ -173,11 +173,10 @@ void parse_files(ParserState* state, SourceManager* sman, InputFiles files, jmp_
 
   for (size_t i = 0; i < files.n; i++) {
     TestFile file = {0};
-    SrcID srcid = sman_open(sman, files.get[i], state->arena);
-    if (srcid == INVALID_SRC_ID)
+
+    if (!sman_open(&file.scanner, sman, files.get[i]))
       throw_diag(&state->engine, NULL_SPAN, SG_ERR_CANT_OPEN_FILE, files.get[i]);
 
-    file.scanner = scanner_new(sman, srcid);
     parse_file(state, &file);
     vec_push(state->files, file);
   }

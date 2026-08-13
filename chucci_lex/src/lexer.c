@@ -14,11 +14,11 @@
 
 static InternID keyword_ids[_keyword_count];
 
-TokenStream lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner) {
+TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* interner) {
   Lexer* lexer = malloc(sizeof(Lexer));
   *lexer = (Lexer){0};
   lexer->sman = sman;
-  lexer->scanner = scanner_new(sman, srcid);
+  lexer->scanner = scanner;
   lexer->interner = interner;
 
 // TODO: Relative caching (instead of kind, do (kind - first keyword), so that order doesnt matter)

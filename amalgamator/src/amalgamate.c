@@ -35,9 +35,9 @@ static inline void skip_unwanted_str(SrcScanner* scanner) {
 
 static SrcScanner include(Amalgamator* a, bstr fname) {
   // try to open file directly
-  SrcID srcid = sman_open(a->sman, fname, a->arena);
-  if (srcid != INVALID_SRC_ID)
-    return scanner_new(a->sman, srcid);
+  SrcScanner scanner;
+  if (sman_open(&scanner, a->sman, fname))
+    return scanner;
 
   // try all directory + file combinations
   size_t fnamelen = strlen(fname);
@@ -55,11 +55,8 @@ static SrcScanner include(Amalgamator* a, bstr fname) {
     memcpy(path + dirlen + 1, fname, fnamelen);
     path[dirlen + 1 + fnamelen] = '\0';
 
-    srcid = sman_open(a->sman, path, a->arena);
-    printf("%s sheet %d\n", path, srcid);
-
-    if (srcid != INVALID_SRC_ID)
-      return scanner_new(a->sman, srcid);
+    if (sman_open(&scanner, a->sman, path))
+      return scanner;
 
     // reset arena on failure
     vmarena_mark_reset(a->arena, mark);
@@ -123,12 +120,11 @@ StringBuilder amalgamate(Amalgamator* a, jmp_buf* onerror) {
 
   for (size_t i = 0; i < a->files.n; i++) {
     bstr fname = a->files.get[i];
-    SrcID srcid = sman_open(a->sman, fname, a->arena);
+    SrcScanner scanner;
 
-    if (srcid == INVALID_SRC_ID)
+    if (!sman_open(&scanner, a->sman, fname))
       throw_diag(&a->engine, NULL_SPAN, AMAL_ERR_FILE_NOT_FOUND, fname);
 
-    SrcScanner scanner = scanner_new(a->sman, srcid);
     append_processed(a, &scanner);
   }
   append_ch(&a->output, '\0');

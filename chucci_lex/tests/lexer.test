@@ -108,8 +108,8 @@ $test "Lexer test" : chucci_lex(lexer) {
              "    return 0;\n"
              "}\n";
   size_t len = strlen(str);
-  SrcID srcid = sman_str(sman, "scratch", str, len);
-  TokenStream ts = lexer_new(sman, srcid, interner);
+  SrcScanner scanner = sman_str(sman, "scratch", str, len);
+  TokenStream ts = lexer_new(sman, scanner, interner);
 
   Token tokens[] = {
       (Token){.span = {.offset = 68, .len = 1, .srcid = 0}, .kind = OP_PREPROCESS, .ident = 0},

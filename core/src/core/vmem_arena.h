@@ -69,5 +69,7 @@ void vmarena_free(VMEMArena *arena);
 
 void* os_demand_alloc(size_t size);
 void os_demand_free(void* data, size_t size);
+void* os_mmap_file(const char* filepath, size_t* out_size);
+void os_unmap_file(void* data, size_t size);
 
 #endif

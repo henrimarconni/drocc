@@ -14,11 +14,13 @@ SrcScanner scanner_new(SourceManager* sman, SrcID id) {
 
 int nextch(SrcScanner* scanner) {
   SMSource file = scanner->sman->sources.get[scanner->srcid];
-  int ch = file.contents[scanner->id++];
+  int ch = file.b_contents[scanner->id++];
   if (ch == '\0') {
     scanner->id--;
     return EOF;
   }
+  if (ch == '\n')
+    vec_push(scanner->sman->sources.get[scanner->srcid].offsets, scanner->id);
 
   return ch;
 }
@@ -41,7 +43,7 @@ int peekch(SrcScanner* scanner) {
   SMSource file = scanner->sman->sources.get[scanner->srcid];
   if (scanner->id >= file.len)
     return EOF;
-  int ch = file.contents[scanner->id];
+  int ch = file.b_contents[scanner->id];
   return ch == '\0' ? EOF : ch;
 }
 
@@ -49,7 +51,7 @@ int peeknextch(SrcScanner* scanner) {
   SMSource file = scanner->sman->sources.get[scanner->srcid];
   if (scanner->id + 1 >= file.len)
     return EOF;
-  int ch = file.contents[scanner->id + 1];
+  int ch = file.b_contents[scanner->id + 1];
   return ch == '\0' ? EOF : ch;
 }
 
