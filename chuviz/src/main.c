@@ -1,17 +1,19 @@
 #include "chuviz/lexer_tab.h"
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
+#include "core/signals.h"
 #include "libterm/libterm.h"
-#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
-void cleanup_and_exit(int sig) {
+void handler(int sig) {
   lt_shutdown();
-  exit(sig);
+  printf("chuviz exiting with signal: %d\n", sig);
+  exit(1);
 }
 
 void parse_args(int argc, char** argv, bstr* file) {
+  register_crash_handlers(handler);
   ce_initopt(argc, argv);
   ce_add_meta("chuviz", "The chucci visualizer", "./chuviz file.c");
   ce_addopt("help", 'h', 0, "Print help");
@@ -41,10 +43,6 @@ void parse_args(int argc, char** argv, bstr* file) {
 void event_loop(LexerTab* tab) {
   lt_init();
   lt_set_output_mode(LT_OUTPUT_TRUECOLOR);
-
-  signal(SIGINT, cleanup_and_exit);
-  signal(SIGTERM, cleanup_and_exit);
-  signal(SIGSEGV, cleanup_and_exit);
 
   while (true) {
     lt_clear();

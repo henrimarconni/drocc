@@ -7,6 +7,7 @@
 #define FS_UTILS_H
 
 #include "core/stringdef.h"
+#include <stdbool.h>
 
 #define ANSI_RED "\x1b[31m"
 #define ANSI_YELLOW "\x1b[33m"

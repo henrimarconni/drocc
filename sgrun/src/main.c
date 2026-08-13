@@ -1,10 +1,13 @@
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
+#include "core/signals.h"
 #include "core/stringdef.h"
 #include "core/strutils.h"
 #include "sgrun/loader.h"
 #include "sgrun/runner.h"
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static void parse_test_info(bstr str, int* tests_len, bstr* name) {
   bstr tests_len_str;
@@ -24,7 +27,13 @@ static void parse_test_info(bstr str, int* tests_len, bstr* name) {
 const int DEFAULT_MAX_JOBS = 2;
 const size_t DEFAULT_MAX_TIMEOUT_MS = 10000;
 
+void handler(int sig) {
+  printf("sgrun: caught signal %d", sig);
+  exit(1);
+}
+
 int main(int argc, char** argv) {
+  register_crash_handlers(handler);
   bstr runner_exe = argv[0];
   ce_initopt(argc, argv);
   ce_add_meta("sgrun", "SaulGood Test Runner", "./sgrun libtest1.so libtest2.so");
