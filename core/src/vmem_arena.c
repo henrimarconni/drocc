@@ -1,5 +1,6 @@
 #include "core/vmem_arena.h"
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,16 +20,33 @@
 #define ALIGN_UP(n, a) (((n) + (a) - 1) & ~((a) - 1))
 #define DEFAULT_ALIGNMENT 8
 
+void* os_demand_alloc(size_t size) {
+  void* data = NULL;
+#if defined(__unix__) || defined(__APPLE__)
+  data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  assert(data != MAP_FAILED);
+#elif defined(_WIN32)
+  data = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  assert(data);
+#endif
+  return data;
+}
+
+void os_demand_free(void* data, size_t size) {
+  if (!data)
+    return;
+#if defined(__unix__) || defined(__APPLE__)
+  assert(munmap(data, size) != -1);
+#elif defined(_WIN32)
+  assert(VirtualFree(data, 0, MEM_RELEASE) != 0);
+#endif
+}
+
 VMEMArena* vmarena_new(size_t cap) {
   VMEMArena* arena = malloc(sizeof(VMEMArena));
   arena->pos = 0;
   arena->cap = cap;
-#if defined(__unix__) || defined(__APPLE__)
-  arena->data = mmap(NULL, cap, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#elif defined(_WIN32)
-  arena->data = VirtualAlloc(NULL, cap, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-  assert(arena.data);
-#endif
+  arena->data = os_demand_alloc(cap);
   return arena;
 }
 
@@ -65,12 +83,6 @@ void vmarena_mark_reset(VMEMArena* arena, VMEMArenaMark mark) { arena->pos = mar
 VMEMArenaMark vmarena_mark(VMEMArena* arena) { return (VMEMArenaMark){.pos = arena->pos}; }
 
 void vmarena_free(VMEMArena* arena) {
-  if (!arena->data)
-    return;
-#if defined(__unix__) || defined(__APPLE__)
-  assert(munmap(arena->data, arena->cap) != -1);
-#elif defined(_WIN32)
-  assert(VirtualFree(arena->data, 0, MEM_RELEASE) != 0);
-#endif
+  os_demand_free(arena->data, arena->cap);
   free(arena);
 }

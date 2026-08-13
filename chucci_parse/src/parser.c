@@ -31,6 +31,7 @@ TopLevelNode parser_next(Parser* p) {
   print_decl(p, decl);
 
   base = unwind_declarator(decl, p, base);
+
   print_type(base, p->ty_int);
   printf("\n");
   fflush(stdout);

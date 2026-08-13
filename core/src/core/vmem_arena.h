@@ -66,5 +66,7 @@ void vmarena_free(VMEMArena *arena);
 #define vmarena_realloc(arena, ptr, old_size, size) _vmarena_realloc(arena, ptr, old_size, size) 
 #endif
 
+void* os_demand_alloc(size_t size);
+void os_demand_free(void* data, size_t size);
 
 #endif

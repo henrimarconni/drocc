@@ -137,7 +137,7 @@ void print_decl(Parser* p, Declarator* decl) {
       printf("ARRAY");
       break;
     case DECL_IDENT:
-      printf("IDENT(%s)", interner_fetch_sv(p->interner, decl->ident).str);
+      printf("IDENT(%s)", interner_fetch_str(p->interner, decl->ident));
       break;
     case DECL_FUNCTION:
       printf("FUNCTION");
