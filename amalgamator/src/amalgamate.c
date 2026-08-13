@@ -36,8 +36,22 @@ static inline void skip_unwanted_str(SrcScanner* scanner) {
 static SrcScanner include(Amalgamator* a, bstr fname) {
   // try to open file directly
   SrcScanner scanner;
-  if (sman_open(&scanner, a->sman, fname))
+  VMEMArenaMark mark = vmarena_mark(a->arena);
+
+  size_t len = strlen(fname);
+  bstr path = vmarena_alloc(a->arena, len + 1);
+  mempcpy(path, fname, len);
+  path[len] = '\0';
+
+  // sman_open fname must not get modified
+  // however, it can get modified if
+  // it is a static buffer (in amalgamate function)
+  // so we need to duplicate it
+  if (sman_open(&scanner, a->sman, path))
     return scanner;
+
+  // reset on failure
+  vmarena_mark_reset(a->arena, mark);
 
   // try all directory + file combinations
   size_t fnamelen = strlen(fname);
