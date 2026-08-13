@@ -9,7 +9,6 @@
 #include "macromancer/mm_diag.h"
 #include "macromancer/mmtok.h"
 #include "macromancer/parser.h"
-#include <assert.h>
 #include <setjmp.h>
 #include <stdbool.h>
 #include <stddef.h>

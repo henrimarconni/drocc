@@ -28,7 +28,8 @@ void* os_mmap_file(const char* filepath, size_t* out_size) {
   assert(fd != -1);
 
   struct stat sb;
-  assert(fstat(fd, &sb) != -1);
+  int res = fstat(fd, &sb);
+  assert(res != -1);
   *out_size = sb.st_size;
 
   if (*out_size == 0) {
