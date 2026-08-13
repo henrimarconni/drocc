@@ -20,7 +20,6 @@ typedef struct {
   StorageClass sc;
 } VarFnDecl;
 
-
 /// Type of Top Level Nodes
 typedef enum {
   /// type var = ...;
@@ -35,14 +34,12 @@ typedef enum {
   // TLN_TYPE_DECL => struct/enum/union + typedefs
 } TLNASTKind;
 
-
 typedef struct {
   TLNASTKind kind;
   union {
     VarFnDecl varfn_decl;
   };
 } TopLevelNode;
-
 
 /// Top level node abstract-syntax-tree stream
 typedef struct {
@@ -51,10 +48,10 @@ typedef struct {
 
   ///  Mapping InternID to SymbolID
   vec(SymbolID) symbolids;
-  
+
   /// Mapping InternID to SymbolID specifically for struct/enum/union without any typedef
   vec(SymbolID) tagged_symbolids;
-  
+
   /// Type interner
   TypeInterner* ty_int;
 
@@ -69,10 +66,14 @@ typedef struct {
   Create new parser
   @param ts Consumes the provided TokenStream
 */
-Parser parser_new(TokenStream ts, VMEMArena* arena, SourceManager* sman, StringInterner* interner);
+Parser parser_new(
+    TokenStream ts,
+    VMEMArena* arena,
+    SourceManager* sman,
+    StringInterner* interner,
+    TypeInterner* ty_int);
 
 /// Get the next TopLevelNode
 TopLevelNode parser_next(Parser* p);
-
 
 #endif

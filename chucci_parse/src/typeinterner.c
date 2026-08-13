@@ -1,5 +1,6 @@
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
+#include "core/infvec.h"
 #include "core/vec.h"
 #include "thirdparty/wyhash.h"
 #include <assert.h>
@@ -8,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_SIZE 1024 * 1024 * 256
 #define EMPTY_TYPEID 0
 #define TY_RESIZE_RATIO 0.80
 #define hash_bytes(bytes, len) wyhash((bytes), (len), 0, _wyp)
@@ -23,9 +25,12 @@ TypeInterner* ty_interner_new() {
   *interner = (TypeInterner){0};
   interner->cap = DEFAULT_TY_INTERNER_CAP;
 
+  infvec_init(interner->types, MAX_SIZE);
+  infvec_init(interner->payloads, MAX_SIZE);
+
   // reserve 0 as EMPTY_TYPEID and init vectors
   interner->len = 1;
-  vec_push(interner->types, (Type){0});
+  infvec_push(interner->types, (Type){0});
   vec_resize(interner->entries, interner->cap);
   memset(interner->entries.get, 0, interner->cap * sizeof(TypeID));
   return interner;
@@ -109,8 +114,8 @@ TypeID ty_intern(TypeInterner* interner, TyQualifier qual, uint32_t* payload, ui
   Type type = {.qual = qual, .payload = {interner->payloads.n, count}};
 
   for (uint32_t i = 0; i < count; i++)
-    vec_push(interner->payloads, payload[i]);
-  vec_push(interner->types, type);
+    infvec_push(interner->payloads, payload[i]);
+  infvec_push(interner->types, type);
   return *entry;
 }
 
@@ -118,3 +123,10 @@ void* ty_payload_base(TypeInterner* interner, uint32_t offset) {
   return &interner->payloads.get[offset];
 }
 Type ty_fetch(TypeInterner* interner, TypeID id) { return interner->types.get[id]; }
+
+void tyint_free(TypeInterner* interner) {
+  infvec_destroy(interner->payloads);
+  infvec_destroy(interner->types);
+  vec_destroy(interner->entries);
+  free(interner);
+}
