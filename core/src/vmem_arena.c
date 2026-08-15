@@ -1,39 +1,146 @@
 #include "core/vmem_arena.h"
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+// unix
 #if defined(__unix__) || defined(__APPLE__)
+#include <fcntl.h>
 #include <sys/mman.h>
-#elif defined(_WIN32)
-#include <windows.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+// MAP_ANON falllback
+#ifndef MAP_ANON
+#ifdef MAP_ANONYMOUS
+#define MAP_ANON MAP_ANONYMOUS
 #else
-#error "Unsupported platform"
+#define MAP_ANON 0x1000
+#endif
 #endif
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-#define ALIGN_UP(n, a) (((n) + (a) - 1) & ~((a) - 1))
+// windows
+#elif defined(_WIN32)
+#include <windows.h>
+#else
+#error "Unsupported platform"
+#endif
+
+#define COMMIT_SIZE 4096
+
+void* os_mmap_file(const char* filepath, size_t* out_size) {
+#if defined(__unix__) || defined(__APPLE__)
+  int fd = open(filepath, O_RDONLY);
+  assert(fd != -1);
+
+  struct stat sb;
+  int res = fstat(fd, &sb);
+  (void)res;
+  assert(res != -1);
+  *out_size = (size_t)sb.st_size;
+
+  if (*out_size == 0) {
+    close(fd);
+    return NULL;
+  }
+
+  // Map the file into virtual memory
+  void* data = mmap(NULL, *out_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  assert(data != MAP_FAILED);
+
+  close(fd);
+  return data;
+
+#elif defined(_WIN32)
+  HANDLE hFile = CreateFileA(
+      filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  assert(hFile != INVALID_HANDLE_VALUE);
+
+  LARGE_INTEGER size;
+  GetFileSizeEx(hFile, &size);
+  *out_size = (size_t)size.QuadPart;
+
+  if (*out_size == 0) {
+    CloseHandle(hFile);
+    return NULL;
+  }
+
+  HANDLE hMap = CreateFileMappingA(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+  assert(hMap != NULL);
+
+  void* data = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
+  assert(data != NULL);
+
+  CloseHandle(hMap);
+  CloseHandle(hFile);
+  return data;
+#endif
+}
+
+void os_unmap_file(void* data, size_t size) {
+  if (!data)
+    return;
+#if defined(__unix__) || defined(__APPLE__)
+  munmap(data, size);
+#elif defined(_WIN32)
+  (void)size;
+  UnmapViewOfFile(data);
+#endif
+}
+
+#define ALIGN_UP(n, a) (((n) + (a) - 1ULL) & ~((a) - 1ULL))
 #define DEFAULT_ALIGNMENT 8
+
+void* os_vm_reserve(size_t size) {
+#if defined(_WIN32)
+  return VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_NOACCESS);
+#else
+  return mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#endif
+}
+
+void os_vm_commit(void* ptr, size_t size) {
+#if defined(_WIN32)
+  VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
+#else
+  mprotect(ptr, size, PROT_READ | PROT_WRITE);
+#endif
+}
+
+void os_vm_free(void* ptr, size_t size) {
+#if defined(_WIN32)
+  (void)size;
+  VirtualFree(ptr, 0, MEM_RELEASE);
+#else
+  munmap(ptr, size);
+#endif
+}
 
 VMEMArena* vmarena_new(size_t cap) {
   VMEMArena* arena = malloc(sizeof(VMEMArena));
   arena->pos = 0;
   arena->cap = cap;
-#if defined(__unix__) || defined(__APPLE__)
-  arena->data = mmap(NULL, cap, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#elif defined(_WIN32)
-  arena->data = VirtualAlloc(NULL, cap, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-  assert(arena.data);
-#endif
+  arena->data = os_vm_reserve(cap);
+  arena->committed_len = 0;
   return arena;
 }
 
 void* _vmarena_alloc(VMEMArena* arena, size_t size) {
   arena->pos = ALIGN_UP(arena->pos, DEFAULT_ALIGNMENT);
+
+  while (arena->pos + size > arena->committed_len) {
+    void* commit_ptr = (char*)arena->data + arena->committed_len;
+    os_vm_commit(commit_ptr, COMMIT_SIZE);
+    arena->committed_len += COMMIT_SIZE;
+  }
+
   assert(arena->cap - arena->pos >= size && arena->data);
   arena->pos += size;
   return arena->data + arena->pos - size;
@@ -48,7 +155,7 @@ void* _vmarena_calloc(VMEMArena* arena, size_t size) {
 void* _vmarena_realloc(VMEMArena* arena, void* ptr, size_t old_size, size_t new_size) {
   if (old_size >= new_size)
     return ptr;
-  else if (arena->data + arena->pos == ptr + old_size) {
+  else if (arena->data + arena->pos == (uint8_t*)ptr + old_size) {
     arena->pos += new_size - old_size;
     return ptr;
   } else {
@@ -65,12 +172,6 @@ void vmarena_mark_reset(VMEMArena* arena, VMEMArenaMark mark) { arena->pos = mar
 VMEMArenaMark vmarena_mark(VMEMArena* arena) { return (VMEMArenaMark){.pos = arena->pos}; }
 
 void vmarena_free(VMEMArena* arena) {
-  if (!arena->data)
-    return;
-#if defined(__unix__) || defined(__APPLE__)
-  assert(munmap(arena->data, arena->cap) != -1);
-#elif defined(_WIN32)
-  assert(VirtualFree(arena->data, 0, MEM_RELEASE) != 0);
-#endif
+  os_vm_free(arena->data, arena->cap);
   free(arena);
 }

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 SrcScanner scanner_new(SourceManager* sman, SrcID id) {
@@ -14,11 +15,14 @@ SrcScanner scanner_new(SourceManager* sman, SrcID id) {
 
 int nextch(SrcScanner* scanner) {
   SMSource file = scanner->sman->sources.get[scanner->srcid];
-  int ch = file.contents[scanner->id++];
-  if (ch == '\0') {
-    scanner->id--;
+
+  if (scanner->id >= file.len)
     return EOF;
-  }
+
+  int ch = file.b_contents[scanner->id++];
+
+  if (ch == '\n')
+    vec_push(scanner->sman->sources.get[scanner->srcid].offsets, scanner->id);
 
   return ch;
 }
@@ -41,7 +45,7 @@ int peekch(SrcScanner* scanner) {
   SMSource file = scanner->sman->sources.get[scanner->srcid];
   if (scanner->id >= file.len)
     return EOF;
-  int ch = file.contents[scanner->id];
+  int ch = file.b_contents[scanner->id];
   return ch == '\0' ? EOF : ch;
 }
 
@@ -49,7 +53,7 @@ int peeknextch(SrcScanner* scanner) {
   SMSource file = scanner->sman->sources.get[scanner->srcid];
   if (scanner->id + 1 >= file.len)
     return EOF;
-  int ch = file.contents[scanner->id + 1];
+  int ch = file.b_contents[scanner->id + 1];
   return ch == '\0' ? EOF : ch;
 }
 
@@ -66,7 +70,9 @@ Span span_begin(SrcScanner* scanner) {
   return span;
 }
 
-void span_end(Span* span, SrcScanner* scanner) { span->len = scanner->id - span->offset; }
+void span_end(Span* span, SrcScanner* scanner) {
+  span->len = (uint16_t)scanner->id - (uint16_t)span->offset;
+}
 SrcScanner scanner_new(SourceManager* sman, SrcID id);
 
 void scanner_rewind(SrcScanner* scanner, Span span) { scanner->id = span.offset; }

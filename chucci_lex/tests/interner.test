@@ -10,7 +10,7 @@ $c {
 }
 
 $c {
-  bool interner_fuzz(char* buf, size_t len) {
+  static bool interner_fuzz(char* buf, size_t len) {
     if (len == 0)
       return false;
 
@@ -33,18 +33,18 @@ $test "Interner Test" : core(interner) {
   InternID id2 = intern(strv, interner);
   InternID id3 = intern(strv, interner);
   InternID id4 = intern(strv, interner);
-  printf("%d == %d == %d == %d == 0\n", id, id2, id3, id4);
+  printf("%d == %d == %d == %d == 1\n", id, id2, id3, id4);
   fflush(stdout);
-  assert(id == id2 && id == id3 && id == id4 && id == 0);
+  assert(id == id2 && id == id3 && id == id4 && id == 1);
 
   strv = strview("69420");
   id = intern(strv, interner);
   id2 = intern(strv, interner);
   id3 = intern(strv, interner);
   id4 = intern(strv, interner);
-  printf("%d == %d == %d == %d == 1\n", id, id2, id3, id4);
+  printf("%d == %d == %d == %d == 2\n", id, id2, id3, id4);
   fflush(stdout);
-  assert(id == id2 && id == id3 && id == id4 && id == 1);
+  assert(id == id2 && id == id3 && id == id4 && id == 2);
 
   interner_free(interner);
   vmarena_free(arena);
@@ -58,22 +58,29 @@ $test "Interner Resize Test" : core(interner_resize) {
 
   StringView strv;
   strv.str = buf;
-  size_t i = 0;
-  size_t max_cap = 65535;
+  uint32_t i = 1;
+  uint32_t max_cap = 65535;
 
-  for (size_t n = 1; n < sizeof(buf) - 1; n++) {
-    if (i > max_cap)
+  for (uint32_t n = 1; n < sizeof(buf) - 1; n++) {
+    if (i >= max_cap)
       break;
     strv.len = n;
     memset(buf, 0, sizeof(buf));
-    do {
+    while (interner_fuzz(buf, n)) {
       InternID id = intern(strv, interner);
-      printf("%d == %zu for `%.*s` with len = %d\n", id, i, strv.len, strv.str, strv.len);
+      printf("%d == %d for [", id, i);
+      for (size_t x = 0; x < strv.len; x++) {
+        unsigned char c = (unsigned char)strv.str[x];
+        printf("%d", c);
+        if (x + 1 != strv.len)
+          printf(", ");
+      }
+      printf("] with len = %d\n", strv.len);
       fflush(stdout);
       assert(i++ == id);
       if (i > max_cap)
         break;
-    } while (interner_fuzz(buf, n));
+    }
   }
 
   interner_free(interner);

@@ -1,3 +1,4 @@
+#include "core/scanner.h"
 #include "core/span.h"
 #include "core/srcman.h"
 #include "core/vec.h"
@@ -5,11 +6,11 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
-SourceManager sman_new() {
-  SourceManager sman = {0};
+SourceManager* sman_new(void) {
+  SourceManager* sman = malloc(sizeof(SourceManager));
+  *sman = (SourceManager){0};
   return sman;
 }
 
@@ -22,12 +23,18 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   info.sv = span_sv(sman, span);
   info.file = src;
 
-  size_t start = 0;
-  size_t end = src->offsets.n - 1;
-  size_t row = 0;
+  if (src->offsets.n == 0) {
+    info.row = 1;
+    info.col = span.offset;
+    return info;
+  }
+
+  uint32_t start = 0;
+  uint32_t end = src->offsets.n - 1;
+  uint32_t row = 0;
 
   while (start <= end) {
-    size_t mid = start + (end - start) / 2;
+    uint32_t mid = start + (end - start) / 2;
     uint32_t line_start_offset = src->offsets.get[mid];
 
     if (line_start_offset <= info.id) {
@@ -43,80 +50,59 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
   return info;
 }
 
-SrcID sman_str(SourceManager* man, const bstr name, const bstr contents, size_t len) {
-  SMSource source = {
-      .len = len,
-      .name = name,
-      .contents = contents,
-  };
-
-  // Calculate offsets
-  size_t offset = 0;
-  // first line
-  vec_push(source.offsets, 0);
-  for (bstr curr = contents; curr < contents + len; curr++) {
-    if (*curr == '\n')
-      vec_push(source.offsets, offset + 1);
-    offset++;
+SrcScanner sman_str(SourceManager* man, const bstr name, const bstr contents, size_t len) {
+  // check if file is already loaded
+  for (uint16_t i = 0; i < man->sources.n; i++) {
+    if (strcmp(man->sources.get[i].name, name) == 0)
+      return scanner_new(man, i);
   }
 
-  // Push to vector
-  SrcID srcid = man->sources.n;
+  SMSource source = {
+      .len = len, .name = name, .b_contents = contents, .is_mmaped = false, .offsets = {0}};
+
+  // line 1
+  vec_push(source.offsets, 0);
+
+  SrcID srcid = (SrcID)man->sources.n;
   vec_push(man->sources, source);
 
-  return srcid;
+  return scanner_new(man, srcid);
 }
 
-SrcID sman_open(SourceManager* man, bstr name, VMEMArena* arena) {
+bool sman_open(SrcScanner* out_scanner, SourceManager* man, bstr name) {
   // check if file is already loaded
-  for (size_t i = 0; i < man->sources.n; i++) {
-    if (strcmp(man->sources.get[i].name, name) == 0)
-      return i;
+  for (uint16_t i = 0; i < man->sources.n; i++) {
+    if (strcmp(man->sources.get[i].name, name) == 0) {
+      *out_scanner = scanner_new(man, i);
+      return true;
+    }
   }
 
-  FILE* file = fopen(name, "rb");
-  if (!file)
-    return INVALID_SRC_ID;
+  // load the file
+  size_t file_size;
+  ostr contents = os_mmap_file(name, &file_size);
 
-  if (fseek(file, 0, SEEK_END) != 0) {
-    fclose(file);
-    return INVALID_SRC_ID;
-  }
+  // add it to the list
+  SMSource source = {
+      .len = file_size, .name = name, .b_contents = contents, .is_mmaped = true, .offsets = {0}};
 
-  long file_size = ftell(file);
-  if (file_size < 0) {
-    fclose(file);
-    return INVALID_SRC_ID;
-  }
-  rewind(file);
+  // line 1
+  vec_push(source.offsets, 0);
 
-  VMEMArenaMark mark = vmarena_mark(arena);
+  vec_push(man->sources, source);
+  *out_scanner = sman_str(man, name, contents, file_size);
+  man->sources.get[out_scanner->id].is_mmaped = true;
 
-  size_t pathlen = strlen(name);
-  bstr dup = vmarena_alloc(arena, pathlen + 1);
-  char* contents = vmarena_alloc(arena, file_size + 1);
-
-  if (!dup || !contents) {
-    vmarena_mark_reset(arena, mark);
-    fclose(file);
-    return INVALID_SRC_ID;
-  }
-
-  // Read data
-  size_t n = fread(contents, 1, file_size, file);
-  fclose(file);
-
-  if (n != (size_t)file_size) {
-    vmarena_mark_reset(arena, mark);
-    return INVALID_SRC_ID;
-  }
-
-  // Finalize string copies and initialize struct
-  memcpy(dup, name, pathlen);
-  dup[pathlen] = '\0';
-  contents[file_size] = '\0';
-
-  return sman_str(man, dup, contents, file_size);
+  return true;
 }
 
-void sman_free(SourceManager* sman) { vec_destroy(sman->sources); }
+void sman_free(SourceManager* sman) {
+  for (size_t i = 0; i < sman->sources.n; i++) {
+    SMSource* src = &sman->sources.get[i];
+    vec_destroy(src->offsets);
+    if (src->is_mmaped)
+      os_unmap_file(src->o_contents, src->len);
+  }
+  vec_destroy(sman->sources);
+  free(sman);
+}

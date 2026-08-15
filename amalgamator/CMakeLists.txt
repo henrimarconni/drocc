@@ -15,4 +15,5 @@ target_link_libraries(
   amalgamator
   PRIVATE
   core
+  drocc_warn
 )

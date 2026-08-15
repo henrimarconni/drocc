@@ -1,8 +1,3 @@
-#define SG_RUNNER_DEV
-#include "sgrun/sg_api.h"
-#include <assert.h>
-#include <stdlib.h>
-
 #ifdef _WIN32
 #include <io.h>
 #define sg_dup _dup
@@ -10,6 +5,8 @@
 #define sg_fileno _fileno
 #define sg_close _close
 #else
+#define _POSIX_C_SOURCE 200809L
+#include <stdio.h>
 #include <unistd.h>
 #define sg_dup dup
 #define sg_dup2 dup2
@@ -17,9 +14,14 @@
 #define sg_close close
 #endif
 
+#define SG_RUNNER_DEV
+#include "sgrun/capture.h"
+#include "sgrun/sg_api.h"
+#include <assert.h>
+#include <stdlib.h>
+
 void capture_begin(SGCapture* cap, FILE* stream) {
   fflush(stream);
-
   cap->stream = stream;
   cap->saved_fd = sg_dup(sg_fileno(stream));
   assert(cap->saved_fd != -1);
@@ -53,7 +55,7 @@ char* capture_end(SGCapture* cap) {
   char* buf = malloc((size_t)len + 1);
   assert(buf);
 
-  fread(buf, 1, (size_t)len, cap->tmp);
+  (void)fread(buf, 1, (size_t)len, cap->tmp);
   buf[len] = '\0';
 
   fflush(cap->tmp);

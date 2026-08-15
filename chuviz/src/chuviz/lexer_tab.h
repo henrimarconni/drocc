@@ -4,22 +4,25 @@
 #include "chucci_lex/token.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
-#include "core/vec.h"
+#include "core/vmem_arena.h"
 #include "libterm/libterm.h"
 #include <stddef.h>
 
 typedef struct {
   SourceManager* sman;
   StringInterner* interner;
-  vec(Token) tokens; // flattened TokenStream
+  TokenVec tokens; // flattened TokenStream
+  VMEMArena* arena;
+
   size_t selected; // selected token
   SrcID srcid;
   int percentage1;
-  size_t scroll_y;
+  int scroll_y;
 } LexerTab;
 
 
-LexerTab lexertab_init(SourceManager* sman, StringInterner* interner, SrcID srcid);
+LexerTab* lexertab_init(bstr file);
+void lexertab_free(LexerTab* tab);
 void lexertab_input(LexerTab* tab, struct lt_event* event);
 void render_lexert(LexerTab* tab);
 

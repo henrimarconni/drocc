@@ -1,5 +1,6 @@
 #include "sgrun/sg_fmt.h"
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -11,7 +12,7 @@ void print_heading(char ch, bstr fmt, ...) {
   int len = vsnprintf(title, sizeof(title), fmt, args);
   va_end(args);
 
-  size_t used = len + 4; // two spaces on each side
+  uint32_t used = (uint32_t)len + 4; // two spaces on each side
   if (used >= HEADING_WIDTH) {
     size_t max_title = HEADING_WIDTH - 4;
 

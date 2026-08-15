@@ -6,10 +6,12 @@
 #include "macromancer/mm_diag.h"
 #include "macromancer/mmtok.h"
 #include "macromancer/parser.h"
+#include <assert.h>
 #include <ctype.h>
+#include <stdint.h>
 #include <string.h>
 
-void skip_comment(SrcScanner* scanner) {
+static void skip_comment(SrcScanner* scanner) {
   if (peekch(scanner) == '#') {
     while (peekch(scanner) != '\n' && peekch(scanner) != EOF) {
       nextch(scanner);
@@ -18,7 +20,7 @@ void skip_comment(SrcScanner* scanner) {
 }
 
 void skip_unwanted(SrcScanner* scanner) {
-  int last_id;
+  uint32_t last_id;
   do {
     last_id = scanner->id;
     skip_comment(scanner);
@@ -26,12 +28,12 @@ void skip_unwanted(SrcScanner* scanner) {
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-MMToken tok_ident(MMParser* p) {
+static MMToken tok_ident(MMParser* p) {
   Span span = span_begin(&p->scanner);
 
   nextch(&p->scanner);
-  char ch = peekch(&p->scanner);
-  while (ch != EOF && (isalnum(ch) || ch == '_')) {
+  int ch = peekch(&p->scanner);
+  while (ch != EOF && (isalnum((unsigned char)ch) || ch == '_')) {
     nextch(&p->scanner);
     ch = peekch(&p->scanner);
   }
@@ -49,11 +51,17 @@ MMToken tok_ident(MMParser* p) {
   return tok;
 }
 
-MMToken tok_surround(MMParser* p, char start, char end) {
+static MMToken tok_surround(MMParser* p, char start, char end) {
   Span span = span_begin(&p->scanner);
-  nextch(&p->scanner); // start character
+  int ch = nextch(&p->scanner); // start character
 
-  int ch = peekch(&p->scanner);
+  // we dont need to throw because tok_surround is always called
+  // after checking if first character is `start`
+  // @see tok_angstr and tok_str
+  assert(ch == start);
+  (void)start;
+
+  ch = peekch(&p->scanner);
   while (ch != end && ch != EOF) {
     nextch(&p->scanner);
     ch = peekch(&p->scanner);
@@ -75,24 +83,24 @@ MMToken tok_surround(MMParser* p, char start, char end) {
   return tok;
 }
 
-MMToken tok_angstr(MMParser* p) {
+static MMToken tok_angstr(MMParser* p) {
   MMToken tok = tok_surround(p, '<', '>');
   tok.type = MMT_ANGSTR;
   return tok;
 }
 
-MMToken tok_str(MMParser* p) {
+static MMToken tok_str(MMParser* p) {
   MMToken tok = tok_surround(p, '"', '"');
   tok.type = MMT_STR;
   return tok;
 }
 
-MMToken tok_keyw(MMParser* p) {
+static MMToken tok_keyw(MMParser* p) {
   Span span = span_begin(&p->scanner);
   nextch(&p->scanner); // '$'
-  char ch = peekch(&p->scanner);
+  int ch = peekch(&p->scanner);
 
-  while (ch != EOF && (isalnum(ch) || ch == '_')) {
+  while (ch != EOF && (isalnum((unsigned char)ch) || ch == '_')) {
     nextch(&p->scanner);
     ch = peekch(&p->scanner);
   }
@@ -107,7 +115,7 @@ MMToken tok_keyw(MMParser* p) {
   return tok;
 }
 
-MMToken tok_simple(MMParser* p, MMTokenType type) {
+static MMToken tok_simple(MMParser* p, MMTokenType type) {
   Span span = span_begin(&p->scanner);
   nextch(&p->scanner);
   span_end(&span, &p->scanner);
@@ -138,7 +146,7 @@ MMToken get_mmtok(MMParser* p) {
     skip_unwanted(&p->scanner);
 
     Span start_span = span_begin(&p->scanner);
-    char next_c = peekch(&p->scanner);
+    int next_c = peekch(&p->scanner);
     if (next_c == '"')
       tok.sv = tok_str(p).sv;
     else if (next_c == '<')

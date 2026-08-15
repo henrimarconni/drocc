@@ -17,7 +17,7 @@ typedef struct Lexer {
   bool in_pp_directive;
 } Lexer;
 
-TokenStream lexer_new(SourceManager* sman, SrcID srcid, StringInterner* interner);
+TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* interner);
 Token lexer_next(void* lexer);
 Token lexer_peek(void* lexer);
 void lexer_free(void* lexer);

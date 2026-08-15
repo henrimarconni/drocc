@@ -13,7 +13,7 @@
 
 typedef enum { SGCLI_INVALID_ARG = -1, SGCLI_FILE_DOESNT_EXIST = -2 } SGCLIError;
 
-void parse_args(bstr* outfile, InputFiles* files) {
+static void parse_args(bstr* outfile, InputFiles* files) {
   char ch;
   ParsedOpt popt;
   while (ce_getopt(&ch, &popt)) {
@@ -38,7 +38,7 @@ void parse_args(bstr* outfile, InputFiles* files) {
     exit(0);
 }
 
-int emit_output(SGCodegen* c, bstr outfile) {
+static int emit_output(SGCodegen* c, bstr outfile) {
   if (!outfile) {
     printf("%s\n", c->output.get);
     return 0;
@@ -61,14 +61,14 @@ int main(int argc, char** argv) {
 
   parse_args(&outfile, &files);
 
-  SourceManager sman = sman_new();
+  SourceManager* sman = sman_new();
   VMEMArena* arena = vmarena_new(128 * 1024);
   ParserState state = {};
   state.arena = arena;
   jmp_buf onerror;
 
   if (setjmp(onerror) == 0) {
-    parse_files(&state, &sman, files, &onerror);
+    parse_files(&state, sman, files, &onerror);
     SGCodegen c = {};
     generate_code(&c, &state);
     emit_output(&c, outfile);
@@ -77,5 +77,5 @@ int main(int argc, char** argv) {
   parser_free(&state);
   vmarena_free(arena);
   vec_destroy(files);
-  sman_free(&sman);
+  sman_free(sman);
 }

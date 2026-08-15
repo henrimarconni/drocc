@@ -11,7 +11,7 @@
 #define TAB_WIDTH 4
 
 static inline bstr span_str(SourceManager* man, Span span) {
-  return &man->sources.get[span.srcid].contents[span.offset];
+  return &man->sources.get[span.srcid].b_contents[span.offset];
 }
 
 StringView span_sv(SourceManager* man, Span span) {
@@ -39,18 +39,19 @@ bool span_str_cmp(SourceManager* man, Span span, bstr str) {
 // Gives null terminated duplicate
 bstr dup_span_buf(SourceManager* man, Span span, bstr buf, size_t size) {
   assert(size > span.len);
+  (void)size;
   bstr str = span_str(man, span);
   memcpy(buf, str, span.len);
   buf[span.len] = '\0';
   return buf;
 }
 
-void print_n_spaces(int n) {
+static void print_n_spaces(int n) {
   while (n--)
     putchar(' ');
 }
 
-void print_line_start(int offset1) {
+static void print_line_start(int offset1) {
   print_n_spaces(offset1);
   printf("| ");
 }
@@ -69,8 +70,8 @@ void highlight_span(SourceManager* man, Span span) {
   printf("%s| ", line_no);
 
   bstr line_start = info.sv.str - info.col + 1;
-  size_t spaces_before_span = 0;
-  size_t span_visual_width = 0;
+  int spaces_before_span = 0;
+  int span_visual_width = 0;
 
   // print line
   for (bstr cur = line_start; *cur && *cur != '\n'; cur++) {
@@ -106,7 +107,7 @@ void highlight_span(SourceManager* man, Span span) {
 
   if (span_visual_width > 0) {
     putchar('^');
-    for (size_t i = 1; i < span_visual_width; ++i) {
+    for (int i = 1; i < span_visual_width; ++i) {
       putchar('~');
     }
   } else

@@ -85,6 +85,8 @@ extern const bool is_sep_table[256];
   X(KW_INLINE, "inline")                                                                           \
   X(KW_EXTERN, "extern")                                                                           \
   X(KW_SIZEOF, "sizeof")                                                                           \
+  X(KW_RESTRICT, "restrict")                                                                       \
+  X(KW_VOLATILE, "VOLATILE")                                                                       \
   /* Primitive types */                                                                            \
   X(KW_VOID, "void")                                                                               \
   X(KW_LONG, "long")                                                                               \
@@ -93,8 +95,9 @@ extern const bool is_sep_table[256];
   X(KW_SIGNED, "signed")                                                                           \
   X(KW_DOUBLE, "double")                                                                           \
   X(KW_FLOAT, "float")                                                                             \
-  X(KW_BOOL, "bool")                                                                               \
-  X(KW_CHAR, "char")
+  X(KW_CHAR, "char")                                                                               \
+  X(KW_SHORT, "short")                                                                             \
+  X(KW_BOOL, "bool")
 
 #define is_tok_op_or_sep(token) (token.kind < TOK_EOF && token.kind > KW_SIZEOF)
 

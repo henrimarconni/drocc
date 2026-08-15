@@ -3,7 +3,7 @@
 
 #include "core/stringdef.h"
 #include "core/vec.h"
-#include "core/vmem_arena.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 #define INVALID_SRC_ID 65535
@@ -16,9 +16,9 @@
 
 
 typedef struct Span {
-  uint64_t offset : 32;
-  uint64_t len : 16;
-  uint16_t srcid : 16;
+  uint16_t len;
+  uint16_t srcid;
+  uint32_t offset;
 } Span;
 
 typedef uint16_t SrcID;
@@ -29,7 +29,14 @@ typedef struct {
   vec(uint32_t) offsets;
   size_t len;
   bstr name;
-  bstr contents;
+  bool is_mmaped;
+  union {
+    /// borrowed contents must not be freed
+    bstr b_contents;
+
+    /// mmapped contents, must be freed
+    ostr o_contents;
+  };
 } SMSource;
 
 typedef struct {
@@ -37,32 +44,35 @@ typedef struct {
 } SourceManager;
 
 typedef struct SrcScanner {
-  size_t id;
+  uint32_t id;
   SourceManager* sman;
   SrcID srcid;
 } SrcScanner;
 
 typedef struct {
-  uint16_t row, col;
+  uint32_t row, col;
   uint32_t id;
   StringView sv;
   SMSource* file;
 } SMSpanInfo;
 
 
-SourceManager sman_new();
+SourceManager* sman_new(void);
 void sman_free(SourceManager* sman);
+
 /**
-  Open a file and allocate the contents in arena
-  @return INVALID_SRC_ID if file cannot be opened, else the valid SrcID
+  Open a file and mmap it
+  @note name field must remain valid till the you call sman_free
+  @param out_scanner populates this on success
+  @return false if file cannot be opened, else true
 */
-SrcID sman_open(SourceManager* man, bstr const name, VMEMArena* arena);
+bool sman_open(SrcScanner* out_scanner, SourceManager* man, bstr name);
 
 /**
   Consider a string as a file
   @note This doesnt allocate memory, so the contents you provide must live till the SourceManager
 */
-SrcID sman_str(SourceManager* man, bstr const name, bstr const contents, size_t len);
+SrcScanner sman_str(SourceManager* man, bstr const name, bstr const contents, size_t len);
 
 /// Get information about the span
 SMSpanInfo sman_info(SourceManager* sman, Span span);

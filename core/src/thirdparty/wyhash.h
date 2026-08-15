@@ -231,14 +231,14 @@ static inline uint64_t w1rand(uint64_t* seed) {
 // wyrand, wyhash64 or wyhash.
 static inline double wy2u01(uint64_t r) {
   const double _wynorm = 1.0 / (1ull << 52);
-  return (r >> 12) * _wynorm;
+  return (double)(r >> 12) * _wynorm;
 }
 
 // convert any 64 bit pseudo random numbers to APPROXIMATE Gaussian distribution. It can be combined
 // with wyrand, wyhash64 or wyhash.
 static inline double wy2gau(uint64_t r) {
   const double _wynorm = 1.0 / (1ull << 20);
-  return ((r & 0x1fffff) + ((r >> 21) & 0x1fffff) + ((r >> 42) & 0x1fffff)) * _wynorm - 3.0;
+  return ((double)(r & 0x1fffff) + (double)((r >> 21) & 0x1fffff) + (double)((r >> 42) & 0x1fffff)) * _wynorm - 3.0;
 }
 
 #ifdef WYTRNG
@@ -296,7 +296,7 @@ static inline unsigned long long pow_mod(unsigned long long a, unsigned long lon
   }
   return r;
 }
-unsigned sprp(unsigned long long n, unsigned long long a) {
+static inline unsigned sprp(unsigned long long n, unsigned long long a) {
   unsigned long long d = n - 1;
   unsigned char s = 0;
   while (!(d & 0xff)) {
@@ -328,7 +328,7 @@ unsigned sprp(unsigned long long n, unsigned long long a) {
   }
   return 0;
 }
-unsigned is_prime(unsigned long long n) {
+static inline unsigned is_prime(unsigned long long n) {
   if (n < 2 || !(n & 1))
     return 0;
   if (n < 4)

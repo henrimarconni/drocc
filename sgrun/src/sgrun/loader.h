@@ -2,6 +2,7 @@
 #define SG_LOADER_H
 
 #include "core/stringdef.h"
+#include <stdint.h>
 
 #define SG_RUNNER_DEV
 #include "sg_api.h"
@@ -11,7 +12,7 @@ typedef struct {
   SGRuntime* saulg;
   struct SGTest* tests;
   void* handle;
-  int tests_len;
+  uint32_t tests_len;
   bstr name;
 } SGTestLib;
 

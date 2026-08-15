@@ -10,12 +10,13 @@
 #include <ctype.h>
 #include <setjmp.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 bstr toktype_to_str[] = {"Block", "String", "Identifier", "`(`", "`)`", "`:`"};
 
-void skip_comment(SrcScanner* file) {
+static void skip_comment(SrcScanner* file) {
   if (peekch(file) == '#') {
     while (peekch(file) != '\n' && peekch(file) != EOF) {
       nextch(file);
@@ -23,8 +24,8 @@ void skip_comment(SrcScanner* file) {
   }
 }
 
-void skip_unwanted(SrcScanner* file) {
-  int last_id;
+static void skip_unwanted(SrcScanner* file) {
+  uint32_t last_id;
   do {
     last_id = file->id;
     skip_comment(file);
@@ -32,7 +33,7 @@ void skip_unwanted(SrcScanner* file) {
   } while (file->id != last_id && peekch(file) != EOF);
 }
 
-SGToken tok_block(DiagEngine* engine, TestFile* file) {
+static SGToken tok_block(DiagEngine* engine, TestFile* file) {
   nextch(&file->scanner); // skip {
   Span span = span_begin(&file->scanner);
 
@@ -63,7 +64,7 @@ SGToken tok_block(DiagEngine* engine, TestFile* file) {
 #define is_id_start(ch) (isalpha((ch)) || (ch) == '_' || (ch) == '$')
 #define is_id_body(ch) (isalnum((ch)) || (ch) == '_')
 
-SGToken tok_id(TestFile* file) {
+static SGToken tok_id(TestFile* file) {
   Span span = span_begin(&file->scanner);
   nextch(&file->scanner); // first character
   int ch = peekch(&file->scanner);
@@ -76,7 +77,7 @@ SGToken tok_id(TestFile* file) {
   return (SGToken){TOK_ID, sv, span};
 }
 
-SGToken tok_str(DiagEngine* engine, TestFile* file) {
+static SGToken tok_str(DiagEngine* engine, TestFile* file) {
   Span span = span_begin(&file->scanner);
   if (lex_cstr(&file->scanner) < 0)
     throw_diag(engine, span, SG_ERR_UNEXPECTED_EOF);
@@ -85,7 +86,8 @@ SGToken tok_str(DiagEngine* engine, TestFile* file) {
   return (SGToken){TOK_STR, sv, span};
 }
 
-SGToken tok_simple(TestFile* file, SGTokenType type, int ch, Span span) {
+static SGToken tok_simple(TestFile* file, SGTokenType type, int ch, Span span) {
+  (void)ch;
   span.len = 1;
   StringView sv = span_sv(file->scanner.sman, span);
   return (SGToken){type, sv, span};
@@ -94,7 +96,7 @@ SGToken tok_simple(TestFile* file, SGTokenType type, int ch, Span span) {
 // \t\t\t$
 //       ^ (after skip_unwanted)
 //        ^ (after nextch)
-SGToken get_tok(DiagEngine* engine, TestFile* file) {
+static SGToken get_tok(DiagEngine* engine, TestFile* file) {
   skip_unwanted(&file->scanner);
   Span span = span_begin(&file->scanner);
   int ch = peekch(&file->scanner);
@@ -118,14 +120,14 @@ SGToken get_tok(DiagEngine* engine, TestFile* file) {
   }
 }
 
-SGToken expect_tok(DiagEngine* engine, TestFile* file, SGTokenType type) {
+static SGToken expect_tok(DiagEngine* engine, TestFile* file, SGTokenType type) {
   SGToken tok = get_tok(engine, file);
   if (tok.type != type)
     throw_diag(engine, tok.span, SG_ERR_UNEXPECTED_TOK, toktype_to_str[type], tok.sv);
   return tok;
 }
 
-void parse_cblock(DiagEngine* engine, TestFile* file) {
+static void parse_cblock(DiagEngine* engine, TestFile* file) {
   SGCodegenNode node = {};
   SGToken block = expect_tok(engine, file, TOK_BLOCK);
   node.c_code = block;
@@ -134,7 +136,7 @@ void parse_cblock(DiagEngine* engine, TestFile* file) {
 }
 
 // Syntax: $test "description" : TestGroup(test_name) {...}
-void parse_test(DiagEngine* engine, TestFile* file) {
+static void parse_test(DiagEngine* engine, TestFile* file) {
   SGCodegenNode node = {};
   node.type = CG_TEST;
 
@@ -149,7 +151,7 @@ void parse_test(DiagEngine* engine, TestFile* file) {
   vec_push(file->nodes, node);
 }
 
-void parse_keyw(DiagEngine* engine, TestFile* file, SGToken keyw) {
+static void parse_keyw(DiagEngine* engine, TestFile* file, SGToken keyw) {
   if (span_str_cmp(file->scanner.sman, keyw.span, "$c"))
     parse_cblock(engine, file);
   else if (span_str_cmp(file->scanner.sman, keyw.span, "$test"))
@@ -158,7 +160,7 @@ void parse_keyw(DiagEngine* engine, TestFile* file, SGToken keyw) {
     throw_diag(engine, keyw.span, SG_ERR_UNEXPECTED_KEYW, keyw.sv);
 }
 
-void parse_file(ParserState* state, TestFile* file) {
+static void parse_file(ParserState* state, TestFile* file) {
   while (true) {
     skip_unwanted(&file->scanner);
     if (peekch(&file->scanner) == EOF)
@@ -173,11 +175,10 @@ void parse_files(ParserState* state, SourceManager* sman, InputFiles files, jmp_
 
   for (size_t i = 0; i < files.n; i++) {
     TestFile file = {0};
-    SrcID srcid = sman_open(sman, files.get[i], state->arena);
-    if (srcid == INVALID_SRC_ID)
+
+    if (!sman_open(&file.scanner, sman, files.get[i]))
       throw_diag(&state->engine, NULL_SPAN, SG_ERR_CANT_OPEN_FILE, files.get[i]);
 
-    file.scanner = scanner_new(sman, srcid);
     parse_file(state, &file);
     vec_push(state->files, file);
   }

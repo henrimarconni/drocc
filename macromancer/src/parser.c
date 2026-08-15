@@ -1,6 +1,5 @@
 #include "core/diagnostics.h"
 #include "core/scanner.h"
-#include "core/span.h"
 #include "core/srcman.h"
 #include "core/stringdef.h"
 #include "core/strutils.h"
@@ -9,10 +8,10 @@
 #include "macromancer/mm_diag.h"
 #include "macromancer/mmtok.h"
 #include "macromancer/parser.h"
-#include <assert.h>
 #include <setjmp.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -24,7 +23,7 @@
   X("$interface", parse_interface)                                                                 \
   X("$export", parse_export)
 
-void add_interface(MMParser* p, Interface interface) {
+static void add_interface(MMParser* p, Interface interface) {
   for (size_t i = 0; i < p->interfaces.n; i++) {
     if (sv_cmp(interface.name.sv, p->interfaces.get[i]->name.sv))
       throw_diag(&p->engine, interface.name.span, MM_ERR_INTERFACE_ALREADY_EXISTS, interface.name);
@@ -34,7 +33,7 @@ void add_interface(MMParser* p, Interface interface) {
   vec_push(p->interfaces, mem);
 }
 
-Impl* find_impl(MMParser* p, Interface* iface, StringView name) {
+static Impl* find_impl(Interface* iface, StringView name) {
   for (size_t i = 0; i < iface->impls.n; i++) {
     Impl* impl = iface->impls.get[i];
     if (sv_cmp(impl->name.sv, name))
@@ -43,32 +42,24 @@ Impl* find_impl(MMParser* p, Interface* iface, StringView name) {
   return NULL;
 }
 
-int find_iface_idx(MMParser* p, StringView name) {
-  for (int i = 0; i < p->interfaces.n; i++) {
+static int find_iface_idx(MMParser* p, StringView name) {
+  for (int i = 0; i < (int)p->interfaces.n; i++) {
     if (sv_cmp(p->interfaces.get[i]->name.sv, name))
       return i;
   }
   return -1;
 }
 
-Interface* find_iface(MMParser* p, StringView name) {
+static Interface* find_iface(MMParser* p, StringView name) {
   int idx = find_iface_idx(p, name);
   if (idx < 0)
     return NULL;
   return p->interfaces.get[idx];
 }
 
-int find_fn_id(MMParser* p, Interface* iface, Span name) {
-  for (size_t i = 0; i < iface->functions.n; i++) {
-    if (span_cmp(p->sman, iface->functions.get[i].span, name))
-      return i;
-  }
-  return -1;
-}
-
-void add_impl(MMParser* p, Impl impl, size_t iface_idx) {
+static void add_impl(MMParser* p, Impl impl, uint32_t iface_idx) {
   Interface* iface = p->interfaces.get[iface_idx];
-  for (size_t i = 0; i < iface->impls.n; i++) {
+  for (uint32_t i = 0; i < iface->impls.n; i++) {
     if (sv_cmp(impl.name.sv, iface->impls.get[i]->name.sv)) {
       throw_diag(&p->engine, iface->name.span, MM_ERR_IMPL_ALREADY_EXISTS, impl.name, iface->name);
     }
@@ -78,7 +69,7 @@ void add_impl(MMParser* p, Impl impl, size_t iface_idx) {
   vec_push(p->interfaces.get[iface_idx]->impls, mem);
 }
 
-void parse_impl(MMParser* p) {
+static void parse_impl(MMParser* p) {
   Impl impl = {0};
 
   impl.name = expect_mmtok(p, MMT_IDENT);
@@ -112,14 +103,14 @@ void parse_impl(MMParser* p) {
   int idx = find_iface_idx(p, iface_tok.sv);
   if (idx < 0)
     throw_diag(&p->engine, iface_tok.span, MM_ERR_INTERFACE_DOESNT_EXIST, iface_tok.sv);
-  add_impl(p, impl, idx);
+  add_impl(p, impl, (uint32_t)idx);
 }
 
-void parse_interface(MMParser* p) {
+static void parse_interface(MMParser* p) {
   Interface iface = {0};
 
   iface.name = expect_mmtok(p, MMT_IDENT);
-  MMToken as = expect_mmtok(p, MMT_AS);
+  expect_mmtok(p, MMT_AS);
   MMToken type = expect_mmtok(p, MMT_IDENT);
 
   // Dynamic or Static
@@ -151,7 +142,7 @@ void parse_interface(MMParser* p) {
   add_interface(p, iface);
 }
 
-void add_export(MMParser* p, ExportCmd cmd) {
+static void add_export(MMParser* p, ExportCmd cmd) {
   for (size_t i = 0; i < p->exports.n; i++) {
     ExportCmd* cmd2 = &p->exports.get[i];
     if (cmd.iface == cmd2->iface) {
@@ -171,7 +162,7 @@ void add_export(MMParser* p, ExportCmd cmd) {
   vec_push(p->exports, cmd);
 }
 
-void parse_export(MMParser* p) {
+static void parse_export(MMParser* p) {
   ExportCmd cmd = {0};
   MMToken iface_tok = expect_mmtok(p, MMT_IDENT);
   cmd.iface = find_iface(p, iface_tok.sv);
@@ -179,12 +170,12 @@ void parse_export(MMParser* p) {
   expect_mmtok(p, MMT_AS);
 
   MMToken impl_tok = expect_mmtok(p, MMT_IDENT);
-  cmd.impl = find_impl(p, cmd.iface, impl_tok.sv);
+  cmd.impl = find_impl(cmd.iface, impl_tok.sv);
 
   add_export(p, cmd);
 }
 
-void parse_keyw(MMParser* p, MMToken keyw) {
+static void parse_keyw(MMParser* p, MMToken keyw) {
 #define X(kstr, fn)                                                                                \
   if (strncmp(kstr, keyw.sv.str, keyw.sv.len) == 0) {                                              \
     fn(p);                                                                                         \
@@ -195,7 +186,7 @@ void parse_keyw(MMParser* p, MMToken keyw) {
   throw_diag(&p->engine, keyw.span, MM_ERR_UNEXPECTED_KEYW, keyw.sv);
 }
 
-void parse_conf(MMParser* p) {
+static void parse_conf(MMParser* p) {
   while (true) {
     skip_unwanted(&p->scanner);
     if (peekch(&p->scanner) == EOF)
@@ -218,22 +209,19 @@ void read_conf(
   p->sman = sman;
   p->engine = new_engine(mm_diaginfos, __mm_diagtype_len, p->sman, onerror);
 
-  SrcID srcid = sman_open(p->sman, file, p->arena);
-  if (srcid == INVALID_SRC_ID)
+  if (!sman_open(&p->scanner, p->sman, file))
     throw_diag(&p->engine, NULL_SPAN, MM_ERR_CANT_OPEN_FILE, file);
-
-  p->scanner = scanner_new(p->sman, srcid);
 
   parse_conf(p);
 
-  for (size_t i = 0; i < export_override->n; i++) {
+  for (uint32_t i = 0; i < export_override->n; i++) {
     ExportOverride ov = export_override->get[i];
     ExportCmd cmd = {0};
     cmd.iface = find_iface(p, strview(ov.iface));
     if (!cmd.iface)
       throw_diag(&p->engine, NULL_SPAN, MM_ERR_INTERFACE_DOESNT_EXIST, ov.iface);
 
-    cmd.impl = find_impl(p, cmd.iface, strview(ov.impl));
+    cmd.impl = find_impl(cmd.iface, strview(ov.impl));
     if (!cmd.impl)
       throw_diag(&p->engine, NULL_SPAN, MM_ERR_IMPL_NOT_DEFINED, ov.impl);
 

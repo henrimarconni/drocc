@@ -1,7 +1,33 @@
 cmake_minimum_required(VERSION 3.32)
 project(drocc)
 
-enable_testing()
+add_library(drocc_warn INTERFACE)
+
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(drocc_warn INTERFACE
+    -Wall
+    -Wextra
+    -pedantic
+    -Wuninitialized
+    -Winit-self
+    -Wshadow            
+    -Wstrict-prototypes 
+    -Wmissing-prototypes
+    -Wconversion        
+    -Wformat=2          
+    -Werror=implicit-function-declaration 
+    -Werror=incompatible-pointer-types    
+    -Werror=return-type                   
+    -Werror=uninitialized                 
+  )
+elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
+  target_compile_options(drocc_warn INTERFACE
+    /W4     
+    /permissive- 
+    /we4700 
+    /we4013 
+  )
+endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
   include("${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
@@ -12,6 +38,7 @@ else()
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
@@ -25,6 +52,7 @@ add_subdirectory(macromancer)
 add_subdirectory(saulgood)
 add_subdirectory(sgrun)
 add_subdirectory(chucci_lex)
+add_subdirectory(chucci_parse)
 
 # chuviz
 add_subdirectory(chuviz)
@@ -33,3 +61,9 @@ add_subdirectory(chuviz)
 
 add_subdirectory(macromancer/tests macromancer_tests)
 add_subdirectory(chucci_lex/tests chucci_lex_tests)
+add_subdirectory(chucci_parse/tests chucci_parse_tests)
+
+if (IS_DIRECTORY "chutest")
+message(STATUS "Found chutest directory")
+add_subdirectory(chutest chutest)
+endif()

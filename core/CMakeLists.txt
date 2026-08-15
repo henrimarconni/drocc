@@ -15,6 +15,13 @@ add_library(
   src/cli_diag.c
   src/strutils.c
   src/string_interner.c
+  src/signals.c
+)
+
+target_link_libraries(
+  core
+  PRIVATE
+  drocc_warn
 )
 
 target_include_directories(

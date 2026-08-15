@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void render_rect(Rect rect, uint64_t border_fg) {
+void render_rect(Rect rect, uint32_t border_fg) {
   if (rect.w < 2 || rect.h < 2)
     return;
 
@@ -31,17 +31,17 @@ void render_rect(Rect rect, uint64_t border_fg) {
   }
 }
 
-void render_boxedtext(BoxedText boxtext, uint64_t border_fg) {
+void render_boxedtext(BoxedText boxtext, uint32_t border_fg) {
   render_rect(boxtext.rect, border_fg);
 
-  int len = strlen(boxtext.str);
+  int len = (int)strlen(boxtext.str);
   int center_x = boxtext.rect.start.x + (boxtext.rect.w - len) / 2;
   int center_y = boxtext.rect.start.y + (boxtext.rect.h / 2);
 
   lt_printf(center_x, center_y, border_fg | LT_BOLD, LT_DEFAULT, "%s", boxtext.str);
 }
 
-void render_boxovtext(BoxOverlayText boxov, uint64_t border_fg) {
+void render_boxovtext(BoxOverlayText boxov, uint32_t border_fg) {
   render_rect(boxov.rect, border_fg);
 
   if (!boxov.str)
@@ -76,7 +76,7 @@ RectPrintCtx rect_print_init(Rect* rect) {
   return ctx;
 }
 
-void rect_printf(RectPrintCtx* ctx, uint64_t fg, uint64_t bg, const char* fmt, ...) {
+void rect_printf(RectPrintCtx* ctx, uint32_t fg, uint32_t bg, const char* fmt, ...) {
   char buf[4096];
   va_list args;
   va_start(args, fmt);
@@ -100,7 +100,7 @@ void rect_printf(RectPrintCtx* ctx, uint64_t fg, uint64_t bg, const char* fmt, .
     if (ctx->pos.y >= ctx->rect->start.y + ctx->rect->h)
       break;
 
-    lt_set_cell(ctx->pos.x, ctx->pos.y, buf[i], fg, bg);
+    lt_set_cell(ctx->pos.x, ctx->pos.y, (lt_uchar)buf[i], fg, bg);
 
     ctx->pos.x++;
     i++;

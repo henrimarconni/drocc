@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void appendf(StringBuilder* b, bstr fstr, ...) {
+static void appendf(StringBuilder* b, bstr fstr, ...) {
   va_list args;
   va_start(args, fstr);
   while (*fstr != '\0') {
@@ -64,7 +64,7 @@ void appendf(StringBuilder* b, bstr fstr, ...) {
 #define impl_name cmd->impl->name.sv
 #define impl_pairs cmd->impl->pairs
 
-void export_static(MMCodegen* c, ExportCmd* cmd) {
+static void export_static(MMCodegen* c, ExportCmd* cmd) {
   append_str(&c->output, "\n");
   for (size_t i = 0; i < impl_pairs.n; i++) {
     MMPair* pair = &impl_pairs.get[i];
@@ -73,7 +73,7 @@ void export_static(MMCodegen* c, ExportCmd* cmd) {
   append_str(&c->output, "\n\n");
 }
 
-void export_dynamic_header(MMCodegen* c, ExportCmd* cmd) {
+static void export_dynamic_header(MMCodegen* c, ExportCmd* cmd) {
   append_str(&c->output, "\n\n");
 
   appendf(&c->output, "struct %t {\n", iface_name);
@@ -98,7 +98,7 @@ void export_dynamic_header(MMCodegen* c, ExportCmd* cmd) {
   }
 }
 
-void export_pair_list(MMCodegen* c, ExportCmd* cmd, Impl* impl) {
+static void export_pair_list(MMCodegen* c, Impl* impl) {
   for (size_t i = 0; i < impl->pairs.n; i++) {
     MMPair* pair = &impl->pairs.get[i];
     appendf(&c->output, "  ._%s = %s", pair->key, pair->val);
@@ -109,17 +109,17 @@ void export_pair_list(MMCodegen* c, ExportCmd* cmd, Impl* impl) {
   }
 }
 
-void export_dynamic_source(MMCodegen* c, ExportCmd* cmd) {
+static void export_dynamic_source(MMCodegen* c, ExportCmd* cmd) {
   for (size_t i = 0; i < cmd->iface->impls.n; i++) {
     Impl* impl = cmd->iface->impls.get[i];
     appendf(&c->output, "const struct %t %v = {\n", iface_name, impl->name.sv);
-    export_pair_list(c, cmd, impl);
+    export_pair_list(c, impl);
   }
   appendf(&c->output, "struct %t %i = {\n", iface_name, iface_name);
-  export_pair_list(c, cmd, cmd->impl);
+  export_pair_list(c, cmd->impl);
 }
 
-void export_dynamic(MMCodegen* c, ExportCmd* cmd) {
+static void export_dynamic(MMCodegen* c, ExportCmd* cmd) {
   export_dynamic_header(c, cmd);
 
   appendf(&c->output, "\n\n#ifdef MM_%s_IMPLEMENTATION\n\n", iface_name);
@@ -128,7 +128,7 @@ void export_dynamic(MMCodegen* c, ExportCmd* cmd) {
 }
 
 typedef vec(StringView) HideSet;
-bool contains(HideSet v, StringView header) {
+static bool contains(HideSet v, StringView header) {
   for (size_t i = 0; i < v.n; i++) {
     if (sv_cmp(header, v.get[i]))
       return true;
@@ -136,7 +136,7 @@ bool contains(HideSet v, StringView header) {
   return false;
 }
 
-void export(MMCodegen* c, ExportCmd* cmd) {
+static void export(MMCodegen* c, ExportCmd* cmd) {
   // header guard
   appendf(&c->output, "#ifndef MM_%s_H__\n", iface_name);
   appendf(&c->output, "#define MM_%s_H__\n", iface_name);

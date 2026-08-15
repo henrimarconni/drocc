@@ -52,6 +52,26 @@ function(saulgood_add_tests)
 
     add_library(${SG_NAME} SHARED "${SG_OUTPUT}")
 
+    target_compile_definitions(${SG_NAME} 
+        PRIVATE 
+            DEBUG 
+            _DEBUG
+        INTERFACE
+            $<VERTEX_COMPILE_LANGUAGE:C,CXX>
+    )
+    
+    if(MSVC)
+        target_compile_options(${SG_NAME} PRIVATE /Od /Zi /U _NDEBUG /U NDEBUG)
+    else()
+        target_compile_options(${SG_NAME} PRIVATE -O0 -g -U NDEBUG)
+    endif()
+
+    set_target_properties(${SG_NAME} PROPERTIES 
+        MAP_IMPORTED_CONFIG_RELEASE DEBUG
+        MAP_IMPORTED_CONFIG_MINSIZEREL DEBUG
+        MAP_IMPORTED_CONFIG_RELWITHDEBINFO DEBUG
+    )
+
     if(SG_LIBRARIES)
         target_link_libraries(${SG_NAME} PRIVATE ${SG_LIBRARIES})
     endif()

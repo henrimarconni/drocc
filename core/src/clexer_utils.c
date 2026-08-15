@@ -6,15 +6,15 @@
 int skip_c_comments(SrcScanner* scanner) {
   while (peekch(scanner) == '/') {
     if (peeknextch(scanner) == '/') {
-      char ch;
+      int ch;
       while ((ch = peekch(scanner)) != '\n') {
         ch = nextch(scanner);
         if (ch == EOF)
           return -1;
       }
     } else if (peeknextch(scanner) == '*') {
-      nextch(scanner);           // skip /
-      char ch = nextch(scanner); // skip *
+      nextch(scanner);          // skip /
+      int ch = nextch(scanner); // skip *
       while (true) {
         ch = nextch(scanner);
         if (ch == '*' && peekch(scanner) == '/') {

@@ -7,7 +7,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-void appendf(StringBuilder* b, bstr fstr, ...) {
+static void appendf(StringBuilder* b, bstr fstr, ...) {
   va_list args;
   va_start(args, fstr);
   while (*fstr != '\0') {
@@ -34,13 +34,15 @@ void appendf(StringBuilder* b, bstr fstr, ...) {
   va_end(args);
 }
 
-void gen_from_test(SGCodegen* c, Test* test) {
-  appendf(&c->output, "\n// %s : %s\nvoid %s() {%s}\n", test->desc.sv, test->group.sv,
+static void gen_from_test(SGCodegen* c, Test* test) {
+  appendf(&c->output, "\n// %s : %s\nvoid %s(void);\n", test->desc.sv, test->group.sv,
+          test->name.sv);
+  appendf(&c->output, "\n// %s : %s\nvoid %s(void) {%s}\n", test->desc.sv, test->group.sv,
           test->name.sv, test->body.sv);
   c->test_len++;
 }
 
-void gen_from_node(SGCodegen* c, SGCodegenNode* node) {
+static void gen_from_node(SGCodegen* c, SGCodegenNode* node) {
   switch (node->type) {
   case CG_CBLOCK:
     append_sv(&c->output, node->c_code.sv);
@@ -51,12 +53,12 @@ void gen_from_node(SGCodegen* c, SGCodegenNode* node) {
   }
 }
 
-void gen_from_file(SGCodegen* c, TestFile* file) {
+static void gen_from_file(SGCodegen* c, TestFile* file) {
   for (size_t i = 0; i < file->nodes.n; i++)
     gen_from_node(c, &file->nodes.get[i]);
 }
 
-void declare_test_list(SGCodegen* c, ParserState* state) {
+static void declare_test_list(SGCodegen* c, ParserState* state) {
   // Declare list of tests
   append_str(&c->output, "struct SGTest saulgood_tests[] = {\n");
   for (size_t i = 0; i < state->files.n; i++) {
@@ -65,8 +67,8 @@ void declare_test_list(SGCodegen* c, ParserState* state) {
       SGCodegenNode node = file.nodes.get[j];
       if (node.type == CG_CBLOCK)
         continue;
-      appendf(&c->output, "(struct SGTest){\"%s\", \"%s\", %s, &%s},", node.test.name.sv,
-              node.test.group.sv, node.test.desc.sv, node.test.name.sv);
+      appendf(&c->output, "{\"%s\", \"%s\", %s, &%s},", node.test.name.sv, node.test.group.sv,
+              node.test.desc.sv, node.test.name.sv);
     }
   }
   append_str(&c->output, "\n};\n");
@@ -82,6 +84,7 @@ void generate_code(SGCodegen* c, ParserState* state) {
 
   // Add runner header
   append_str(&c->output, runner_api_code);
+  append_str(&c->output, "\n#include <stdint.h>\n");
 
   // Generate tests
   for (size_t i = 0; i < state->files.n; i++)
@@ -90,7 +93,7 @@ void generate_code(SGCodegen* c, ParserState* state) {
   declare_test_list(c, state);
 
   // Declare number of tests
-  appendf(&c->output, "const int sg_test_len = %d;\n", c->test_len);
+  appendf(&c->output, "const uint32_t sg_test_len = %d;\n", c->test_len);
   append_ch(&c->output, '\0');
 }
 

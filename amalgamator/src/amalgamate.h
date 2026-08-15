@@ -14,7 +14,7 @@ typedef struct {
   StringBuilder output;
   IncludeDirVec idirs;
   InputFIleVec files;
-  SourceManager sman;
+  SourceManager* sman;
   VMEMArena* arena;
   DiagEngine engine;
 } Amalgamator;

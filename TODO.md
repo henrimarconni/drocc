@@ -20,7 +20,7 @@ This file tracks long-term work across the Drocc Compiler Collection.
 ### Amalgamator
 
 * [✓] Impove include cache implementation.
-* [ ] Skip preprocessor directives inside strings. (this should be fixed after chucci_front is implemented)
+* [ ] Skip strings. (this can be fixed after chucci_lex is implemented)
 * [ ] Add examples.
 * [ ] Add tests.
 
@@ -37,7 +37,7 @@ This file tracks long-term work across the Drocc Compiler Collection.
 ### Drocc
 
 * [ ] Add installation support.
-* [ ] Add CI/CD
+* [✓] Add CI/CD
 * [ ] Homepage
 * [ ] Website.
 * [ ] User guide.
@@ -52,7 +52,7 @@ This file tracks long-term work across the Drocc Compiler Collection.
 ## Naming
 
 * [✓] Namespace all public symbols.
-* [ ] Prefix public types with project code.
+* [✓] Prefix public types with project code.
 
   * `SGCodegen`
   * `MMCodegen`
@@ -78,8 +78,8 @@ This file tracks long-term work across the Drocc Compiler Collection.
 
 # CI
 
-* [ ] Build every project.
-* [ ] Run all tests.
+* [✓] Build every project.
+* [✓] Run all tests.
 * [ ] Generate documentation.
 * [ ] Check formatting.
 * [ ] Upload documentation.

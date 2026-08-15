@@ -1,7 +1,7 @@
 #include "amal_diag.h"
 
 const DiagInfo amal_diaginfos[__amal_diaginfos_len] = {
-#define X(_, msg, level) (DiagInfo){level, msg},
+#define X(_, msg, level) {level, msg},
     AMAL_ERRORS(X)
 #undef X
 };

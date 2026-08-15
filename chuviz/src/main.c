@@ -1,20 +1,19 @@
 #include "chuviz/lexer_tab.h"
 #include "core/ce_getopt.h"
 #include "core/cli_diag.h"
-#include "core/srcman.h"
-#include "core/string_interner.h"
-#include "core/vmem_arena.h"
+#include "core/signals.h"
 #include "libterm/libterm.h"
-#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
-void cleanup_and_exit(int sig) {
+static void handler(int sig) {
   lt_shutdown();
-  exit(sig);
+  printf("chuviz exiting with signal: %d\n", sig);
+  exit(1);
 }
 
-void parse_args(int argc, char** argv, bstr* file) {
+static void parse_args(int argc, char** argv, bstr* file) {
+  register_crash_handlers(handler);
   ce_initopt(argc, argv);
   ce_add_meta("chuviz", "The chucci visualizer", "./chuviz file.c");
   ce_addopt("help", 'h', 0, "Print help");
@@ -41,13 +40,9 @@ void parse_args(int argc, char** argv, bstr* file) {
     clid_throw_diag(CLID_ERROR, -1, "Please specify the file :P");
 }
 
-void event_loop(LexerTab* tab) {
+static void event_loop(LexerTab* tab) {
   lt_init();
   lt_set_output_mode(LT_OUTPUT_TRUECOLOR);
-
-  signal(SIGINT, cleanup_and_exit);
-  signal(SIGTERM, cleanup_and_exit);
-  signal(SIGSEGV, cleanup_and_exit);
 
   while (true) {
     lt_clear();
@@ -68,19 +63,12 @@ int main(int argc, char** argv) {
   bstr file = NULL;
   parse_args(argc, argv, &file);
 
-  SourceManager sman = sman_new();
-  VMEMArena* arena = vmarena_new(128 * 1024);
-  SrcID srcid = sman_open(&sman, file, arena);
-
-  if (srcid == INVALID_SRC_ID) {
-    vmarena_free(arena);
-    sman_free(&sman);
+  LexerTab* tab = lexertab_init(file);
+  if (!tab)
     clid_throw_diag(CLID_ERROR, -1, "Cannot open file: %s", file);
-  }
 
-  StringInterner* interner = interner_new(arena);
-  LexerTab tab = lexertab_init(&sman, interner, srcid);
-  event_loop(&tab);
+  event_loop(tab);
 
+  lexertab_free(tab);
   return 0;
 }

@@ -2,8 +2,8 @@
 include(FetchContent)
 FetchContent_Declare(
   libterm
-  GIT_REPOSITORY https://github.com/rizukirr/libterm
-  GIT_TAG        v0.1.2
+  GIT_REPOSITORY https://github.com/henrimarconni/libterm
+  GIT_TAG        v0.1.2.1
 )
 FetchContent_MakeAvailable(libterm)
 
@@ -26,5 +26,6 @@ target_link_libraries(
   PUBLIC
   core
   chucci_lex
+  drocc_warn
   Libterm::libterm
 )

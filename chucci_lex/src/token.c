@@ -27,9 +27,13 @@ const char* tok_to_str[_token_kind_count] = {
     "anglestr"};
 #define X(a, b, c) [(unsigned char) c] = true,
 
-// Ignore the warning, it is due to the fact that multiple operators start with same character
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverride-init"
+
 const bool is_op_table[256] = {OPERATORS(X)};
 const bool is_sep_table[256] = {SEPARATORS(X)};
+
+#pragma GCC diagnostic pop
 #undef X
 
 void print_token(SourceManager* sman, Token* token) {

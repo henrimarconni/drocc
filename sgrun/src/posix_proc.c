@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "core/stringbuilder.h"
 #include "sgrun/posix_proc.h"
 #include "sgrun/process.h"
@@ -5,6 +7,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -128,7 +131,7 @@ static bool pump_pipe(int* fd, StringBuilder* b) {
   ssize_t n;
 
   while ((n = read(*fd, buf, sizeof(buf))) > 0) {
-    StringView sv = {.str = buf, .len = (size_t)n};
+    StringView sv = {.str = buf, .len = (uint32_t)n};
     append_sv(b, sv);
   }
 
