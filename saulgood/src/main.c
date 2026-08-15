@@ -13,7 +13,7 @@
 
 typedef enum { SGCLI_INVALID_ARG = -1, SGCLI_FILE_DOESNT_EXIST = -2 } SGCLIError;
 
-void parse_args(bstr* outfile, InputFiles* files) {
+static void parse_args(bstr* outfile, InputFiles* files) {
   char ch;
   ParsedOpt popt;
   while (ce_getopt(&ch, &popt)) {
@@ -38,7 +38,7 @@ void parse_args(bstr* outfile, InputFiles* files) {
     exit(0);
 }
 
-int emit_output(SGCodegen* c, bstr outfile) {
+static int emit_output(SGCodegen* c, bstr outfile) {
   if (!outfile) {
     printf("%s\n", c->output.get);
     return 0;

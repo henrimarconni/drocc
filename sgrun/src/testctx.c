@@ -52,8 +52,42 @@ bool start_new_test_ctx(void* ctx) {
   return testctx->proc != NULL;
 }
 
-/// Print test status after test has finished and increase passed/failed number
-void print_test(SGProcessStatus* status, SGTestCtx* ctx);
+static void print_failed_output(SGTestCtx* ctx) {
+  // print captured output only when --show-output isnt set and theres a failure
+  // else it prints everything automatically
+  if (!ctx->rs->show_output) {
+    ostr err = ctx->err.get;
+    ostr out = ctx->out.get;
+
+    if (err && strlen(err) > 0)
+      printf("stderr:\n%s\n", err);
+    if (out && strlen(out) > 0)
+      printf("stdout:\n%s\n", out);
+  }
+}
+
+static void print_test(SGProcessStatus* status, SGTestCtx* ctx) {
+  printf(
+      "[%*zu/%*d] %-40s",
+      ctx->fmt_width,
+      ctx->id + 1,
+      ctx->fmt_width,
+      ctx->rs->lib.tests_len,
+      ctx->test->name);
+
+  if (status->state == SGPROC_TIMEOUT) {
+    (*ctx->failed)++;
+    printf("KILLED (timeout)\n");
+    print_failed_output(ctx);
+  } else if (status->state == SGPROC_EXITED && status->code == 0) {
+    printf("PASS\n");
+    (*ctx->passed)++;
+  } else {
+    (*ctx->failed)++;
+    printf("FAIL (%d:%d)\n", status->state, status->code);
+    print_failed_output(ctx);
+  }
+}
 
 bool poll_test_ctx(void* ctx) {
   SGTestCtx* testctx = ctx;

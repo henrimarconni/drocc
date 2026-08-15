@@ -10,7 +10,7 @@
 #define COMMIT_LEN 128
 
 // OS Page alignment helper (4096 bytes) to prevent mprotect/VirtualAlloc crashes
-#define INFVEC_ALIGN_UP(x) (((x) + 4095) & ~4095)
+#define INFVEC_ALIGN_UP(x) (((x) + 4095ULL) & ~4095ULL)
 
 #include "core/vmem_arena.h" // IWYU pragma: keep
 #include <assert.h>          // IWYU pragma: keep
@@ -33,7 +33,7 @@
    (vec).committed = 0)
 
 #define infvec_push(vec, e)                                                                        \
-  (assert((vec).n < (vec).m),                                                                      \
+  ((void)(assert((vec).n < (vec).m),                                                                      \
    ((vec).n >= (vec).committed)                                                                    \
        ? (((INFVEC_ALIGN_UP(((vec).committed + COMMIT_LEN) * sizeof(*(vec).get)) >                 \
             INFVEC_ALIGN_UP((vec).committed * sizeof(*(vec).get)))                                 \
@@ -46,7 +46,7 @@
           (vec).committed += COMMIT_LEN)                                                           \
        : 0,                                                                                        \
    (vec).get[(vec).n++] = (e),                                                                     \
-   0)
+   0))
 
 #define infvec_pop(vec) (assert((vec).n > 0), (vec).get[--(vec).n])
 

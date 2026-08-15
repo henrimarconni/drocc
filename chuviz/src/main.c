@@ -6,13 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void handler(int sig) {
+static void handler(int sig) {
   lt_shutdown();
   printf("chuviz exiting with signal: %d\n", sig);
   exit(1);
 }
 
-void parse_args(int argc, char** argv, bstr* file) {
+static void parse_args(int argc, char** argv, bstr* file) {
   register_crash_handlers(handler);
   ce_initopt(argc, argv);
   ce_add_meta("chuviz", "The chucci visualizer", "./chuviz file.c");
@@ -40,7 +40,7 @@ void parse_args(int argc, char** argv, bstr* file) {
     clid_throw_diag(CLID_ERROR, -1, "Please specify the file :P");
 }
 
-void event_loop(LexerTab* tab) {
+static void event_loop(LexerTab* tab) {
   lt_init();
   lt_set_output_mode(LT_OUTPUT_TRUECOLOR);
 

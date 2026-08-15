@@ -1,7 +1,33 @@
 cmake_minimum_required(VERSION 3.32)
 project(drocc)
 
-enable_testing()
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  add_compile_definitions(_POSIX_C_SOURCE=200809L)
+  add_compile_options(
+    -Wall
+    -Wextra
+    -pedantic
+    -Wuninitialized
+    -Winit-self
+    -Wshadow            
+    -Wstrict-prototypes 
+    -Wmissing-prototypes
+    -Wconversion        
+    -Wformat=2          
+    -Werror=implicit-function-declaration 
+    -Werror=incompatible-pointer-types    
+    -Werror=return-type                   
+    -Werror=uninitialized                 
+    -std=c23
+  )
+elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
+  add_compile_options(
+    /W4     
+    /permissive- 
+    /we4700 
+    /we4013 
+  )
+endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
   include("${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")

@@ -3,6 +3,7 @@
 #include "sgrun/capture.h"
 #include "sgrun/loader.h"
 #include "sgrun/runner.h"
+#include <stdint.h>
 
 void sg_load(SGRunnerOptions* rs, bstr name) {
   void* handle = sgdl_load(name);
@@ -12,7 +13,7 @@ void sg_load(SGRunnerOptions* rs, bstr name) {
   SGRuntime* saulg = sgdl_get(handle, "saulg");
 
   struct SGTest* tests = sgdl_get(handle, "saulgood_tests");
-  int* tests_len = sgdl_get(handle, "sg_test_len");
+  uint32_t* tests_len = sgdl_get(handle, "sg_test_len");
 
   if (!tests || !saulg || !tests_len) {
     sgdl_unload(handle);

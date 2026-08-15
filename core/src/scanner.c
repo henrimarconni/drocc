@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 SrcScanner scanner_new(SourceManager* sman, SrcID id) {
@@ -69,7 +70,9 @@ Span span_begin(SrcScanner* scanner) {
   return span;
 }
 
-void span_end(Span* span, SrcScanner* scanner) { span->len = scanner->id - span->offset; }
+void span_end(Span* span, SrcScanner* scanner) {
+  span->len = (uint16_t)scanner->id - (uint16_t)span->offset;
+}
 SrcScanner scanner_new(SourceManager* sman, SrcID id);
 
 void scanner_rewind(SrcScanner* scanner, Span span) { scanner->id = span.offset; }

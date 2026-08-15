@@ -48,15 +48,17 @@ typedef struct {
   Rect* rect;
 } RectPrintCtx;
 
-void render_boxedtext(BoxedText boxtext, uint64_t border_fg);
-void render_boxovtext(BoxOverlayText boxov, uint64_t border_fg);
-void render_rect(Rect rect, uint64_t border_fg);
+void render_boxedtext(BoxedText boxtext, uint32_t border_fg);
+void render_boxovtext(BoxOverlayText boxov, uint32_t border_fg);
+void render_rect(Rect rect, uint32_t border_fg);
 
 /// vertically divide the rect into separate panes, with given percentages of area
 void vdivide_rect(Rect rect, Rect* panes, size_t count, int* percentage);
 
 RectPrintCtx rect_print_init(Rect* rect);
-void rect_printf(RectPrintCtx* ctx, uint64_t fg, uint64_t bg, const char* fmt, ...);
+
+PRINT_ATTR(4, 5)
+void rect_printf(RectPrintCtx* ctx, uint32_t fg, uint32_t bg, const char* fmt, ...);
 
 Rect get_window_rect();
 Rect bordered_rect(Rect rect);

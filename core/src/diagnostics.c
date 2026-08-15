@@ -12,17 +12,17 @@ struct Diag {
   int diag_type;
 };
 
-void print_str(bstr str) {
+static void print_str(bstr str) {
   while (*str)
     putchar(*str++);
 }
 
-void print_sv(StringView sv) {
+static void print_sv(StringView sv) {
   while (sv.len--)
     putchar(*sv.str++);
 }
 
-void vformat(bstr str, va_list args) {
+static void vformat(bstr str, va_list args) {
   while (*str) {
     if (0)
       ;
@@ -37,7 +37,7 @@ void vformat(bstr str, va_list args) {
   }
 }
 
-void print_diag_intro(DiagLevel level) {
+static void print_diag_intro(DiagLevel level) {
   switch (level) {
   case DL_ERROR:
     printf(ERROR_STR);
@@ -48,14 +48,14 @@ void print_diag_intro(DiagLevel level) {
   }
 }
 
-DiagEngine new_engine(const DiagInfo* infos, size_t info_len, SourceManager* sman,
-                      jmp_buf* onerror) {
+DiagEngine
+new_engine(const DiagInfo* infos, size_t info_len, SourceManager* sman, jmp_buf* onerror) {
   return (DiagEngine){infos, {}, info_len, onerror, sman};
 }
 
 [[noreturn]]
 void _throw_diag(DiagEngine* eng, Span span, int type, ...) {
-  assert(type < eng->info_len);
+  assert(type < (int)eng->info_len);
   DiagInfo info = eng->infos[type];
   print_diag_intro(info.level);
   va_list args;
@@ -70,7 +70,7 @@ void _throw_diag(DiagEngine* eng, Span span, int type, ...) {
 }
 
 void _print_diag(DiagEngine* eng, Span span, int type, ...) {
-  assert(type < eng->info_len);
+  assert(type < (int)eng->info_len);
   DiagInfo info = eng->infos[type];
   print_diag_intro(info.level);
   va_list args;

@@ -16,9 +16,9 @@
 
 
 typedef struct Span {
-  uint64_t offset : 32;
-  uint64_t len : 16;
-  uint16_t srcid : 16;
+  uint16_t len;
+  uint16_t srcid;
+  uint32_t offset;
 } Span;
 
 typedef uint16_t SrcID;
@@ -44,20 +44,20 @@ typedef struct {
 } SourceManager;
 
 typedef struct SrcScanner {
-  size_t id;
+  uint32_t id;
   SourceManager* sman;
   SrcID srcid;
 } SrcScanner;
 
 typedef struct {
-  uint16_t row, col;
+  uint32_t row, col;
   uint32_t id;
   StringView sv;
   SMSource* file;
 } SMSpanInfo;
 
 
-SourceManager* sman_new();
+SourceManager* sman_new(void);
 void sman_free(SourceManager* sman);
 
 /**

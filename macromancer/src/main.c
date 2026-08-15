@@ -12,7 +12,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-int emit_output(bstr output_path, MMCodegen* c) {
+static int emit_output(bstr output_path, MMCodegen* c) {
   if (!output_path) {
     printf("%s\n", c->output.get);
     return 0;

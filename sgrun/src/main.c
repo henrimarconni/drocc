@@ -6,6 +6,7 @@
 #include "sgrun/loader.h"
 #include "sgrun/runner.h"
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -20,21 +21,18 @@ static void parse_test_info(bstr str, int* tests_len, bstr* name) {
 
   if (res2 < 0)
     clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
-  if (tests_len < 0)
-    clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
 }
 
-const int DEFAULT_MAX_JOBS = 2;
-const size_t DEFAULT_MAX_TIMEOUT_MS = 10000;
+#define DEFAULT_MAX_JOBS 2
+#define DEFAULT_MAX_TIMEOUT_MS 10000
 
-void handler(int sig) {
+static void handler(int sig) {
   printf("sgrun: caught signal %d", sig);
   exit(1);
 }
 
 int main(int argc, char** argv) {
   register_crash_handlers(handler);
-  bstr runner_exe = argv[0];
   ce_initopt(argc, argv);
   ce_add_meta("sgrun", "SaulGood Test Runner", "./sgrun libtest1.so libtest2.so");
   ce_addopt("help", 'h', 0, "Print help");
@@ -64,12 +62,12 @@ int main(int argc, char** argv) {
       break;
 
     case 't':
-      rs.timeout = popt.d;
+      rs.timeout = (uint32_t)popt.d;
       break;
 
     case 'j':
       if (popt.d > 0)
-        rs.max_jobs = popt.d;
+        rs.max_jobs = (uint32_t)popt.d;
       break;
 
     case 'h':
@@ -81,7 +79,7 @@ int main(int argc, char** argv) {
       int test_id;
       parse_test_info(popt.s, &test_id, &name);
       sg_load(&rs, popt.s);
-      sg_run_test(&rs, test_id);
+      sg_run_test(&rs, (uint32_t)test_id);
       sg_unload(&rs.lib);
       return 0;
     }

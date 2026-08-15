@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -30,7 +31,7 @@ TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* i
   return ts_from_func(lexer, lexer_next, lexer_peek, lexer_free);
 }
 
-Token lex_op_sep(Lexer* l, int ch) {
+static Token lex_op_sep(Lexer* l, int ch) {
   Span span = span_begin(&l->scanner);
 #define X(kind, str, ch1)                                                                          \
   if (ch1 == ch && match_str(&l->scanner, str)) {                                                  \
@@ -43,7 +44,7 @@ Token lex_op_sep(Lexer* l, int ch) {
   assert(false);
 }
 
-int chucci_nextch(SrcScanner* scanner) {
+static int chucci_nextch(SrcScanner* scanner) {
   int ch = nextch(scanner);
   if (ch == '\\') {
     int lookahead = peekch(scanner);
@@ -63,8 +64,8 @@ int chucci_nextch(SrcScanner* scanner) {
   return ch;
 }
 
-void skip_unwanted(SrcScanner* scanner) {
-  int last_id;
+static void skip_unwanted(SrcScanner* scanner) {
+  uint32_t last_id;
   do {
     last_id = scanner->id;
     int res = skip_c_comments(scanner);
@@ -74,8 +75,8 @@ void skip_unwanted(SrcScanner* scanner) {
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-void skip_unwanted_except_newline(SrcScanner* scanner) {
-  int last_id;
+static void skip_unwanted_except_newline(SrcScanner* scanner) {
+  uint32_t last_id;
   do {
     last_id = scanner->id;
     if (skip_c_comments(scanner) < 0)
@@ -103,7 +104,7 @@ void skip_unwanted_except_newline(SrcScanner* scanner) {
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-Token lex_ident(Lexer* l, int ch) {
+static Token lex_ident(Lexer* l, int ch) {
   Span span = span_begin(&l->scanner);
   while (isalnum(ch) || ch == '_') {
     chucci_nextch(&l->scanner);
@@ -113,10 +114,10 @@ Token lex_ident(Lexer* l, int ch) {
   InternID id = intern(span_sv(l->sman, span), l->interner);
 
   // keyword checking
-  // 'i' here is not only an index, but also the
+  // 'i' here is not only an index, but also the TokenKind
   // NOTE: you gotta change this if you change the logic to use relative ordering
   // instead of depending on the KEYWORDS being the first thing in the enum
-  size_t i = _keyword_count;
+  uint32_t i = _keyword_count;
   while (i--) {
     if (keyword_ids[i] == id)
       return token_new(span, i);

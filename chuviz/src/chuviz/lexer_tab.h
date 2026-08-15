@@ -17,7 +17,7 @@ typedef struct {
   size_t selected; // selected token
   SrcID srcid;
   int percentage1;
-  size_t scroll_y;
+  int scroll_y;
 } LexerTab;
 
 

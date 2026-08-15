@@ -19,7 +19,7 @@ typedef struct {
   StringBuilder err;
   StringBuilder out;
   int fmt_width;
-  size_t time;
+  double time;
 } SGTestCtx;
 
 SGTestCtx new_test_ctx(size_t id, struct SGTest* test, SGRunnerOptions* rs, size_t* passed,

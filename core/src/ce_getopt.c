@@ -26,7 +26,7 @@ static GetoptData ce_data = {
     .desc = NULL,
     .name = NULL,
     .usage = NULL,
-    .opts = {0},
+    .opts = {{0}},
 };
 
 static Opt nullopt = {0};
@@ -79,7 +79,7 @@ void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc) {
   *opt = (Opt){longhand, shorthand, val_format, desc};
 }
 
-void ce_printhelp() {
+void ce_printhelp(void) {
   if (ce_data.name && ce_data.desc)
     printf("%s: %s\n", ce_data.name, ce_data.desc);
   if (ce_data.usage)
@@ -105,8 +105,10 @@ static void parse_opt(const Opt* opt, ParsedOpt* popt) {
   }
 
   if (ce_data.curr == ce_data.argc) {
-    printf("Error: Expected value of type %c, found nothing in option --%s\n", opt->val_format,
-           opt->longhand);
+    printf(
+        "Error: Expected value of type %c, found nothing in option --%s\n",
+        opt->val_format,
+        opt->longhand);
     exit(-1);
   }
 

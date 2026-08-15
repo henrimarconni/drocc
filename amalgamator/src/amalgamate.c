@@ -10,12 +10,13 @@
 #include "core/vmem_arena.h"
 #include <setjmp.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 static inline void skip_unwanted(SrcScanner* scanner) {
-  int last_id;
+  uint32_t last_id;
   do {
     last_id = scanner->id;
     skip_c_comments(scanner);
@@ -24,7 +25,7 @@ static inline void skip_unwanted(SrcScanner* scanner) {
 }
 
 static inline void skip_unwanted_str(SrcScanner* scanner) {
-  int last_id;
+  uint32_t last_id;
   do {
     last_id = scanner->id;
     skip_c_comments(scanner);
@@ -60,8 +61,8 @@ static SrcScanner include(Amalgamator* a, bstr fname) {
     bstr dir = a->idirs.get[i];
     size_t dirlen = strlen(dir);
 
-    VMEMArenaMark mark = vmarena_mark(a->arena);
-    bstr path = vmarena_alloc(a->arena, dirlen + 1 + fnamelen + 1);
+    mark = vmarena_mark(a->arena);
+    path = vmarena_alloc(a->arena, dirlen + 1 + fnamelen + 1);
 
     // path = dir + / + fname
     memcpy(path, dir, dirlen);
@@ -88,7 +89,7 @@ static void append_processed(Amalgamator* a, SrcScanner* scanner) {
 
       // add the text before #include to the output
       span_end(&span, scanner);
-      span.len -= strlen("#include");
+      span.len -= (uint16_t)strlen("#include");
       append_sv(&a->output, span_sv(a->sman, span));
 
       // remove spaces between #include and ""

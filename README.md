@@ -5,8 +5,7 @@ drocc is a monorepo containing a suite of modern, modular build tools and compil
 ## Projects
 
 ### 1.1. SaulGood
-A domain-specific language (DSL) and test runner designed to eliminate the need for complex macros and runtime test registration in C. 
-*   **Code Generator:** Transpiles the testing DSL directly into C code.
+* A simple domain-specific language (DSL) designed to eliminate the need for complex macros and runtime test registration in C. 
 
 ### 1.2. sgrun
 *   **Process Isolation:** Each test is run as a different process.

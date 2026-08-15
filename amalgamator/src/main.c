@@ -7,12 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void parse_args(bstr* output_file, InputFIleVec* input_files, IncludeDirVec* include_dirs) {
-  // TODO: Make it scan all #includes and recursively expand them
-  // ce_add_meta("amalgamator", "Amalgamates all #include \"...\" into a single file",
-  //             "./amalgamator file.c -o output.c -I includes/");
-  ce_add_meta("amalgamator", "Concatenates multiple source files into a single output file.",
-              "./amalgamator file1.c file2.c file3.c -o amalgamated.c -I ./code_dir");
+static void parse_args(bstr* output_file, InputFIleVec* input_files, IncludeDirVec* include_dirs) {
+  ce_add_meta(
+      "amalgamator",
+      "Amalgamates all #include \"...\" into a single file",
+      "./amalgamator file.c -o output.c -I includes/");
   ce_addopt("help", 'h', 0, "Print help");
   ce_addopt("output", 'o', 's', "Specify output location");
   ce_addopt("include-dir", 'I', 's', "Specify a location to find included files");
@@ -45,7 +44,7 @@ void parse_args(bstr* output_file, InputFIleVec* input_files, IncludeDirVec* inc
   }
 }
 
-void write_out(bstr output_path, StringBuilder b) {
+static void write_out(bstr output_path, StringBuilder b) {
   FILE* out = output_path ? fopen(output_path, "w") : stdout;
   if (!out) {
     printf("Could not open output file %s for writing\n", output_path);

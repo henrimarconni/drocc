@@ -53,12 +53,14 @@ Token ts_next(TokenStream* ts) {
   case TS_FUNC:
     return ts->fstream.next(ts->fstream.ctx);
   }
+  __builtin_unreachable();
 }
 
 Token ts_peek(TokenStream* ts) {
   switch (ts->kind) {
   case TS_SINGLE:
     ts->is_consumed = true;
+    break;
 
   case TS_VEC:
     if (ts->vstream.pos >= ts->vstream.vec.n) {
@@ -70,6 +72,7 @@ Token ts_peek(TokenStream* ts) {
   case TS_FUNC:
     return ts->fstream.peek(ts->fstream.ctx);
   }
+  __builtin_unreachable();
 }
 
 Token ts_expect(TokenStream* ts, TokenKind kind, DiagEngine* engine) {

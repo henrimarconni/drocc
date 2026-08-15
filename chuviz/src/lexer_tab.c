@@ -17,11 +17,11 @@
 
 #define TAB_WIDTH 2
 
-static inline void print_line_start(RectPrintCtx* srcctx, int max_line_size, size_t line_start) {
-  rect_printf(srcctx, LT_DEFAULT, LT_DEFAULT, "%*zu  ", max_line_size, line_start + 1);
+static inline void print_line_start(RectPrintCtx* srcctx, int max_line_size, int line_start) {
+  rect_printf(srcctx, LT_DEFAULT, LT_DEFAULT, "%*d  ", max_line_size, line_start + 1);
 }
 
-uint64_t token_color(TokenKind kind) {
+static uint32_t token_color(TokenKind kind) {
   if (kind < _keyword_count)
     return THEME_CATPPUCCIN.keyword_fg | LT_BOLD;
   if (kind < _op_sep_end)
@@ -46,9 +46,9 @@ typedef struct {
 /// Print the source
 static inline void print_src(PrintSrcCtx* ctx) {
   char tmp[16];
-  int max_line_size = snprintf(tmp, sizeof(tmp), "%zu", ctx->file->offsets.n);
+  int max_line_size = snprintf(tmp, sizeof(tmp), "%d", ctx->file->offsets.n);
 
-  size_t line_start = ctx->tab->scroll_y;
+  int line_start = ctx->tab->scroll_y;
   print_line_start(ctx->srcctx, max_line_size, line_start);
 
   // loop through all tokens and print only the required ones
@@ -65,7 +65,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
       ctx->scope_level--;
 
     // if newline, print line start
-    while (line_start + 1 < ctx->file->offsets.n &&
+    while (line_start + 1 < (int)ctx->file->offsets.n &&
            token->span.offset >= ctx->file->offsets.get[line_start + 1]) {
       line_start++;
       rect_printf(ctx->srcctx, LT_DEFAULT, LT_DEFAULT, "\n");
@@ -139,7 +139,7 @@ static inline void print_src(PrintSrcCtx* ctx) {
   }
 }
 
-void print_token_info(RectPrintCtx* ctx, Token* token, SMSpanInfo info) {
+static void print_token_info(RectPrintCtx* ctx, Token* token, SMSpanInfo info) {
   char tabs[16] = {0};
   static_assert(sizeof(tabs) > TAB_WIDTH, "Make the tabs[16] buffer larger for TAB_WIDTH >= 16");
   memset(tabs, ' ', TAB_WIDTH);
@@ -201,7 +201,8 @@ void print_token_info(RectPrintCtx* ctx, Token* token, SMSpanInfo info) {
   size_t id = info.sv.len;
   while (token->kind != SEP_NEWLINE && info.sv.str[id] && info.sv.str[id] != '\n')
     id++;
-  rect_printf(ctx, LT_DEFAULT, LT_DEFAULT, "%.*s\n", id - info.sv.len, info.sv.str + info.sv.len);
+  rect_printf(
+      ctx, LT_DEFAULT, LT_DEFAULT, "%.*s\n", (int)(id - info.sv.len), info.sv.str + info.sv.len);
 }
 
 void render_lexert(LexerTab* tab) {
@@ -228,24 +229,25 @@ void render_lexert(LexerTab* tab) {
   Token* active_token = &tab->tokens.get[tab->selected];
   SMSpanInfo info = sman_info(tab->sman, active_token->span);
 
-  size_t pane_height = panes[0].h;
-  size_t top_margin = pane_height / 5;          // 20% threshold
-  size_t bottom_margin = (pane_height * 4) / 5; // 80% threshold
+  int pane_height = panes[0].h;
+  int top_margin = pane_height / 5;          // 20% threshold
+  int bottom_margin = (pane_height * 4) / 5; // 80% threshold
 
   // Push the camera UP if the token is too high
-  if (info.row < tab->scroll_y + top_margin) {
-    if (info.row > top_margin)
-      tab->scroll_y = info.row - top_margin;
+  int row = (int)info.row;
+  if (row < tab->scroll_y + top_margin) {
+    if (row > top_margin)
+      tab->scroll_y = row - top_margin;
     else
       tab->scroll_y = 0;
   }
   // Push the camera DOWN if the token is too low
-  else if (info.row > tab->scroll_y + bottom_margin) {
-    tab->scroll_y = info.row - bottom_margin;
+  else if (row > tab->scroll_y + bottom_margin) {
+    tab->scroll_y = row - bottom_margin;
 
-    if (file->offsets.n > pane_height) {
-      if (tab->scroll_y > file->offsets.n - pane_height)
-        tab->scroll_y = file->offsets.n - pane_height;
+    if ((int)file->offsets.n > pane_height) {
+      if (tab->scroll_y > (int)file->offsets.n - pane_height)
+        tab->scroll_y = (int)file->offsets.n - pane_height;
     } else
       tab->scroll_y = 0;
   }

@@ -17,7 +17,7 @@
 #define hash_str(bytes, len) wyhash((bytes), (len), 0, _wyp)
 #define is_pow_2(n) ((n & (n - 1)) == 0)
 #define entry_str(entry, interner) (char*)((interner)->arena->data + (entry)->offset)
-#define wrap_around(num, cap) (num & (cap - 1))
+#define wrap_around(num, cap) ((num) & ((cap) - 1))
 
 StringInterner* interner_new(VMEMArena* arena) {
   // calloc gives zeroed memory
@@ -45,7 +45,7 @@ populate(InternEntry* entry, StringInterner* interner, bstr str, size_t len) {
   memcpy(new_str, str, len);
   new_str[len] = '\0';
 
-  uint32_t offset = (new_str - (char*)interner->arena->data);
+  uint32_t offset = (uint32_t)(new_str - (char*)interner->arena->data);
 
   entry->intern_id = interner->len++;
 
@@ -61,8 +61,6 @@ static inline InternEntry* find_entry(StringInterner* interner, bstr str, size_t
   if (entry->intern_id == EMPTY_INTERNID)
     return entry;
 
-  StringView sv = {str, len};
-
   // linear probing
   while (entry->intern_id != EMPTY_INTERNID) {
     // Already interned
@@ -76,7 +74,7 @@ static inline InternEntry* find_entry(StringInterner* interner, bstr str, size_t
   return entry;
 }
 
-void resize(StringInterner* interner) {
+static void resize(StringInterner* interner) {
   InternEntryVec old_entries = interner->entries;
   interner->entries = (InternEntryVec){0};
   interner->cap *= 2;

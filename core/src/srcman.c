@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 
-SourceManager* sman_new() {
+SourceManager* sman_new(void) {
   SourceManager* sman = malloc(sizeof(SourceManager));
   *sman = (SourceManager){0};
   return sman;
@@ -29,12 +29,12 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
     return info;
   }
 
-  size_t start = 0;
-  size_t end = src->offsets.n - 1;
-  size_t row = 0;
+  uint32_t start = 0;
+  uint32_t end = src->offsets.n - 1;
+  uint32_t row = 0;
 
   while (start <= end) {
-    size_t mid = start + (end - start) / 2;
+    uint32_t mid = start + (end - start) / 2;
     uint32_t line_start_offset = src->offsets.get[mid];
 
     if (line_start_offset <= info.id) {
@@ -52,7 +52,7 @@ SMSpanInfo sman_info(SourceManager* sman, Span span) {
 
 SrcScanner sman_str(SourceManager* man, const bstr name, const bstr contents, size_t len) {
   // check if file is already loaded
-  for (size_t i = 0; i < man->sources.n; i++) {
+  for (uint16_t i = 0; i < man->sources.n; i++) {
     if (strcmp(man->sources.get[i].name, name) == 0)
       return scanner_new(man, i);
   }
@@ -63,7 +63,7 @@ SrcScanner sman_str(SourceManager* man, const bstr name, const bstr contents, si
   // line 1
   vec_push(source.offsets, 0);
 
-  SrcID srcid = man->sources.n;
+  SrcID srcid = (SrcID)man->sources.n;
   vec_push(man->sources, source);
 
   return scanner_new(man, srcid);
@@ -71,7 +71,7 @@ SrcScanner sman_str(SourceManager* man, const bstr name, const bstr contents, si
 
 bool sman_open(SrcScanner* out_scanner, SourceManager* man, bstr name) {
   // check if file is already loaded
-  for (size_t i = 0; i < man->sources.n; i++) {
+  for (uint16_t i = 0; i < man->sources.n; i++) {
     if (strcmp(man->sources.get[i].name, name) == 0) {
       *out_scanner = scanner_new(man, i);
       return true;
@@ -89,9 +89,7 @@ bool sman_open(SrcScanner* out_scanner, SourceManager* man, bstr name) {
   // line 1
   vec_push(source.offsets, 0);
 
-  SrcID srcid = man->sources.n;
   vec_push(man->sources, source);
-
   *out_scanner = sman_str(man, name, contents, file_size);
   man->sources.get[out_scanner->id].is_mmaped = true;
 

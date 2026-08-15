@@ -20,9 +20,9 @@ int parse_float(float* f, bstr str) {
       return -1;
 
     if (!floated)
-      *f = (*f * 10.0) + (ch - '0');
+      *f = (*f * 10.0F) + (ch - '0');
     else {
-      divisor *= 10.0;
+      divisor *= 10.0F;
       *f = *f + ((ch - '0') / divisor);
     }
   }

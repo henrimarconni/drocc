@@ -4,14 +4,15 @@
 #include "core/stringdef.h"
 #include "loader.h"
 #include <stddef.h>
+#include <stdint.h>
 
 
 typedef struct SGRunnerOptions {
   SGTestLib lib;
   bstr runner_exe;
   bool show_output;
-  size_t max_jobs;
-  size_t timeout;
+  uint32_t max_jobs;
+  uint32_t timeout;
 } SGRunnerOptions;
 
 
@@ -22,7 +23,7 @@ typedef enum {
   SGRE_PROCESS_ERROR = -4
 } SGRError;
 
-void sg_run_test(SGRunnerOptions* rs, size_t id);
+void sg_run_test(SGRunnerOptions* rs, uint32_t id);
 int sg_test_lib(SGRunnerOptions* rs);
 
 #endif

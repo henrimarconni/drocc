@@ -10,7 +10,7 @@ $c {
 }
 
 $c {
-  bool interner_fuzz(char* buf, size_t len) {
+  static bool interner_fuzz(char* buf, size_t len) {
     if (len == 0)
       return false;
 
@@ -58,19 +58,19 @@ $test "Interner Resize Test" : core(interner_resize) {
 
   StringView strv;
   strv.str = buf;
-  size_t i = 1;
-  size_t max_cap = 65535;
+  uint32_t i = 1;
+  uint32_t max_cap = 65535;
 
-  for (size_t n = 1; n < sizeof(buf) - 1; n++) {
+  for (uint32_t n = 1; n < sizeof(buf) - 1; n++) {
     if (i >= max_cap)
       break;
     strv.len = n;
     memset(buf, 0, sizeof(buf));
     while (interner_fuzz(buf, n)) {
       InternID id = intern(strv, interner);
-      printf("%d == %zu for [", id, i);
+      printf("%d == %d for [", id, i);
       for (size_t x = 0; x < strv.len; x++) {
-        unsigned char c = strv.str[x];
+        unsigned char c = (unsigned char)strv.str[x];
         printf("%d", c);
         if (x + 1 != strv.len)
           printf(", ");

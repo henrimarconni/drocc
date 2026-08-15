@@ -2,6 +2,7 @@
 #define PARSER_H_
 
 #include "chucci_lex/token_stream.h"
+#include "chucci_parse/ast.h"
 #include "chucci_parse/symbol.h"
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
@@ -10,35 +11,6 @@
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <stdint.h>
-
-/// Declaration of variable/function
-typedef struct {
-  SymbolID symid;
-  Type type;
-  /// Can only be SC_STATIC/SC_EXTERN for functions
-  StorageClass sc;
-} VarFnDecl;
-
-/// Type of Top Level Nodes
-typedef enum {
-  /// type var = ...;
-  TLN_VAR_DEF,
-  /// type fn(..) {...}
-  TLN_FUNC_DEF,
-
-  /// type fn(...); or type var;
-  TLN_VARFN_DECL,
-
-  // TODO:
-  // TLN_TYPE_DECL => struct/enum/union + typedefs
-} TLNASTKind;
-
-typedef struct {
-  TLNASTKind kind;
-  union {
-    VarFnDecl varfn_decl;
-  };
-} TopLevelNode;
 
 /// Top level node abstract-syntax-tree stream
 typedef struct {
@@ -74,5 +46,6 @@ Parser parser_new(
 
 /// Get the next TopLevelNode
 TopLevelNode parser_next(Parser* p);
+void parser_free(Parser* p);
 
 #endif

@@ -2,12 +2,13 @@
 #include "sgrun/sg_scheduler.h"
 #include "sgrun/sg_sleep.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define SGJS_FPS 240
 
-SGJScheduler sgjs_new(size_t max_jobs) {
+SGJScheduler sgjs_new(uint32_t max_jobs) {
   SGJScheduler sgjs = {0};
   sgjs.max_jobs = max_jobs;
   vec_resize(sgjs.executing, max_jobs);

@@ -3,8 +3,9 @@
 
 #include "core/stringdef.h"
 
+#define HEADING_WIDTH 80U
 
-#define HEADING_WIDTH 80
+PRINT_ATTR(2, 3)
 void print_heading(char ch, bstr fmt, ...);
 
 #endif

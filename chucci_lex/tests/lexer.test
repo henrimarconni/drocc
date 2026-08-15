@@ -27,7 +27,7 @@ $c {
       "TOK_ANGLE",
       "_token_kind_count"};
 
-  void test_generate_token_array(TokenStream * ts, size_t len) {
+  static void test_generate_token_array(TokenStream * ts, size_t len) {
     char buf[32];
     int offset = snprintf(buf, sizeof(buf), "%zu", len);
 
@@ -307,6 +307,7 @@ $test "Lexer test" : chucci_lex(lexer) {
   };
   size_t token_len = sizeof(tokens) / sizeof(Token);
   // test_generate_token_array(&ts, token_len);
+  (void)test_generate_token_array;
 
   size_t i = 0;
   Token token = ts_next(&ts);

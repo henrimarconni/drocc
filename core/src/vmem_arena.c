@@ -1,6 +1,7 @@
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +31,7 @@ void* os_mmap_file(const char* filepath, size_t* out_size) {
   struct stat sb;
   int res = fstat(fd, &sb);
   assert(res != -1);
-  *out_size = sb.st_size;
+  *out_size = (size_t)sb.st_size;
 
   if (*out_size == 0) {
     close(fd);
@@ -80,7 +81,7 @@ void os_unmap_file(void* data, size_t size) {
 #endif
 }
 
-#define ALIGN_UP(n, a) (((n) + (a) - 1) & ~((a) - 1))
+#define ALIGN_UP(n, a) (((n) + (a) - 1ULL) & ~((a) - 1ULL))
 #define DEFAULT_ALIGNMENT 8
 
 void* os_vm_reserve(size_t size) {
@@ -139,7 +140,7 @@ void* _vmarena_calloc(VMEMArena* arena, size_t size) {
 void* _vmarena_realloc(VMEMArena* arena, void* ptr, size_t old_size, size_t new_size) {
   if (old_size >= new_size)
     return ptr;
-  else if (arena->data + arena->pos == ptr + old_size) {
+  else if (arena->data + arena->pos == (uint8_t*)ptr + old_size) {
     arena->pos += new_size - old_size;
     return ptr;
   } else {

@@ -65,6 +65,6 @@ void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc);
   @endcode
 */
 bool ce_getopt(char* ch, ParsedOpt* popt);
-void ce_printhelp();
+void ce_printhelp(void);
 
 #endif
