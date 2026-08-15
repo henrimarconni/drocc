@@ -41,7 +41,7 @@ static Token lex_op_sep(Lexer* l, int ch) {
   OPERATORS(X)
   SEPARATORS(X)
 #undef X
-  assert(false);
+  __builtin_unreachable();
 }
 
 static int chucci_nextch(SrcScanner* scanner) {
@@ -221,7 +221,7 @@ Token lexer_next(void* ctx) {
   highlight_span(l->sman, span_begin(&l->scanner));
   fflush(stdout);
 
-  assert(false);
+  __builtin_unreachable();
 }
 
 Token lexer_peek(void* ctx) {

@@ -18,7 +18,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     -Werror=incompatible-pointer-types    
     -Werror=return-type                   
     -Werror=uninitialized                 
-    -std=c23
   )
 elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
   add_compile_options(

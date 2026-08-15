@@ -50,6 +50,7 @@ TopLevelNode parser_next(Parser* p) {
   fflush(stdout);
 
   assert(false);
+  __builtin_unreachable();
 }
 
 void parser_free(Parser* p) {

@@ -17,6 +17,10 @@
 #error "Unsupported platform"
 #endif
 
+#ifndef MAP_ANON
+#define MAP_ANON MAP_ANONYMOUS
+#endif
+
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
@@ -52,7 +56,7 @@ void* os_mmap_file(const char* filepath, size_t* out_size) {
 
   LARGE_INTEGER size;
   GetFileSizeEx(hFile, &size);
-  *out_size = size.QuadPart;
+  *out_size = (size_t)size.QuadPart;
 
   if (*out_size == 0) {
     CloseHandle(hFile);
@@ -77,6 +81,7 @@ void os_unmap_file(void* data, size_t size) {
 #if defined(__unix__) || defined(__APPLE__)
   munmap(data, size);
 #elif defined(_WIN32)
+  (void)size;
   UnmapViewOfFile(data);
 #endif
 }
@@ -102,6 +107,7 @@ void os_vm_commit(void* ptr, size_t size) {
 
 void os_vm_free(void* ptr, size_t size) {
 #if defined(_WIN32)
+  (void)size;
   VirtualFree(ptr, 0, MEM_RELEASE);
 #else
   munmap(ptr, size);
