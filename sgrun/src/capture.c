@@ -55,7 +55,7 @@ char* capture_end(SGCapture* cap) {
   char* buf = malloc((size_t)len + 1);
   assert(buf);
 
-  fread(buf, 1, (size_t)len, cap->tmp);
+  (void)fread(buf, 1, (size_t)len, cap->tmp);
   buf[len] = '\0';
 
   fflush(cap->tmp);

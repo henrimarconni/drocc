@@ -41,7 +41,8 @@ static uint64_t hash_type_query(TyQualifier qual, uint32_t* payload, uint32_t co
   size_t total_count = count + 1;
   uint32_t* data = total_count > 64 ? malloc(total_count * sizeof(uint32_t)) : buf;
 
-  data[0] = qual.kind | (qual.is_const << 5) | (qual.is_volatile << 6) | (qual.is_restrict << 7);
+  data[0] = (uint32_t)qual.kind | ((uint32_t)qual.is_const << 5) |
+            ((uint32_t)qual.is_volatile << 6) | ((uint32_t)qual.is_restrict << 7);
   if (count > 0)
     memcpy(data + 1, payload, count * sizeof(uint32_t));
   uint64_t hash = hash_bytes(data, total_count * sizeof(uint32_t));

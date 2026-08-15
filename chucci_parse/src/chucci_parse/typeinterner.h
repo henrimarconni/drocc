@@ -21,7 +21,7 @@ typedef struct TypeInterner {
   infvec(uint32_t) payloads;
 } TypeInterner;
 
-TypeInterner* ty_interner_new();
+TypeInterner* ty_interner_new(void);
 TypeID ty_intern(TypeInterner* interner, TyQualifier qual, uint32_t* payload, uint32_t count);
 
 Type ty_fetch(TypeInterner* interner, TypeID id);
