@@ -55,6 +55,7 @@ target_link_libraries(
   sgrun
   PRIVATE
   core
+  drocc_warn
 )
 
 # Example test

@@ -18,5 +18,6 @@ target_link_libraries(
   chucci_lex
   PUBLIC
   core
+  drocc_warn
 )
 

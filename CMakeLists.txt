@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.32)
 project(drocc)
 
+add_library(drocc_warn INTERFACE)
+
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_definitions(_POSIX_C_SOURCE=200809L)
-  add_compile_options(
+  target_compile_options(drocc_warn INTERFACE
     -Wall
     -Wextra
     -pedantic
@@ -20,15 +21,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     -Werror=uninitialized                 
   )
 elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
-  add_compile_options(
+  target_compile_options(drocc_warn INTERFACE
     /W4     
     /permissive- 
     /we4700 
     /we4013 
   )
 endif()
-
-set(CMAKE_C_EXTENSIONS ON)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
   include("${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
@@ -39,6 +38,7 @@ else()
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 

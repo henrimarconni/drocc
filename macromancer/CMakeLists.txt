@@ -16,4 +16,5 @@ target_link_libraries(
   macromancer
   PRIVATE
   core
+  drocc_warn
 )

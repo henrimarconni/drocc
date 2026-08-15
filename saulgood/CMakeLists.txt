@@ -39,5 +39,6 @@ target_link_libraries(
   saulgood
   PRIVATE
   core
+  drocc_warn
 )
 

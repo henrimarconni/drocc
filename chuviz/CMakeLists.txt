@@ -26,5 +26,6 @@ target_link_libraries(
   PUBLIC
   core
   chucci_lex
+  drocc_warn
   Libterm::libterm
 )

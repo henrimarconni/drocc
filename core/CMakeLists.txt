@@ -18,6 +18,12 @@ add_library(
   src/signals.c
 )
 
+target_link_libraries(
+  core
+  PRIVATE
+  drocc_warn
+)
+
 target_include_directories(
   core
   PUBLIC
