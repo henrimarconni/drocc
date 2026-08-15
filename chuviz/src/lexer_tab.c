@@ -32,7 +32,7 @@ static uint32_t token_color(TokenKind kind) {
     return THEME_CATPPUCCIN.ident_fg;
   if (kind == TOK_VAL)
     return THEME_CATPPUCCIN.value_fg;
-  assert(false);
+  __builtin_unreachable();
 }
 
 typedef struct {
@@ -304,7 +304,7 @@ LexerTab* lexertab_init(bstr file) {
   StringInterner* interner = interner_new(arena);
 
   LexerTab* tab = malloc(sizeof(LexerTab));
-  tab->tokens = (TokenVec){0};
+  *tab = (LexerTab){0};
   tab->interner = interner;
   tab->sman = sman;
   tab->arena = arena;

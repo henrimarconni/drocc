@@ -7,7 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void parse_args(bstr* output_file, InputFIleVec* input_files, IncludeDirVec* include_dirs) {
+static void
+parse_args(volatile bstr* output_file, InputFIleVec* input_files, IncludeDirVec* include_dirs) {
   ce_add_meta(
       "amalgamator",
       "Amalgamates all #include \"...\" into a single file",
@@ -62,9 +63,9 @@ int main(int argc, char** argv) {
   if (argc == 1)
     return -1;
 
-  bstr output_file = NULL;
+  volatile bstr output_file = NULL;
 
-  Amalgamator a = {};
+  Amalgamator a = {0};
 
   vec_push(a.idirs, "."); // add current directory to search list
   ce_initopt(argc, argv);

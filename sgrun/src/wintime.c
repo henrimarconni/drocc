@@ -9,5 +9,5 @@ double sg_wintime() {
   QueryPerformanceFrequency(&frequency);
   QueryPerformanceCounter(&current_time);
 
-  return (uint64_t)((current_time.QuadPart * 1000) / frequency.QuadPart);
+  return (double)((current_time.QuadPart * 1000) / frequency.QuadPart);
 }

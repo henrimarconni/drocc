@@ -123,7 +123,7 @@ Token tstack_next(TokenStreamStack* stack) {
 
     if (stream->is_consumed) {
       ts_free(stream);
-      vec_pop(*stack);
+      (void)vec_pop(*stack);
       continue;
     }
 
@@ -131,7 +131,7 @@ Token tstack_next(TokenStreamStack* stack) {
 
     if (stream->is_consumed) {
       ts_free(stream);
-      vec_pop(*stack);
+      (void)vec_pop(*stack);
     }
 
     // If the token is valid, return it.

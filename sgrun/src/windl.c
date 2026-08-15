@@ -2,6 +2,7 @@
 // TODO: This is ripped-off code, please verify
 
 #include "sgrun/windl.h"
+#include <stdint.h>
 #include <windows.h>
 
 void* windl_load(bstr name) { return (void*)LoadLibraryA(name); }
@@ -14,5 +15,5 @@ void windl_unload(void* handle) {
 void* windl_get(void* handle, bstr name) {
   if (!handle)
     return NULL;
-  return (void*)GetProcAddress((HMODULE)handle, name);
+  return (void*)(uintptr_t)GetProcAddress((HMODULE)handle, name);
 }

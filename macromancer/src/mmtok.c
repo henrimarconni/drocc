@@ -59,6 +59,7 @@ static MMToken tok_surround(MMParser* p, char start, char end) {
   // after checking if first character is `start`
   // @see tok_angstr and tok_str
   assert(ch == start);
+  (void)start;
 
   ch = peekch(&p->scanner);
   while (ch != end && ch != EOF) {

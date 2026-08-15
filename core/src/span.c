@@ -39,6 +39,7 @@ bool span_str_cmp(SourceManager* man, Span span, bstr str) {
 // Gives null terminated duplicate
 bstr dup_span_buf(SourceManager* man, Span span, bstr buf, size_t size) {
   assert(size > span.len);
+  (void)size;
   bstr str = span_str(man, span);
   memcpy(buf, str, span.len);
   buf[span.len] = '\0';
