@@ -305,6 +305,7 @@ LexerTab* lexertab_init(bstr file) {
 
   LexerTab* tab = malloc(sizeof(LexerTab));
   *tab = (LexerTab){0};
+  tab->tokens.get = NULL;
   tab->interner = interner;
   tab->sman = sman;
   tab->arena = arena;

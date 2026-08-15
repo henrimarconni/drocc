@@ -6,23 +6,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+// unix
 #if defined(__unix__) || defined(__APPLE__)
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#elif defined(_WIN32)
-#include <windows.h>
-#else
-#error "Unsupported platform"
-#endif
 
+// MAP_ANON falllback
 #ifndef MAP_ANON
+#ifdef MAP_ANONYMOUS
 #define MAP_ANON MAP_ANONYMOUS
+#else
+#define MAP_ANON 0x1000
+#endif
 #endif
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
+#endif
+
+// windows
+#elif defined(_WIN32)
+#include <windows.h>
+#else
+#error "Unsupported platform"
 #endif
 
 #define COMMIT_SIZE 4096

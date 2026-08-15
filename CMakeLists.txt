@@ -28,6 +28,8 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
   )
 endif()
 
+set(CMAKE_C_EXTENSIONS ON)
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
   include("${CMAKE_CURRENT_SOURCE_DIR}/InternalModules.cmake")
   message(STATUS "Loaded modules natively from drocc directories.")
