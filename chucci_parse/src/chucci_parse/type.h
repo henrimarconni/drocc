@@ -8,7 +8,7 @@
 typedef uint32_t TypeID;
 typedef struct TypeInterner TypeInterner;
 
-typedef enum {
+typedef enum : uint8_t {
   TY_FUNCTION,
   TY_POINTER,
   TY_ARRAY,
@@ -49,19 +49,14 @@ static_assert(
 typedef struct Type Type;
 
 typedef struct {
-  uint32_t offset;
-  uint32_t len;
-} TyPayload;
-
-typedef struct {
   uint8_t is_volatile : 1;
   uint8_t is_const : 1;
   uint8_t is_restrict : 1;
-  TypeKind kind : 5;
+  uint8_t kind : 5;
 } TyQualifier;
 
 typedef struct Type {
-  TyPayload payload;
+  uint8_t payload_len;
   TyQualifier qual;
 } Type;
 

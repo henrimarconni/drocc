@@ -2,8 +2,8 @@
 #define TYPEINTERNER_H_
 
 #include "chucci_parse/type.h"
-#include "core/infvec.h"
 #include "core/vec.h"
+#include "core/vmem_arena.h"
 #include <assert.h>
 #include <stdint.h>
 
@@ -17,8 +17,8 @@ typedef struct TypeInterner {
   TypeID len;
   TypeID cap;
   TypeIDVec entries;
-  infvec(Type) types;
-  infvec(uint32_t) payloads;
+  /// Continous bit stream: [ TypeHeader{kind, qualifier, payload_len} payload...... ] [...] ...
+  VMEMArena data;
 } TypeInterner;
 
 TypeInterner* ty_interner_new(void);
