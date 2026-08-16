@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.32)
-project(drocc)
+project(drocc C)
 
 add_library(drocc_warn INTERFACE)
+
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu2x")
+elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:clatest")
+endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(drocc_warn INTERFACE
@@ -38,14 +44,11 @@ else()
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_C_EXTENSIONS ON)
-set(CMAKE_C_STANDARD 23)
-set(CMAKE_EXPORT_COMPILE_COMMANDS on)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_compile_options(-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=)
 
-# Libraries
-
+# libraries
 add_subdirectory(core)
 add_subdirectory(amalgamator)
 add_subdirectory(macromancer)
@@ -58,12 +61,11 @@ add_subdirectory(chucci_parse)
 add_subdirectory(chuviz)
 
 # Tests
-
 add_subdirectory(macromancer/tests macromancer_tests)
 add_subdirectory(chucci_lex/tests chucci_lex_tests)
 add_subdirectory(chucci_parse/tests chucci_parse_tests)
 
 if (IS_DIRECTORY "chutest")
-message(STATUS "Found chutest directory")
-add_subdirectory(chutest chutest)
+  message(STATUS "Found chutest directory")
+  add_subdirectory(chutest chutest)
 endif()
