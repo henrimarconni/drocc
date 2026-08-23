@@ -14,14 +14,15 @@
 bool file_exists(bstr path) { return file_access(path); }
 
 int write_out(bstr output_path, bstr str) {
-  FILE* out = fopen(output_path, "w");
-  if (!out) {
-    // printf("Could not open output file %s for writing\n", output_path);
+  if (!output_path || !str)
     return -1;
-  }
-  fprintf(out, "%s", str);
-  if (output_path) {
-    fclose(out);
-  }
+
+  FILE* out = fopen(output_path, "w");
+  if (!out)
+    return -1;
+
+  fputs(str, out);
+  fclose(out);
+
   return 0;
 }
