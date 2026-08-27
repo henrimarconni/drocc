@@ -22,11 +22,16 @@ TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* i
   lexer->scanner = scanner;
   lexer->interner = interner;
 
-// TODO: Relative caching (instead of kind, do (kind - first keyword), so that order doesnt matter)
-// (see token.h for the minor problem with current approach)
+  // TODO: Relative caching (instead of kind, do (kind - first keyword), so that order doesnt
+  // matter) (see token.h for the minor problem with current approach)
+
+  // 0 id reserved as empty InternID
+  // we only cache once
+  if (keyword_ids[0] == 0) {
 #define X(kind, str) keyword_ids[kind] = intern(strview(str), interner);
-  KEYWORDS(X)
+    KEYWORDS(X)
 #undef X
+  }
 
   return ts_from_func(lexer, lexer_next, lexer_peek, lexer_free);
 }

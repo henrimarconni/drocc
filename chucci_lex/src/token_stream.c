@@ -51,7 +51,10 @@ Token ts_next(TokenStream* ts) {
   }
 
   case TS_FUNC:
-    return ts->fstream.next(ts->fstream.ctx);
+    Token token = ts->fstream.next(ts->fstream.ctx);
+    if (token.kind == TOK_EOF)
+      ts->is_consumed = true;
+    return token;
   }
   __builtin_unreachable();
 }
@@ -136,9 +139,8 @@ Token tstack_next(TokenStreamStack* stack) {
 
     // If the token is valid, return it.
     // If it's a EOF_TOKEN, loop and try the next stream
-    if (token.kind != TOK_EOF) {
+    if (token.kind != TOK_EOF)
       return token;
-    }
   }
 
   return EOF_TOKEN;
