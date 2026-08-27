@@ -2,15 +2,21 @@
 #define PREPROC_H_
 
 #include "chucci_lex/token_stream.h"
+#include "core/slice.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
+
+typedef slice(bstr) PPSearchPaths;
 
 typedef struct {
   TokenStreamStack stack;
   VMEMArena* arena;
   SourceManager* sman;
   StringInterner* interner;
+
+  PPSearchPaths sys_search;
+  PPSearchPaths search;
 } Preprocessor;
 
 #define PREPROC_CMDS(X)\
@@ -29,7 +35,7 @@ PREPROC_CMDS(X)
 _preproc_cmd_count
 } PreprocCMD;
 
-TokenStream preproc_new(TokenStream ts, SourceManager* sman, StringInterner* interner);
+TokenStream preproc_new(TokenStream ts, SourceManager* sman, StringInterner* interner, PPSearchPaths sys_search, PPSearchPaths search);
 Token preproc_next(void* preproc);
 Token preproc_peek(void* preproc);
 void preproc_free(void* preproc);
