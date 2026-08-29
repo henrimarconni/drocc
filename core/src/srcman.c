@@ -82,6 +82,9 @@ bool sman_open(SrcScanner* out_scanner, SourceManager* man, bstr name) {
   size_t file_size;
   ostr contents = os_mmap_file(name, &file_size);
 
+  if (!contents)
+    return false;
+
   // add it to the list
   SMSource source = {
       .len = file_size, .name = name, .b_contents = contents, .is_mmaped = true, .offsets = {0}};

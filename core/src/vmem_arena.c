@@ -38,12 +38,13 @@
 void* os_mmap_file(const char* filepath, size_t* out_size) {
 #if defined(__unix__) || defined(__APPLE__)
   int fd = open(filepath, O_RDONLY);
-  assert(fd != -1);
+  if (fd == -1)
+    return NULL;
 
   struct stat sb;
   int res = fstat(fd, &sb);
-  (void)res;
-  assert(res != -1);
+  if (res == -1)
+    return NULL;
   *out_size = (size_t)sb.st_size;
 
   if (*out_size == 0) {
@@ -53,7 +54,8 @@ void* os_mmap_file(const char* filepath, size_t* out_size) {
 
   // Map the file into virtual memory
   void* data = mmap(NULL, *out_size, PROT_READ, MAP_PRIVATE, fd, 0);
-  assert(data != MAP_FAILED);
+  if (data == MAP_FAILED)
+    return NULL;
 
   close(fd);
   return data;

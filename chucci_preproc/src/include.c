@@ -1,8 +1,10 @@
+#include "chucci_diag/cc_diag.h"
 #include "chucci_lex/lexer.h"
 #include "chucci_lex/token.h"
 #include "chucci_lex/token_stream.h"
 #include "chucci_preproc/include.h"
 #include "chucci_preproc/preproc.h"
+#include "core/diagnostics.h"
 #include "core/srcman.h"
 #include "core/stringdef.h"
 
@@ -66,11 +68,15 @@ TokenStream preproc_parse_include(Preprocessor* pp) {
     if (include_file(pp, &ts, info.sv, pp->search) ||
         include_file(pp, &ts, info.sv, pp->sys_search))
       return ts;
+    else
+      throw_diag(&pp->engine, token.span, CC_PP_INCLUDED_FILE_NOT_FOUND, info.sv);
 
   } else if (token.kind == TOK_ANGLE) {
     if (include_file(pp, &ts, info.sv, pp->sys_search) ||
         include_file(pp, &ts, info.sv, pp->search))
       return ts;
+    else
+      throw_diag(&pp->engine, token.span, CC_PP_INCLUDED_FILE_NOT_FOUND, info.sv);
   }
 
   return ts;
