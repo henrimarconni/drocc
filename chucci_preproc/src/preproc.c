@@ -1,4 +1,4 @@
-#include "chucci_lex/cc_diag.h"
+#include "chucci_diag/cc_diag.h"
 #include "chucci_lex/token.h"
 #include "chucci_lex/token_stream.h"
 #include "chucci_preproc/include.h"

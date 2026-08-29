@@ -4,7 +4,6 @@ add_library(
   STATIC
   src/lexer.c
   src/token.c
-  src/cc_diag.c
   src/token_stream.c
 )
 
@@ -19,5 +18,6 @@ target_link_libraries(
   PUBLIC
   core
   drocc_warn
+  chucci_diag
 )
 

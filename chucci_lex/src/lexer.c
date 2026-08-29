@@ -1,4 +1,4 @@
-#include "chucci_lex/cc_diag.h"
+#include "chucci_diag/cc_diag.h"
 #include "chucci_lex/lexer.h"
 #include "chucci_lex/token.h"
 #include "chucci_lex/token_stream.h"
@@ -8,7 +8,6 @@
 #include "core/span.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
-#include <assert.h>
 #include <ctype.h>
 #include <setjmp.h>
 #include <stdbool.h>
@@ -74,13 +73,16 @@ static int chucci_nextch(SrcScanner* scanner) {
   return ch;
 }
 
-static void skip_unwanted(SrcScanner* scanner) {
+static void skip_unwanted(DiagEngine* engine, SrcScanner* scanner) {
   uint32_t last_id;
   do {
     last_id = scanner->id;
+    Span span = span_begin(scanner);
     int res = skip_c_comments(scanner);
-    if (res < 0)
-      assert(false);
+    if (res < 0) {
+      span_end(&span, scanner);
+      throw_diag(engine, span, CC_LEX_INVALID_C_BLOCK_COMMENT);
+    }
     skip_space(scanner);
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
@@ -141,7 +143,7 @@ Token lexer_next(void* ctx) {
   if (l->in_pp_directive)
     skip_unwanted_except_newline(&l->scanner);
   else
-    skip_unwanted(&l->scanner);
+    skip_unwanted(&l->engine, &l->scanner);
 
   int ch = peekch(&l->scanner);
 
@@ -227,11 +229,7 @@ Token lexer_next(void* ctx) {
     span_end(&span, &l->scanner);
     return token_new(span, TOK_VAL);
   }
-
-  highlight_span(l->sman, span_begin(&l->scanner));
-  fflush(stdout);
-
-  __builtin_unreachable();
+  throw_diag(&l->engine, span_begin(&l->scanner), CC_LEX_UNEXPECTED_CHAR, ch);
 }
 
 Token lexer_peek(void* ctx) {

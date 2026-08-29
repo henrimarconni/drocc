@@ -15,6 +15,7 @@ target_link_libraries(
   core
   chucci_lex
   chucci_preproc
+  chucci_diag
   drocc_warn
 )
 
