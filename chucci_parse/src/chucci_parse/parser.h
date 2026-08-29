@@ -91,9 +91,10 @@ typedef struct {
   TypeInterner* tyint;
   StringInterner* interner;
   VMEMArena* arena;
+  VMEMArena* scratch;
 } Parser;
 
-Parser* parser_new(TokenStream ts, SourceManager* sman, VMEMArena* arena);
+Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner, VMEMArena* arena);
 ASTNode* parse_next(Parser* p);
 
 

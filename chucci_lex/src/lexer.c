@@ -237,4 +237,8 @@ Token lexer_peek(void* ctx) {
   return token;
 }
 
-void lexer_free(void* lexer) { free(lexer); }
+void lexer_free(void** lexer) {
+  if (*lexer)
+    free(*lexer);
+  *lexer = NULL;
+}

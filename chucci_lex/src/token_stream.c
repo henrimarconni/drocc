@@ -4,6 +4,7 @@
 #include "core/diagnostics.h"
 #include "core/vec.h"
 #include <assert.h>
+#include <stdio.h>
 
 TokenStream ts_from_vec(TokenVec vec) {
   TokenStream ts = {0};
@@ -88,13 +89,13 @@ Token ts_expect(TokenStream* ts, TokenKind kind, DiagEngine* engine) {
   return token;
 }
 
-void ts_free(TokenStream* ts) {
+void _ts_free(TokenStream* ts) {
   switch (ts->kind) {
   case TS_VEC:
     vec_destroy(ts->vstream.vec);
     break;
   case TS_FUNC:
-    ts->fstream.free(ts->fstream.ctx);
+    ts->fstream.free(&ts->fstream.ctx);
     break;
   case TS_SINGLE:
     break;

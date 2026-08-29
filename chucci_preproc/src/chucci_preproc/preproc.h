@@ -38,6 +38,6 @@ _preproc_cmd_count
 TokenStream preproc_new(TokenStream ts, SourceManager* sman, StringInterner* interner, PPSearchPaths sys_search, PPSearchPaths search);
 Token preproc_next(void* preproc);
 Token preproc_peek(void* preproc);
-void preproc_free(void* preproc);
+void preproc_free(void** preproc);
 
 #endif

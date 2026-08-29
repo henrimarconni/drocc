@@ -1,3 +1,4 @@
+#include "chucci_lex/token.h"
 #include "chucci_parse/decl_spec.h"
 #include "chucci_parse/parser.h"
 #include "chucci_parse/type.h"
@@ -68,14 +69,15 @@ static TypeKind resolve_decl_spec_primitive(DeclSpecBuilder* dsb) {
 
 static void resolve_decl_spec(Parser* p, DeclSpecBuilder* dsb, TypeID* tyid, StorageClass* sc) {
   *sc = dsb->storage_class;
-  Type type = {0};
-  type.qual.is_const = dsb->is_const;
-  type.qual.is_restrict = dsb->is_restrict;
-  type.qual.is_volatile = dsb->is_volatile;
+
+  TyQualifier qual = {0};
+  qual.is_const = dsb->is_const;
+  qual.is_restrict = dsb->is_restrict;
+  qual.is_volatile = dsb->is_volatile;
 
   if (dsb->total_primitives >= 1) {
-    type.qual.kind = resolve_decl_spec_primitive(dsb);
-    *tyid = ty_intern(p->tyint, type.qual, NULL, 0);
+    qual.kind = resolve_decl_spec_primitive(dsb);
+    *tyid = ty_intern(p->tyint, qual, NULL, 0);
     return;
   }
 
@@ -176,10 +178,12 @@ void parse_decl_specifier(Parser* p, TypeID* tyid, StorageClass* sc) {
       ts_next(&p->ts);
 
     // try_struct_enum_union(p, &dsb)
+
+    // else break
     else
       break;
   }
 
-  // check for any errors
+  // check for any errors & populate the tyid/sc
   resolve_decl_spec(p, &dsb, tyid, sc);
 }

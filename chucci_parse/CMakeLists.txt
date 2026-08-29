@@ -3,6 +3,10 @@ add_library(
   chucci_parse
   STATIC
   src/parser.c
+  src/typeinterner.c
+  src/type.c
+  src/decl_spec.c
+  src/declarator.c
 )
 
 target_link_libraries(

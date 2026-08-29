@@ -7,7 +7,7 @@
 
 typedef Token (*TSNextFn)(void*);
 typedef Token (*TSPeekFn)(void*);
-typedef void (*TSFreeCtxFn)(void*);
+typedef void (*TSFreeCtxFn)(void**);
 
 typedef enum TokenStreamKind {
   TS_VEC,
@@ -47,7 +47,9 @@ TokenStream ts_from_func(void* ctx, TSNextFn next, TSPeekFn peek, TSFreeCtxFn fr
 Token ts_next(TokenStream* ts);
 Token ts_peek(TokenStream* ts);
 Token ts_expect(TokenStream* ts, TokenKind kind, DiagEngine* engine);
-void ts_free(TokenStream* ts);
+void _ts_free(TokenStream* ts);
+
+#define ts_free(ts) do { printf("%s:%d:%s\n", __func__, __LINE__, __FILE__); _ts_free((ts)); } while (0)
 
 Token tstack_expect(TokenStreamStack* stack, TokenKind kind, DiagEngine* engine);
 Token tstack_peek(TokenStreamStack* stack);

@@ -86,4 +86,4 @@ Token preproc_peek(void* preproc) {
   return EOF_TOKEN;
 }
 
-void preproc_free(void* preproc) { (void)preproc; }
+void preproc_free(void** preproc) { (void)preproc; }

@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 static Declarator* make_decl(Parser* p, DeclaratorKind kind) {
-  Declarator* decl = vmarena_alloc(p->arena, sizeof(Declarator));
+  Declarator* decl = vmarena_alloc(p->scratch, sizeof(Declarator));
   *decl = (Declarator){0};
   decl->kind = kind;
   return decl;
