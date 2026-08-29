@@ -103,18 +103,18 @@ TypeID unwind_declarator(Declarator* decl, Parser* p, TypeID current) {
       // param1_ty, param2_ty ..... return_ty
       vec_push(decl->params, current);
       current = ty_intern(
-          p->ty_int, tyqual(TY_FUNCTION, false, false, false), decl->params.get, decl->params.n);
+          p->tyint, tyqual(TY_FUNCTION, false, false, false), decl->params.get, decl->params.n);
       break;
     }
     case DECL_POINTER: {
       uint32_t payload[] = {current};
       decl->ptrqual.kind = TY_POINTER;
-      current = ty_intern(p->ty_int, decl->ptrqual, payload, 1);
+      current = ty_intern(p->tyint, decl->ptrqual, payload, 1);
       break;
     }
     case DECL_INCOMPLETE_ARRAY: {
       uint32_t payload[] = {current};
-      current = ty_intern(p->ty_int, tyqual(TY_INCOMPLETE_ARRAY, false, false, false), payload, 1);
+      current = ty_intern(p->tyint, tyqual(TY_INCOMPLETE_ARRAY, false, false, false), payload, 1);
       break;
     }
     default:

@@ -175,3 +175,9 @@ void vmarena_free(VMEMArena* arena) {
   os_vm_free(arena->data, arena->cap);
   free(arena);
 }
+
+void print_vmarena(VMEMArena* arena) {
+  for (size_t i = 0; i < arena->pos; i++)
+    printf("%c", arena->data[i]);
+  puts("");
+}

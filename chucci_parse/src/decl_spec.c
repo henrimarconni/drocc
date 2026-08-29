@@ -2,10 +2,10 @@
 #include "chucci_parse/parser.h"
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
-#include "core/srcman.h"
 #include <assert.h>
 #include <stdio.h>
 
+/// Check for any errors and report them, else give the type kind for the primitive type
 static TypeKind resolve_decl_spec_primitive(DeclSpecBuilder* dsb) {
   assert(dsb->num_signed == 0 || dsb->num_unsigned == 0);
 
@@ -75,7 +75,7 @@ static void resolve_decl_spec(Parser* p, DeclSpecBuilder* dsb, TypeID* tyid, Sto
 
   if (dsb->total_primitives >= 1) {
     type.qual.kind = resolve_decl_spec_primitive(dsb);
-    *tyid = ty_intern(p->ty_int, type.qual, NULL, 0);
+    *tyid = ty_intern(p->tyint, type.qual, NULL, 0);
     return;
   }
 
@@ -153,22 +153,33 @@ static bool try_primitive(TokenKind kind, DeclSpecBuilder* tb) {
   return true;
 }
 
+/**
+  This Function parses the Declarator Specifiers, ie, base types, which may be primitive types,
+  structs, enums, unions, typedefs, their qualifiers and their respective storage class
+*/
 void parse_decl_specifier(Parser* p, TypeID* tyid, StorageClass* sc) {
   DeclSpecBuilder dsb = {0};
 
   while (true) {
     Token token = ts_peek(&p->ts);
+
+    // Qualifiers
     if (try_qualifier(token.kind, &dsb))
       ts_next(&p->ts);
+
+    // Storage Class
     else if (try_storage_class(token.kind, &dsb))
       ts_next(&p->ts);
+
+    // Primitive types
     else if (try_primitive(token.kind, &dsb))
       ts_next(&p->ts);
-    // try_struct_enum_union(p, &dsb) and try_typedef(p, &dsb)
+
+    // try_struct_enum_union(p, &dsb)
     else
       break;
   }
 
+  // check for any errors
   resolve_decl_spec(p, &dsb, tyid, sc);
-  *sc = dsb.storage_class;
 }

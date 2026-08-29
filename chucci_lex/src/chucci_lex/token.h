@@ -86,7 +86,7 @@ extern const bool is_sep_table[256];
   X(KW_EXTERN, "extern")                                                                           \
   X(KW_SIZEOF, "sizeof")                                                                           \
   X(KW_RESTRICT, "restrict")                                                                       \
-  X(KW_VOLATILE, "VOLATILE")                                                                       \
+  X(KW_VOLATILE, "volatile")                                                                       \
   /* Primitive types */                                                                            \
   X(KW_VOID, "void")                                                                               \
   X(KW_LONG, "long")                                                                               \
