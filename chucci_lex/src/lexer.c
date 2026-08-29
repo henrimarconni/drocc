@@ -87,12 +87,15 @@ static void skip_unwanted(DiagEngine* engine, SrcScanner* scanner) {
   } while (scanner->id != last_id && peekch(scanner) != EOF);
 }
 
-static void skip_unwanted_except_newline(SrcScanner* scanner) {
+static void skip_unwanted_except_newline(DiagEngine* engine, SrcScanner* scanner) {
   uint32_t last_id;
   do {
     last_id = scanner->id;
-    if (skip_c_comments(scanner) < 0)
-      assert(false);
+    Span span = span_begin(scanner);
+    if (skip_c_comments(scanner) < 0) {
+      span_end(&span, scanner);
+      throw_diag(engine, span, CC_LEX_INVALID_C_BLOCK_COMMENT);
+    }
 
     int ch;
     while ((ch = peekch(scanner)) != EOF) {
@@ -141,7 +144,7 @@ static Token lex_ident(Lexer* l, int ch) {
 Token lexer_next(void* ctx) {
   Lexer* l = ctx;
   if (l->in_pp_directive)
-    skip_unwanted_except_newline(&l->scanner);
+    skip_unwanted_except_newline(&l->engine, &l->scanner);
   else
     skip_unwanted(&l->engine, &l->scanner);
 
@@ -154,7 +157,6 @@ Token lexer_next(void* ctx) {
     l->in_pp_directive = true;
 
   if (ch == '\n') {
-    assert(l->in_pp_directive);
     l->in_pp_directive = false;
     Span span = span_begin(&l->scanner);
     chucci_nextch(&l->scanner);
@@ -204,31 +206,12 @@ Token lexer_next(void* ctx) {
   if (ch == '\"') {
     Span span = span_begin(&l->scanner);
     int res = lex_cstr(&l->scanner);
-    if (res < 0)
-      assert(false);
     span_end(&span, &l->scanner);
+    if (res < 0)
+      throw_diag(&l->engine, span, CC_LEX_INVALID_STRING);
     return token_new(span, TOK_STR);
   }
 
-  if (ch == '\'') {
-    Span span = span_begin(&l->scanner);
-
-    chucci_nextch(&l->scanner); // '\''
-
-    ch = peekch(&l->scanner);
-    if (ch == '\\') {
-      chucci_nextch(&l->scanner); // '\'
-      chucci_nextch(&l->scanner); // escaped character
-    } else if (ch != '\'')
-      chucci_nextch(&l->scanner); // normal character
-
-    assert(peekch(&l->scanner) == '\'');
-
-    chucci_nextch(&l->scanner); // Consume the closing '\''
-
-    span_end(&span, &l->scanner);
-    return token_new(span, TOK_VAL);
-  }
   throw_diag(&l->engine, span_begin(&l->scanner), CC_LEX_UNEXPECTED_CHAR, ch);
 }
 

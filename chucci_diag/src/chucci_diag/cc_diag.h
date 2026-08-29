@@ -4,7 +4,8 @@
 #define CHUCCI_DIAGS(X)                                                                            \
   X(CC_ERR_UNEXPECTED_TOKEN, "Unexpected token, expected %s found %s", DL_ERROR)                   \
   X(CC_LEX_UNEXPECTED_CHAR, "Unexpected character: %c", DL_ERROR)                                  \
-  X(CC_LEX_INVALID_C_BLOCK_COMMENT, "Unexpected Block Comment", DL_ERROR)
+  X(CC_LEX_INVALID_C_BLOCK_COMMENT, "Unterminated Block Comment", DL_ERROR)\
+  X(CC_LEX_INVALID_STRING, "Unterminated C string", DL_ERROR)
 
 typedef enum {
 #define X(a, _, __) a,
