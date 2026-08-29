@@ -3,6 +3,7 @@
 #include "core/cli_diag.h"
 #include "core/signals.h"
 #include "libterm/libterm.h"
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -63,12 +64,13 @@ int main(int argc, char** argv) {
   bstr file = NULL;
   parse_args(argc, argv, &file);
 
-  LexerTab* tab = lexertab_init(file);
-  if (!tab)
-    clid_throw_diag(CLID_ERROR, -1, "Cannot open file: %s", file);
-
-  event_loop(tab);
-
-  lexertab_free(tab);
+  jmp_buf onerror;
+  if (setjmp(onerror) == 0) {
+    LexerTab* tab = lexertab_init(file, &onerror);
+    if (!tab)
+      clid_throw_diag(CLID_ERROR, -1, "Cannot open file: %s", file);
+    event_loop(tab);
+    lexertab_free(tab);
+  }
   return 0;
 }

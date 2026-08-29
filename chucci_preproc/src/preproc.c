@@ -1,10 +1,13 @@
+#include "chucci_lex/cc_diag.h"
 #include "chucci_lex/token.h"
 #include "chucci_lex/token_stream.h"
 #include "chucci_preproc/include.h"
 #include "chucci_preproc/preproc.h"
+#include "core/diagnostics.h"
 #include "core/string_interner.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
+#include <setjmp.h>
 #include <stdio.h>
 
 static InternID preproc_ids[_preproc_cmd_count] = {0};
@@ -31,7 +34,8 @@ TokenStream preproc_new(
     SourceManager* sman,
     StringInterner* interner,
     PPSearchPaths sys_search,
-    PPSearchPaths search) {
+    PPSearchPaths search,
+    jmp_buf* onerror) {
   VMEMArena* arena = vmarena_new(1024 * 1024);
   Preprocessor* preproc = vmarena_calloc(arena, sizeof(Preprocessor));
   preproc->arena = arena;
@@ -39,6 +43,7 @@ TokenStream preproc_new(
   preproc->sman = sman;
   preproc->sys_search = sys_search;
   preproc->search = search;
+  preproc->engine = new_engine(cc_diaginfos, _cc_diaginfos_len, sman, onerror);
 
   if (preproc_ids[0] == 0) {
 #define X(kind, str) preproc_ids[kind] = intern(strview(str), preproc->interner);

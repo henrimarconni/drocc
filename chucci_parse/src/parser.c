@@ -36,7 +36,7 @@ ASTNode* parse_next(Parser* p) {
   Token token = ts_peek(&p->ts);
 
   // Function
-  if (token.kind == SEP_LCURLY) {
+  if (decl->kind == DECL_FUNCTION) {
   }
 
   ASTNode a = {0};

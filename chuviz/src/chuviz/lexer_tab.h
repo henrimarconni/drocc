@@ -6,6 +6,7 @@
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
 #include "libterm/libterm.h"
+#include <setjmp.h>
 #include <stddef.h>
 
 typedef struct {
@@ -21,7 +22,7 @@ typedef struct {
 } LexerTab;
 
 
-LexerTab* lexertab_init(bstr file);
+LexerTab* lexertab_init(bstr file, jmp_buf* onerror);
 void lexertab_free(LexerTab* tab);
 void lexertab_input(LexerTab* tab, struct lt_event* event);
 void render_lexert(LexerTab* tab);

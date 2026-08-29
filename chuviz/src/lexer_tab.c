@@ -10,6 +10,7 @@
 #include "core/vmem_arena.h"
 #include "libterm/libterm.h"
 #include <assert.h>
+#include <setjmp.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -289,7 +290,7 @@ void lexertab_input(LexerTab* tab, struct lt_event* event) {
   }
 }
 
-LexerTab* lexertab_init(bstr file) {
+LexerTab* lexertab_init(bstr file, jmp_buf* onerror) {
   // init
   SourceManager* sman = sman_new();
   VMEMArena* arena = vmarena_new(128 * 1024);
@@ -316,7 +317,7 @@ LexerTab* lexertab_init(bstr file) {
   tab->scroll_y = 0;
   tab->selected = 0;
 
-  TokenStream ts = lexer_new(sman, scanner, interner);
+  TokenStream ts = lexer_new(sman, scanner, interner, onerror);
   Token token = ts_next(&ts);
 
   while (token.kind != TOK_EOF) {

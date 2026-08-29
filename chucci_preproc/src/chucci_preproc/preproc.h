@@ -2,10 +2,12 @@
 #define PREPROC_H_
 
 #include "chucci_lex/token_stream.h"
+#include "core/diagnostics.h"
 #include "core/slice.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
+#include <setjmp.h>
 
 typedef slice(bstr) PPSearchPaths;
 
@@ -17,6 +19,7 @@ typedef struct {
 
   PPSearchPaths sys_search;
   PPSearchPaths search;
+  DiagEngine engine;
 } Preprocessor;
 
 #define PREPROC_CMDS(X)\
@@ -35,9 +38,9 @@ PREPROC_CMDS(X)
 _preproc_cmd_count
 } PreprocCMD;
 
-TokenStream preproc_new(TokenStream ts, SourceManager* sman, StringInterner* interner, PPSearchPaths sys_search, PPSearchPaths search);
-Token preproc_next(void* preproc);
-Token preproc_peek(void* preproc);
-void preproc_free(void** preproc);
+TokenStream preproc_new(TokenStream ts, SourceManager* sman, StringInterner* interner, PPSearchPaths sys_search, PPSearchPaths search, jmp_buf* onerror);
+Token preproc_next(void* pp);
+Token preproc_peek(void* pp);
+void preproc_free(void** pp);
 
 #endif

@@ -1,13 +1,16 @@
+#include "chucci_lex/cc_diag.h"
 #include "chucci_lex/lexer.h"
 #include "chucci_lex/token.h"
 #include "chucci_lex/token_stream.h"
 #include "core/clexer_utils.h"
+#include "core/diagnostics.h"
 #include "core/scanner.h"
 #include "core/span.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
 #include <assert.h>
 #include <ctype.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,12 +18,14 @@
 
 static InternID keyword_ids[_keyword_count];
 
-TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* interner) {
+TokenStream
+lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* interner, jmp_buf* onerror) {
   Lexer* lexer = malloc(sizeof(Lexer));
   *lexer = (Lexer){0};
   lexer->sman = sman;
   lexer->scanner = scanner;
   lexer->interner = interner;
+  lexer->engine = new_engine(cc_diaginfos, _cc_diaginfos_len, sman, onerror);
 
   // TODO: Relative caching (instead of kind, do (kind - first keyword), so that order doesnt
   // matter) (see token.h for the minor problem with current approach)
