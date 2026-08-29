@@ -27,6 +27,7 @@ static Declarator* parse_declarator_direct(Parser* p) {
   }
 
   // grouped types like (*fn)
+  // TODO: WHY THE FUCK DOES THIS WORK!!!!
   else if (token.kind == SEP_LPAREN) {
     ts_next(&p->ts);
     decl = parse_declarator(p);

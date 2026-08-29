@@ -1,3 +1,5 @@
+#include "chucci_lex/token.h"
+#include "chucci_lex/token_stream.h"
 #include "chucci_parse/decl_spec.h"
 #include "chucci_parse/declarator.h"
 #include "chucci_parse/parser.h"
@@ -5,6 +7,7 @@
 #include "chucci_parse/typeinterner.h"
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
+#include <assert.h>
 
 Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner, VMEMArena* arena) {
   Parser p = {0};
@@ -18,6 +21,8 @@ Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner,
   return p;
 }
 
+// static Block parse_block(Parser* p) {}
+
 ASTNode* parse_next(Parser* p) {
   TypeID tyid;
   StorageClass sc;
@@ -27,6 +32,12 @@ ASTNode* parse_next(Parser* p) {
   print_decl(p, decl);
 
   tyid = unwind_declarator(decl, p, tyid);
+
+  Token token = ts_peek(&p->ts);
+
+  // Function
+  if (token.kind == SEP_LCURLY) {
+  }
 
   ASTNode a = {0};
   return &a;
