@@ -6,6 +6,7 @@
 #include "core/diagnostics.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
+#include "core/vmem_arena.h"
 
 typedef struct Lexer {
   SrcScanner scanner;
@@ -17,7 +18,7 @@ typedef struct Lexer {
   bool in_pp_directive;
 } Lexer;
 
-TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* interner, jmp_buf* onerror);
+TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* interner, VMEMArena* arena, jmp_buf* onerror);
 Token lexer_next(void* lexer);
 Token lexer_peek(void* lexer);
 void lexer_free(void** lexer);

@@ -8,6 +8,7 @@
 #include "core/span.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
+#include "core/vmem_arena.h"
 #include <ctype.h>
 #include <setjmp.h>
 #include <stdbool.h>
@@ -17,9 +18,13 @@
 
 static InternID keyword_ids[_keyword_count];
 
-TokenStream
-lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* interner, jmp_buf* onerror) {
-  Lexer* lexer = malloc(sizeof(Lexer));
+TokenStream lexer_new(
+    SourceManager* sman,
+    SrcScanner scanner,
+    StringInterner* interner,
+    VMEMArena* arena,
+    jmp_buf* onerror) {
+  Lexer* lexer = vmarena_calloc(arena, sizeof(Lexer));
   *lexer = (Lexer){0};
   lexer->sman = sman;
   lexer->scanner = scanner;
@@ -223,8 +228,4 @@ Token lexer_peek(void* ctx) {
   return token;
 }
 
-void lexer_free(void** lexer) {
-  if (*lexer)
-    free(*lexer);
-  *lexer = NULL;
-}
+void lexer_free(void** lexer) { *lexer = NULL; }

@@ -19,7 +19,7 @@ include_file(Preprocessor* pp, TokenStream* out_ts, StringView file, PPSearchPat
   path[file.len] = '\0';
 
   if (sman_open(&scanner, pp->sman, path)) {
-    *out_ts = lexer_new(pp->sman, scanner, pp->interner, pp->engine.onerror);
+    *out_ts = lexer_new(pp->sman, scanner, pp->interner, pp->arena, pp->engine.onerror);
     return true;
   }
 
@@ -41,7 +41,7 @@ include_file(Preprocessor* pp, TokenStream* out_ts, StringView file, PPSearchPat
     path[dirlen + 1 + file.len] = '\0';
 
     if (sman_open(&scanner, pp->sman, path)) {
-      *out_ts = lexer_new(pp->sman, scanner, pp->interner, pp->engine.onerror);
+      *out_ts = lexer_new(pp->sman, scanner, pp->interner, pp->arena, pp->engine.onerror);
       return true;
     }
 

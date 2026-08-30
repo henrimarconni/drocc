@@ -1,4 +1,5 @@
 #include "chucci_lex/token.h"
+#include "chucci_lex/token_stream.h"
 #include "chucci_parse/decl_spec.h"
 #include "chucci_parse/parser.h"
 #include "chucci_parse/type.h"
@@ -81,6 +82,7 @@ static void resolve_decl_spec(Parser* p, DeclSpecBuilder* dsb, TypeID* tyid, Sto
     return;
   }
 
+  fflush(stdout);
   assert(false && "struct...etc arent implemented yet");
 }
 

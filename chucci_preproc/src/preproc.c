@@ -7,8 +7,10 @@
 #include "core/string_interner.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
+#include <assert.h>
 #include <setjmp.h>
 #include <stdio.h>
+#include <string.h>
 
 static InternID preproc_ids[_preproc_cmd_count] = {0};
 
@@ -35,8 +37,8 @@ TokenStream preproc_new(
     StringInterner* interner,
     PPSearchPaths sys_search,
     PPSearchPaths search,
+    VMEMArena* arena,
     jmp_buf* onerror) {
-  VMEMArena* arena = vmarena_new(1024 * 1024);
   Preprocessor* preproc = vmarena_calloc(arena, sizeof(Preprocessor));
   preproc->arena = arena;
   preproc->interner = interner;
@@ -66,7 +68,7 @@ static Token preproc_stmt(Preprocessor* pp) {
     token = tstack_next(&pp->stack);
     break;
   default:
-    __builtin_unreachable();
+    assert(false && "NOT IMPLEMENTED");
   }
 
   return token;
@@ -86,9 +88,14 @@ Token preproc_next(void* ctx) {
   return token;
 }
 
-Token preproc_peek(void* preproc) {
-  (void)preproc;
-  return EOF_TOKEN;
+Token preproc_peek(void* ctx) {
+  Preprocessor* pp = ctx;
+  if (!pp->is_peeked) {
+    pp->peeked = preproc_next(pp);
+    pp->is_peeked = true;
+  }
+
+  return pp->peeked;
 }
 
 void preproc_free(void** preproc) { (void)preproc; }

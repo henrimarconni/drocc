@@ -33,8 +33,6 @@ ASTNode* parse_next(Parser* p) {
 
   tyid = unwind_declarator(decl, p, tyid);
 
-  Token token = ts_peek(&p->ts);
-
   // Function
   if (decl->kind == DECL_FUNCTION) {
   }

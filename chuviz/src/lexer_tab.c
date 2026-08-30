@@ -317,7 +317,7 @@ LexerTab* lexertab_init(bstr file, jmp_buf* onerror) {
   tab->scroll_y = 0;
   tab->selected = 0;
 
-  TokenStream ts = lexer_new(sman, scanner, interner, onerror);
+  TokenStream ts = lexer_new(sman, scanner, interner, arena, onerror);
   Token token = ts_next(&ts);
 
   while (token.kind != TOK_EOF) {

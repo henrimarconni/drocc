@@ -113,7 +113,7 @@ $test "Lexer test" : chucci_lex(lexer) {
   SrcScanner scanner = sman_str(sman, "scratch", str, len);
 
   if (setjmp(onerror) == 0) {
-    TokenStream ts = lexer_new(sman, scanner, interner, &onerror);
+    TokenStream ts = lexer_new(sman, scanner, interner, arena, &onerror);
 
     Token tokens[] = {
         (Token){.span = {.offset = 68, .len = 1, .srcid = 0}, .kind = OP_PREPROCESS, .ident = 0},
