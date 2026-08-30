@@ -45,6 +45,7 @@ TokenStream preproc_new(
   preproc->sman = sman;
   preproc->sys_search = sys_search;
   preproc->search = search;
+  preproc->is_peeked = false;
   preproc->engine = new_engine(cc_diaginfos, _cc_diaginfos_len, sman, onerror);
 
   if (preproc_ids[0] == 0) {
@@ -76,6 +77,10 @@ static Token preproc_stmt(Preprocessor* pp) {
 
 Token preproc_next(void* ctx) {
   Preprocessor* pp = ctx;
+  if (pp->is_peeked) {
+    pp->is_peeked = false;
+    return pp->peeked;
+  }
 
   Token token = tstack_next(&pp->stack);
 
