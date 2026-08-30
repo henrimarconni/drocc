@@ -9,12 +9,12 @@
 #include <setjmp.h>
 
 int main(int argc, char** argv) {
-  assert(argc == 3);
+  assert(argc == 2);
 
   VMEMArena* arena = vmarena_new(1024 * 1024);
   StringInterner* interner = interner_new(arena);
   SourceManager* sman = sman_new();
-  SrcScanner scanner = sman_str(sman, "chutest", argv[2], strlen(argv[2]));
+  SrcScanner scanner = sman_str(sman, "chutest", argv[1], strlen(argv[1]));
   PPSearchPaths paths = {NULL, 0};
 
   jmp_buf onerror;
