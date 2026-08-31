@@ -4,7 +4,6 @@ add_library(
   STATIC
   src/parser.c
   src/typeinterner.c
-  src/type.c
   src/decl_spec.c
   src/declarator.c
 )

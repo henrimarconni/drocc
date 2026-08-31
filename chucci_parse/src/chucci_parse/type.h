@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef uint32_t TypeID;
 typedef struct TypeInterner TypeInterner;
 
 typedef enum {
@@ -48,21 +47,10 @@ static_assert(
 
 typedef struct Type Type;
 
-typedef struct {
-  uint32_t offset;
-  uint32_t len;
-} TyPayload;
-
-typedef struct {
-  uint8_t is_volatile : 1;
-  uint8_t is_const : 1;
-  uint8_t is_restrict : 1;
-  TypeKind kind : 5;
-} TyQualifier;
-
 typedef struct Type {
-  TyPayload payload;
-  TyQualifier qual;
+  TypeKind kind;
+  uint8_t payload_len;
+  uint32_t payload[];
 } Type;
 
 /// Storage class associated with a specific variable/function declaration/definition
@@ -75,8 +63,5 @@ typedef enum {
   // SC_AUTO // DEPRECATED
 } StorageClass;
 
-
-TyQualifier tyqual(TypeKind kind, bool is_const, bool is_volatile, bool is_restrict);
-void print_type(TypeID type, TypeInterner* tyint);
 
 #endif

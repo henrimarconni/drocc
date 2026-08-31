@@ -1,7 +1,7 @@
 #ifndef SYMBOL_H_
 #define SYMBOL_H_
 
-#include "chucci_parse/type.h"
+#include "chucci_parse/typeinterner.h"
 #include <stdint.h>
 
 typedef struct {

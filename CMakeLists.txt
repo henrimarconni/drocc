@@ -19,7 +19,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     -Wshadow            
     -Wstrict-prototypes 
     -Wmissing-prototypes
-    -Wconversion        
     -Wformat=2          
     -Werror=implicit-function-declaration 
     -Werror=incompatible-pointer-types    

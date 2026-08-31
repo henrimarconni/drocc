@@ -2,7 +2,6 @@
 #define DECLARATOR_H_
 
 #include "chucci_parse/parser.h"
-#include "chucci_parse/type.h"
 #include "core/string_interner.h"
 #include "core/vec.h"
 
@@ -23,13 +22,24 @@ typedef struct Declarator {
 
   union {
     InternID ident;
-    vec(TypeID) params;
-    TyQualifier ptrqual; //< for pointers
+    /**
+      ident is optional (only required in function definition but not in declaration)
+      If no ident was parsed then ident = 0
+      [Ident] [TypeID] [Ident] [TypeID] .... [Return TypeID]
+    */
+    vec(uint32_t) params;
+    struct {
+      uint8_t is_const : 1;
+      uint8_t is_restrict : 1;
+      uint8_t is_volatile : 1;
+    } ptrqual;
   };
 } Declarator;
 
 void print_decl(Parser* p, Declarator* decl);
 Declarator* parse_declarator(Parser* p);
-TypeID unwind_declarator(Declarator* decl, Parser* p, TypeID current);
+
+/// Outputs TypeID of the unwinded type and name (if exists) associated with the declarator
+void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p, TypeID current);
 
 #endif
