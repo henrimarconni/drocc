@@ -117,7 +117,7 @@ void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p
     }
     case DECL_POINTER: {
       uint32_t payload[] = {tyid_to_uint32_t(current)};
-      ty_intern(
+      current = ty_intern(
           p->tyint,
           TY_POINTER,
           decl->ptrqual.is_const,
@@ -129,7 +129,7 @@ void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p
     }
     case DECL_INCOMPLETE_ARRAY: {
       uint32_t payload[] = {tyid_to_uint32_t(current)};
-      ty_intern(p->tyint, TY_POINTER, false, false, false, payload, 1);
+      current = ty_intern(p->tyint, TY_POINTER, false, false, false, payload, 1);
       break;
     }
     default:

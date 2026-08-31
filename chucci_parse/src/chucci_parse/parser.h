@@ -96,6 +96,7 @@ typedef struct {
 
 Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner, VMEMArena* arena);
 ASTNode* parse_next(Parser* p);
+void print_ast(Parser* p, ASTNode* ast);
 
 
 #endif

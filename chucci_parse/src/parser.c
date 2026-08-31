@@ -49,18 +49,25 @@ static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
   return make_ast_node(p, &node, sizeof(FuncDefNode), AST_FUNC_DEF);
 }
 
-static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid) {
+static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid, Type* type) {
   printf("Parsing func decl\n");
-  ASTNode a = {0};
-  return &a;
+
+  uint32_t size = sizeof(FuncDeclNode) + sizeof(uint32_t) * (type->payload_len - 1);
+  FuncDeclNode* node = vmarena_alloc(p->arena, size);
+  node->ident = id;
+  node->param_len = type->payload_len - 1;
+  node->type = tyid;
+  memcpy(node->params, type->payload, (type->payload_len - 1) * sizeof(uint32_t));
+
+  return make_ast_node(p, node, size, AST_FUNC_DECL);
 }
 
-static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid) {
-  Token token = ts_peek(&p->ts);
+static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid, Type* type) {
+  Token token = ts_next(&p->ts);
   if (token.kind == SEP_LCURLY)
     return parse_func_def(p, id, tyid);
   else if (token.kind == SEP_SEMI)
-    return parse_func_decl(p, id, tyid);
+    return parse_func_decl(p, id, tyid, type);
 
   assert(false && "Not possible");
   __builtin_unreachable();
@@ -81,8 +88,23 @@ ASTNode* parse_next(Parser* p) {
 
   // Function decl or def...
   if (type->kind == TY_FUNCTION)
-    return parse_func(p, name, tyid);
+    return parse_func(p, name, tyid, type);
 
-  ASTNode a = {0};
-  return &a;
+  return NULL;
+}
+
+void print_ast(Parser* p, ASTNode* ast) {
+  switch (ast->kind) {
+  case AST_FUNC_DECL:
+    FuncDeclNode node = *(FuncDeclNode*)&ast->data;
+    assert(node.ident > 0);
+    printf("func_decl(%s", interner_fetch_str(p->interner, node.ident));
+    while (node.param_len--) {
+      printf(", %d", node.params[node.param_len].type.id);
+    }
+    printf(") -> %d\n", node.type.id);
+    break;
+  default:
+    printf("NOT IMPLEMENTED");
+  }
 }

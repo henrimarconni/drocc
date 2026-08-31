@@ -25,6 +25,11 @@ int main(int argc, char** argv) {
         preproc_new(lexerstream, sman, interner, paths, paths, arena, &onerror);
     Parser parser = parser_new(preprocstream, sman, interner, arena);
 
-    parse_next(&parser);
+    while (true) {
+      ASTNode* node = parse_next(&parser);
+      if (!node)
+        break;
+      print_ast(&parser, node);
+    }
   }
 }
