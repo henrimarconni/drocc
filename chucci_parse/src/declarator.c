@@ -9,6 +9,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define tyid_to_uint32_t(tyid) *(uint32_t*)(&tyid)
+
+static_assert(sizeof(uint32_t) == sizeof(TypeID));
+
 static Declarator* make_decl(Parser* p, DeclaratorKind kind) {
   Declarator* decl = vmarena_alloc(p->scratch, sizeof(Declarator));
   *decl = (Declarator){0};
@@ -103,20 +107,29 @@ void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p
     }
     case DECL_FUNCTION: {
       // param1_name, param1_ty, param2_name, param2_ty ..... return_ty
-      vec_push(decl->params, current);
+      vec_push(decl->params, tyid_to_uint32_t(current));
+
+      // function cannot be const, restrict or volatile
       current = ty_intern(
-          p->tyint, tyqual(TY_FUNCTION, false, false, false), decl->params.get, decl->params.n);
+          p->tyint, TY_FUNCTION, false, false, false, decl->params.get, (uint8_t)decl->params.n);
+      vec_destroy(decl->params);
       break;
     }
     case DECL_POINTER: {
-      uint32_t payload[] = {current};
-      decl->ptrqual.kind = TY_POINTER;
-      current = ty_intern(p->tyint, decl->ptrqual, payload, 1);
+      uint32_t payload[] = {tyid_to_uint32_t(current)};
+      ty_intern(
+          p->tyint,
+          TY_POINTER,
+          decl->ptrqual.is_const,
+          decl->ptrqual.is_restrict,
+          decl->ptrqual.is_volatile,
+          payload,
+          1);
       break;
     }
     case DECL_INCOMPLETE_ARRAY: {
-      uint32_t payload[] = {current};
-      current = ty_intern(p->tyint, tyqual(TY_INCOMPLETE_ARRAY, false, false, false), payload, 1);
+      uint32_t payload[] = {tyid_to_uint32_t(current)};
+      ty_intern(p->tyint, TY_POINTER, false, false, false, payload, 1);
       break;
     }
     default:

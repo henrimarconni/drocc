@@ -2,7 +2,6 @@
 #define DECLARATOR_H_
 
 #include "chucci_parse/parser.h"
-#include "chucci_parse/type.h"
 #include "core/string_interner.h"
 #include "core/vec.h"
 
@@ -29,7 +28,11 @@ typedef struct Declarator {
       [Ident] [TypeID] [Ident] [TypeID] .... [Return TypeID]
     */
     vec(uint32_t) params;
-    TyQualifier ptrqual; //< for pointers
+    struct {
+      uint8_t is_const : 1;
+      uint8_t is_restrict : 1;
+      uint8_t is_volatile : 1;
+    } ptrqual;
   };
 } Declarator;
 

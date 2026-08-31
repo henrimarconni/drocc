@@ -32,9 +32,14 @@ static ASTNode* make_ast_node(Parser* p, void* data, size_t len, ASTKind kind) {
   return node;
 }
 
-static Block parse_block(Parser* p) {}
+static Block parse_block(Parser* p) {
+  (void)p;
+  Block b = {0};
+  return b;
+}
 
 static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
+  printf("Parsing func def\n");
   Block block = parse_block(p);
   FuncDefNode node = {0};
   node.block = block;
@@ -44,7 +49,11 @@ static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
   return make_ast_node(p, &node, sizeof(FuncDefNode), AST_FUNC_DEF);
 }
 
-static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid) {}
+static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid) {
+  printf("Parsing func decl\n");
+  ASTNode a = {0};
+  return &a;
+}
 
 static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid) {
   Token token = ts_peek(&p->ts);
@@ -68,9 +77,11 @@ ASTNode* parse_next(Parser* p) {
   InternID name = 0;
   unwind_declarator(&tyid, &name, decl, p, tyid);
 
+  Type* type = ty_fetch(p->tyint, tyid);
+
   // Function decl or def...
-  if (decl->kind == DECL_FUNCTION)
-    return parse_func(p);
+  if (type->kind == TY_FUNCTION)
+    return parse_func(p, name, tyid);
 
   ASTNode a = {0};
   return &a;

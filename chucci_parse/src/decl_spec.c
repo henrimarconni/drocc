@@ -71,14 +71,9 @@ static TypeKind resolve_decl_spec_primitive(DeclSpecBuilder* dsb) {
 static void resolve_decl_spec(Parser* p, DeclSpecBuilder* dsb, TypeID* tyid, StorageClass* sc) {
   *sc = dsb->storage_class;
 
-  TyQualifier qual = {0};
-  qual.is_const = dsb->is_const;
-  qual.is_restrict = dsb->is_restrict;
-  qual.is_volatile = dsb->is_volatile;
-
   if (dsb->total_primitives >= 1) {
-    qual.kind = resolve_decl_spec_primitive(dsb);
-    *tyid = ty_intern(p->tyint, qual, NULL, 0);
+    TypeKind kind = resolve_decl_spec_primitive(dsb);
+    *tyid = ty_intern(p->tyint, kind, dsb->is_const, dsb->is_restrict, dsb->is_volatile, NULL, 0);
     return;
   }
 

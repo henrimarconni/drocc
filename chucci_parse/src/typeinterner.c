@@ -1,50 +1,49 @@
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
-#include "core/infvec.h"
 #include "core/vec.h"
+#include "core/vmem_arena.h"
 #include "thirdparty/wyhash.h"
 #include <assert.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_SIZE 1024 * 1024 * 256
+#define MAX_SIZE (1024 * 1024 * 256)
 #define EMPTY_TYPEID 0
 #define TY_RESIZE_RATIO 0.80
 #define hash_bytes(bytes, len) wyhash((bytes), (len), 0, _wyp)
-#define is_pow_2(n) ((n & (n - 1)) == 0)
+#define is_pow_2(n) (((n) & ((n) - 1)) == 0)
 #define wrap_around(num, cap) ((num) & ((cap) - 1))
 #define DEFAULT_TY_INTERNER_CAP 1024
 
 static_assert(is_pow_2(DEFAULT_TY_INTERNER_CAP), "Interner capacity must be power of 2");
 
 TypeInterner* ty_interner_new() {
-  // initialize base struct
   TypeInterner* interner = malloc(sizeof(TypeInterner));
   *interner = (TypeInterner){0};
   interner->cap = DEFAULT_TY_INTERNER_CAP;
+  interner->arena = vmarena_new(1024 * 1024);
 
-  infvec_init(interner->types, MAX_SIZE);
-  infvec_init(interner->payloads, MAX_SIZE);
+  // Pad the arena by 1 byte so no valid type ever gets offset 0.
+  vmarena_alloc(interner->arena, 1);
 
-  // reserve 0 as EMPTY_TYPEID and init vectors
-  interner->len = 1;
-  infvec_push(interner->types, (Type){0});
+  interner->len = 0; // Number of unique types
   vec_resize(interner->entries, interner->cap);
   memset(interner->entries.get, 0, interner->cap * sizeof(TypeID));
   return interner;
 }
 
-static uint64_t hash_type_query(TyQualifier qual, uint32_t* payload, uint32_t count) {
+static uint64_t hash_type_query(TypeKind kind, uint32_t* payload, uint32_t count) {
   uint32_t buf[64] = {0};
-  size_t total_count = count + 1;
+  uint32_t total_count = count + 1;
   uint32_t* data = total_count > 64 ? malloc(total_count * sizeof(uint32_t)) : buf;
 
-  data[0] = (uint32_t)qual.kind | ((uint32_t)qual.is_const << 5) |
-            ((uint32_t)qual.is_volatile << 6) | ((uint32_t)qual.is_restrict << 7);
+  data[0] = kind;
   if (count > 0)
-    memcpy(data + 1, payload, count * sizeof(uint32_t));
+    memcpy(data + 1, payload, sizeof(uint32_t) * count);
+
   uint64_t hash = hash_bytes(data, total_count * sizeof(uint32_t));
 
   if (total_count > 64)
@@ -52,29 +51,27 @@ static uint64_t hash_type_query(TyQualifier qual, uint32_t* payload, uint32_t co
   return hash;
 }
 
-static bool type_cmp(
-    TypeInterner* interner, Type* stored, TyQualifier qual, uint32_t* payload, uint32_t count) {
-  if (stored->qual.kind != qual.kind || stored->qual.is_const != qual.is_const ||
-      stored->qual.is_volatile != qual.is_volatile ||
-      stored->qual.is_restrict != qual.is_restrict || stored->payload.len != count)
+static bool type_cmp(Type* stored, TypeKind kind, uint32_t* payload, uint8_t count) {
+  if (stored->kind != kind || stored->payload_len != count)
     return false;
 
   if (count == 0)
     return true;
-  uint32_t* stored_payload = &interner->payloads.get[stored->payload.offset];
-  return memcmp(stored_payload, payload, count * sizeof(uint32_t)) == 0;
+  return memcmp(stored->payload, payload, count * sizeof(uint32_t)) == 0;
 }
 
-static TypeID*
-find_entry(TypeInterner* interner, TyQualifier qual, uint32_t* payload, uint32_t count) {
-  uint64_t hash = hash_type_query(qual, payload, count);
+Type* ty_fetch(TypeInterner* interner, TypeID tyid) {
+  return (Type*)(interner->arena->data + tyid.id);
+}
+
+static TypeID* find_entry(TypeInterner* interner, TypeKind kind, uint32_t* payload, uint8_t count) {
+  uint64_t hash = hash_type_query(kind, payload, count);
   uint64_t id = wrap_around(hash, interner->cap);
   TypeID* entry = &interner->entries.get[id];
 
-  // linear probe
-  while (*entry != EMPTY_TYPEID) {
-    Type* stored = &interner->types.get[*entry];
-    if (type_cmp(interner, stored, qual, payload, count))
+  while (entry->id != EMPTY_TYPEID) {
+    Type* stored = ty_fetch(interner, *entry);
+    if (type_cmp(stored, kind, payload, count))
       return entry;
     id = wrap_around(id + 1, interner->cap);
     entry = &interner->entries.get[id];
@@ -84,50 +81,60 @@ find_entry(TypeInterner* interner, TyQualifier qual, uint32_t* payload, uint32_t
 
 static void resize(TypeInterner* interner) {
   TypeIDVec old_entries = interner->entries;
-  interner->entries = (TypeIDVec){0};
-  interner->cap *= 2;
-  vec_resize(interner->entries, interner->cap);
-  memset(interner->entries.get, 0, interner->entries.n * sizeof(TypeID));
 
-  // rehash
+  interner->cap *= 2;
+  interner->entries = (TypeIDVec){0};
+  vec_resize(interner->entries, interner->cap);
+  memset(interner->entries.get, 0, interner->cap * sizeof(TypeID));
+
   for (size_t i = 0; i < old_entries.n; i++) {
     TypeID old_id = old_entries.get[i];
-    if (old_id == EMPTY_TYPEID)
+    if (old_id.id == EMPTY_TYPEID)
       continue;
-    Type* stored = &interner->types.get[old_id];
-    uint32_t* stored_payload = &interner->payloads.get[stored->payload.offset];
-    *find_entry(interner, stored->qual, stored_payload, stored->payload.len) = old_id;
+
+    Type* stored = ty_fetch(interner, old_id);
+    *find_entry(interner, stored->kind, stored->payload, stored->payload_len) = old_id;
   }
   vec_destroy(old_entries);
 }
 
-TypeID ty_intern(TypeInterner* interner, TyQualifier qual, uint32_t* payload, uint32_t count) {
-  // resize
+TypeID ty_intern(
+    TypeInterner* interner,
+    TypeKind kind,
+    bool is_const,
+    bool is_restrict,
+    bool is_volatile,
+    uint32_t* payload,
+    uint8_t count) {
+
   if (interner->len >= TY_RESIZE_RATIO * interner->cap)
     resize(interner);
 
-  TypeID* entry = find_entry(interner, qual, payload, count);
-  if (*entry != EMPTY_TYPEID)
-    return *entry;
+  TypeID* entry = find_entry(interner, kind, payload, count);
 
-  // populate type
-  *entry = interner->len++;
-  Type type = {.qual = qual, .payload = {interner->payloads.n, count}};
+  // If the base type doesn't exist, create it
+  if (entry->id == EMPTY_TYPEID) {
+    uint32_t size = sizeof(Type) + sizeof(uint32_t) * count;
+    Type* type = vmarena_alloc(interner->arena, size);
+    type->kind = kind;
+    type->payload_len = count;
+    if (count > 0)
+      memcpy(type->payload, payload, count * sizeof(uint32_t));
 
-  for (uint32_t i = 0; i < count; i++)
-    infvec_push(interner->payloads, payload[i]);
-  infvec_push(interner->types, type);
-  return *entry;
+    entry->id = (uint32_t)((uint8_t*)type - interner->arena->data);
+    interner->len++;
+  }
+
+  TypeID result = *entry;
+  result.is_const = is_const;
+  result.is_restrict = is_restrict;
+  result.is_volatile = is_volatile;
+
+  return result;
 }
-
-void* ty_payload_base(TypeInterner* interner, uint32_t offset) {
-  return &interner->payloads.get[offset];
-}
-Type ty_fetch(TypeInterner* interner, TypeID id) { return interner->types.get[id]; }
 
 void tyint_free(TypeInterner* interner) {
-  infvec_destroy(interner->payloads);
-  infvec_destroy(interner->types);
   vec_destroy(interner->entries);
+  vmarena_free(interner->arena);
   free(interner);
 }
