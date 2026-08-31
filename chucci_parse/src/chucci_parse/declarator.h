@@ -23,13 +23,20 @@ typedef struct Declarator {
 
   union {
     InternID ident;
-    vec(TypeID) params;
+    /**
+      ident is optional (only required in function definition but not in declaration)
+      If no ident was parsed then ident = 0
+      [Ident] [TypeID] [Ident] [TypeID] .... [Return TypeID]
+    */
+    vec(uint32_t) params;
     TyQualifier ptrqual; //< for pointers
   };
 } Declarator;
 
 void print_decl(Parser* p, Declarator* decl);
 Declarator* parse_declarator(Parser* p);
-TypeID unwind_declarator(Declarator* decl, Parser* p, TypeID current);
+
+/// Outputs TypeID of the unwinded type and name (if exists) associated with the declarator
+void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p, TypeID current);
 
 #endif

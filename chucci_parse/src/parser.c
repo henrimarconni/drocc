@@ -8,6 +8,9 @@
 #include "core/string_interner.h"
 #include "core/vmem_arena.h"
 #include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner, VMEMArena* arena) {
   Parser p = {0};
@@ -21,7 +24,38 @@ Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner,
   return p;
 }
 
-// static Block parse_block(Parser* p) {}
+static ASTNode* make_ast_node(Parser* p, void* data, size_t len, ASTKind kind) {
+  ASTNode* node = vmarena_alloc(p->arena, len + sizeof(ASTNode));
+  node->kind = kind;
+  memcpy(node->data, data, len);
+
+  return node;
+}
+
+static Block parse_block(Parser* p) {}
+
+static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
+  Block block = parse_block(p);
+  FuncDefNode node = {0};
+  node.block = block;
+  node.ident = id;
+  node.type = tyid;
+
+  return make_ast_node(p, &node, sizeof(FuncDefNode), AST_FUNC_DEF);
+}
+
+static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid) {}
+
+static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid) {
+  Token token = ts_peek(&p->ts);
+  if (token.kind == SEP_LCURLY)
+    return parse_func_def(p, id, tyid);
+  else if (token.kind == SEP_SEMI)
+    return parse_func_decl(p, id, tyid);
+
+  assert(false && "Not possible");
+  __builtin_unreachable();
+}
 
 ASTNode* parse_next(Parser* p) {
   TypeID tyid;
@@ -31,11 +65,12 @@ ASTNode* parse_next(Parser* p) {
   Declarator* decl = parse_declarator(p);
   print_decl(p, decl);
 
-  tyid = unwind_declarator(decl, p, tyid);
+  InternID name = 0;
+  unwind_declarator(&tyid, &name, decl, p, tyid);
 
-  // Function
-  if (decl->kind == DECL_FUNCTION) {
-  }
+  // Function decl or def...
+  if (decl->kind == DECL_FUNCTION)
+    return parse_func(p);
 
   ASTNode a = {0};
   return &a;

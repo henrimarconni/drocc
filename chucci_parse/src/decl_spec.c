@@ -91,6 +91,7 @@ static bool try_qualifier(TokenKind kind, DeclSpecBuilder* tb) {
   case KW_CONST:
     tb->is_const = true;
     return true;
+
   case KW_VOLATILE:
     tb->is_volatile = true;
     return true;

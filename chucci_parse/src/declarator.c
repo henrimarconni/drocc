@@ -93,15 +93,16 @@ Declarator* parse_declarator(Parser* p) {
   return parse_declarator_direct(p);
 }
 
-TypeID unwind_declarator(Declarator* decl, Parser* p, TypeID current) {
+void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p, TypeID current) {
   while (decl) {
     switch (decl->kind) {
     case DECL_IDENT: {
+      *name = decl->ident;
       assert(decl->inner == NULL);
       break;
     }
     case DECL_FUNCTION: {
-      // param1_ty, param2_ty ..... return_ty
+      // param1_name, param1_ty, param2_name, param2_ty ..... return_ty
       vec_push(decl->params, current);
       current = ty_intern(
           p->tyint, tyqual(TY_FUNCTION, false, false, false), decl->params.get, decl->params.n);
@@ -125,7 +126,7 @@ TypeID unwind_declarator(Declarator* decl, Parser* p, TypeID current) {
     decl = decl->inner;
   }
 
-  return current;
+  *tyid = current;
 }
 
 void print_decl(Parser* p, Declarator* decl) {
