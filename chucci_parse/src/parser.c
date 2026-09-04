@@ -49,25 +49,21 @@ static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
   return make_ast_node(p, &node, sizeof(FuncDefNode), AST_FUNC_DEF);
 }
 
-static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid, Type* type) {
-  printf("Parsing func decl\n");
+static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid) {
 
-  uint32_t size = sizeof(FuncDeclNode) + sizeof(uint32_t) * (type->payload_len - 1);
-  FuncDeclNode* node = vmarena_alloc(p->arena, size);
-  node->ident = id;
-  node->param_len = type->payload_len - 1;
-  node->type = tyid;
-  memcpy(node->params, type->payload, (type->payload_len - 1) * sizeof(uint32_t));
+  FuncDeclNode node = {0};
+  node.ident = id;
+  node.type = tyid;
 
-  return make_ast_node(p, node, size, AST_FUNC_DECL);
+  return make_ast_node(p, &node, sizeof(FuncDeclNode), AST_FUNC_DECL);
 }
 
-static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid, Type* type) {
+static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid) {
   Token token = ts_next(&p->ts);
   if (token.kind == SEP_LCURLY)
     return parse_func_def(p, id, tyid);
   else if (token.kind == SEP_SEMI)
-    return parse_func_decl(p, id, tyid, type);
+    return parse_func_decl(p, id, tyid);
 
   assert(false && "Not possible");
   __builtin_unreachable();
@@ -88,23 +84,83 @@ ASTNode* parse_next(Parser* p) {
 
   // Function decl or def...
   if (type->kind == TY_FUNCTION)
-    return parse_func(p, name, tyid, type);
+    return parse_func(p, name, tyid);
 
   return NULL;
 }
 
 void print_ast(Parser* p, ASTNode* ast) {
   switch (ast->kind) {
-  case AST_FUNC_DECL:
+  case AST_FUNC_DECL: {
     FuncDeclNode node = *(FuncDeclNode*)&ast->data;
-    assert(node.ident > 0);
-    printf("func_decl(%s", interner_fetch_str(p->interner, node.ident));
-    while (node.param_len--) {
-      printf(", %d", node.params[node.param_len].type.id);
+    printf("func_decl[%s](", interner_fetch_str(p->interner, node.ident));
+
+    Type* type = ty_fetch(p->tyint, node.type);
+
+    // Parameters start at index 1 and come in pairs (name, type)
+    for (uint8_t i = 1; i < type->payload_len; i += 2) {
+      if (i > 1) {
+        printf(", ");
+      }
+
+      InternID param_name = *(InternID*)&type->payload[i];
+      TypeID param_ty = *(TypeID*)&type->payload[i + 1];
+
+      // Print param name (handle anonymous parameters like `int foo(int)`)
+      if (param_name != 0) {
+        printf("%s: %d", interner_fetch_str(p->interner, param_name), param_ty.id);
+      } else {
+        printf("<unnamed>: %d", param_ty.id);
+      }
     }
-    printf(") -> %d\n", node.type.id);
+
+    // Return type is at index 0
+    TypeID ret_ty = *(TypeID*)&type->payload[0];
+    printf(") -> %d\n", ret_ty.id);
     break;
-  default:
-    printf("NOT IMPLEMENTED");
   }
+
+  case AST_FUNC_DEF: {
+    FuncDefNode node = *(FuncDefNode*)&ast->data;
+    printf("func_def[%s](", interner_fetch_str(p->interner, node.ident));
+
+    Type* type = ty_fetch(p->tyint, node.type);
+
+    // Parameters start at index 1 and come in pairs (name, type)
+    for (uint8_t i = 1; i < type->payload_len; i += 2) {
+      if (i > 1) {
+        printf(", ");
+      }
+
+      InternID param_name = *(InternID*)&type->payload[i];
+      TypeID param_ty = *(TypeID*)&type->payload[i + 1];
+
+      if (param_name != 0) {
+        printf("%s: %d", interner_fetch_str(p->interner, param_name), param_ty.id);
+      } else {
+        printf("<unnamed>: %d", param_ty.id);
+      }
+    }
+
+    // Return type is at index 0
+    TypeID ret_ty = *(TypeID*)&type->payload[0];
+    printf(") -> %d\n", ret_ty.id);
+    break;
+  }
+
+  default:
+    assert(false && "NOT IMPLEMENTED");
+  }
+}
+
+VarDeclNode parse_var_decl(Parser* p) {
+  TypeID tyid;
+  StorageClass sc;
+  parse_decl_specifier(p, &tyid, &sc);
+  Declarator* decl = parse_declarator(p);
+
+  VarDeclNode node = {0};
+  unwind_declarator(&node.type, &node.ident, decl, p, tyid);
+
+  return node;
 }
