@@ -89,7 +89,7 @@ typedef struct {
   uint8_t data[];
 } ASTNode;
 
-typedef struct {
+typedef struct Parser{
   TokenStream ts;
   SourceManager* sman;
   vec(LocalScope) scopes;

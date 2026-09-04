@@ -93,58 +93,22 @@ void print_ast(Parser* p, ASTNode* ast) {
   switch (ast->kind) {
   case AST_FUNC_DECL: {
     FuncDeclNode node = *(FuncDeclNode*)&ast->data;
-    printf("func_decl[%s](", interner_fetch_str(p->interner, node.ident));
-
+    printf("func_decl[%s]", interner_fetch_str(p->interner, node.ident));
     Type* type = ty_fetch(p->tyint, node.type);
 
-    // Parameters start at index 1 and come in pairs (name, type)
-    for (uint8_t i = 1; i < type->payload_len; i += 2) {
-      if (i > 1) {
-        printf(", ");
-      }
-
-      InternID param_name = *(InternID*)&type->payload[i];
-      TypeID param_ty = *(TypeID*)&type->payload[i + 1];
-
-      // Print param name (handle anonymous parameters like `int foo(int)`)
-      if (param_name != 0) {
-        printf("%s: %d", interner_fetch_str(p->interner, param_name), param_ty.id);
-      } else {
-        printf("<unnamed>: %d", param_ty.id);
-      }
-    }
-
-    // Return type is at index 0
-    TypeID ret_ty = *(TypeID*)&type->payload[0];
-    printf(") -> %d\n", ret_ty.id);
+    printf("func_def[%s](", interner_fetch_str(p->interner, node.ident));
+    print_func_type(p, type);
+    puts("");
     break;
   }
 
   case AST_FUNC_DEF: {
     FuncDefNode node = *(FuncDefNode*)&ast->data;
-    printf("func_def[%s](", interner_fetch_str(p->interner, node.ident));
-
     Type* type = ty_fetch(p->tyint, node.type);
 
-    // Parameters start at index 1 and come in pairs (name, type)
-    for (uint8_t i = 1; i < type->payload_len; i += 2) {
-      if (i > 1) {
-        printf(", ");
-      }
-
-      InternID param_name = *(InternID*)&type->payload[i];
-      TypeID param_ty = *(TypeID*)&type->payload[i + 1];
-
-      if (param_name != 0) {
-        printf("%s: %d", interner_fetch_str(p->interner, param_name), param_ty.id);
-      } else {
-        printf("<unnamed>: %d", param_ty.id);
-      }
-    }
-
-    // Return type is at index 0
-    TypeID ret_ty = *(TypeID*)&type->payload[0];
-    printf(") -> %d\n", ret_ty.id);
+    printf("func_def[%s]", interner_fetch_str(p->interner, node.ident));
+    print_func_type(p, type);
+    puts("");
     break;
   }
 
