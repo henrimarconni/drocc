@@ -40,6 +40,7 @@
 #include "core/vmem_arena.h"
 #include <stdint.h>
 
+extern bool is_unary[_token_kind_count];
 
 typedef enum {
   AST_VAR_DECL,
@@ -49,9 +50,34 @@ typedef enum {
   AST_TYPE_ADEF
 } ASTKind;
 
-typedef struct {
-  int i; // TODO
+typedef enum {
+  // data: op lhs(Expr) rhs(Expr)
+  EXPR_BINOP,
+  // data: val(Token)
+  EXPR_PRIMARY,
+  // data: cond(Expr) iftrue(Expr) else(Expr)
+  EXPR_TERNARY,
+  // data: op operand(Expr*)
+  EXPR_UNARY,
+  // data: op operand(Expr)
+  EXPR_POSTFIX,
+  // data: parent(Expr) child(InternID)
+  EXPR_MEMBER_ACCESS,
+  // data: array(Expr) index(EXPR_PRIMARY)
+  EXPR_INDEX,
+  // data: num_params(uint8_t) params(Expr[])
+  EXPR_CALL,
+} ExprKind;
+
+typedef struct Expr {
+  ExprKind kind;
+  uint8_t data[];
 } Expr;
+
+typedef struct {
+  Expr* lhs;
+  Expr* rhs;
+} AssignNode;
 
 typedef struct {
   int i; // TODO
@@ -75,7 +101,7 @@ typedef struct {
 typedef struct {
   TypeID type;
   InternID ident;
-  Expr val;
+  Expr* val;
 } VarDefNode;
 
 typedef struct {

@@ -1,5 +1,6 @@
 #include "chucci_lex/lexer.h"
 #include "chucci_lex/token_stream.h"
+#include "chucci_parse/expr.h"
 #include "chucci_parse/parser.h"
 #include "chucci_preproc/preproc.h"
 #include "core/srcman.h"
@@ -7,6 +8,7 @@
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <setjmp.h>
+#include <stdio.h>
 
 int main(int argc, char** argv) {
   assert(argc == 2);
@@ -24,6 +26,12 @@ int main(int argc, char** argv) {
     TokenStream preprocstream =
         preproc_new(lexerstream, sman, interner, paths, paths, arena, &onerror);
     Parser parser = parser_new(preprocstream, sman, interner, arena);
+
+    Expr* expr = parse_expr(&parser);
+    assert(expr);
+    printf("EXPR: %d\n", expr->kind);
+
+    return 0;
 
     while (true) {
       ASTNode* node = parse_next(&parser);

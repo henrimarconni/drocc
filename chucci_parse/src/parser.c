@@ -2,6 +2,7 @@
 #include "chucci_lex/token_stream.h"
 #include "chucci_parse/decl_spec.h"
 #include "chucci_parse/declarator.h"
+#include "chucci_parse/expr.h"
 #include "chucci_parse/parser.h"
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
@@ -12,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
+bool is_unary[_token_kind_count] = {0};
+
 Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner, VMEMArena* arena) {
   Parser p = {0};
   p.arena = arena;
@@ -20,6 +23,12 @@ Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner,
   p.interner = interner;
   p.tyint = ty_interner_new();
   p.scratch = vmarena_new(128 * 1024);
+
+  if (!is_unary[OP_NOT]) {
+#define X(kind, _) is_unary[kind] = true;
+    UNARY_OPS(X)
+#undef X
+  }
 
   return p;
 }

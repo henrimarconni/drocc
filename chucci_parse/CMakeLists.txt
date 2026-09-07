@@ -6,6 +6,7 @@ add_library(
   src/typeinterner.c
   src/decl_spec.c
   src/declarator.c
+  src/expr.c
   src/type.c
 )
 
