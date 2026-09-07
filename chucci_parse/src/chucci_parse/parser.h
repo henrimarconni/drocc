@@ -41,6 +41,7 @@
 #include <stdint.h>
 
 extern bool is_unary[_token_kind_count];
+extern bool is_binary[_token_kind_count];
 
 typedef enum {
   AST_VAR_DECL,

@@ -29,7 +29,8 @@ int main(int argc, char** argv) {
 
     Expr* expr = parse_expr(&parser);
     assert(expr);
-    printf("EXPR: %d\n", expr->kind);
+    print_expr(&parser, expr);
+    puts("");
 
     return 0;
 
