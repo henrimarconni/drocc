@@ -19,7 +19,7 @@ void print_expr(Parser* p, Expr* expr) {
   putchar('(');
   switch (expr->kind) {
   case EXPR_PRIMARY:
-    printf("%s", tok_to_str[((Token*)expr->data)->kind]);
+    print_token(p->sman, ((Token*)expr->data));
     break;
   case EXPR_UNARY:
     printf("%s", tok_to_str[*(TokenKind*)expr->data]);
