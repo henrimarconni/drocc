@@ -146,6 +146,7 @@ static Expr* left_denotation(Parser* p, Expr* left, Token op) {
     return make_expr(p, EXPR_BINOP, data, data_size);
   }
   assert(false && "NOT IMPLEMENTED");
+  return NULL;
 #undef data_size
 }
 
@@ -173,6 +174,7 @@ static Expr* null_denotation(Parser* p, Token token) {
   }
 
   assert(false && "BAD LEFT_DENOTATION");
+  return NULL;
 #undef data_size
 }
 
