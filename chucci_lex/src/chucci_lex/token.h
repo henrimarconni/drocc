@@ -16,22 +16,11 @@ extern const bool is_sep_table[256];
   ((Cursor){.id = (tok).pos.id, .line = (tok).pos.line, .col = (tok).pos.col, .source = (tok).file})
 
 #define OPERATORS(X)                                                                               \
-  /* Special ops*/                                                                                 \
-  X(OP_ELLIPSIS, "...", '.')                                                                       \
-  X(OP_TOKEN_PASTE, "##", '#')                                                                     \
-  X(OP_PREPROCESS, "#", '#')                                                                       \
-  X(OP_DOT, ".", '.')                                                                              \
-  X(OP_QUESTION, "?", '?')                                                                         \
-  X(OP_COLON, ":", ':')                                                                            \
-  X(OP_ARROW, "->", '-')                                                                           \
-  /* Unary ops*/                                                                                   \
-  X(OP_ADD, "+", '+')                                                                              \
-  X(OP_SUB, "-", '-')                                                                              \
-  X(OP_NOT, "!", '!')                                                                              \
-  X(OP_BIT_NOT, "~", '~')                                                                          \
-  /* Binary ops*/                                                                                  \
   X(OP_SHL_EQ, "<<=", '<')                                                                         \
   X(OP_SHR_EQ, ">>=", '>')                                                                         \
+  X(OP_ELLIPSIS, "...", '.')                                                                       \
+  X(OP_INC, "++", '+')                                                                             \
+  X(OP_DEC, "--", '-')                                                                             \
   X(OP_EQ, "==", '=')                                                                              \
   X(OP_NEQ, "!=", '!')                                                                             \
   X(OP_LE, "<=", '<')                                                                              \
@@ -40,6 +29,7 @@ extern const bool is_sep_table[256];
   X(OP_OR, "||", '|')                                                                              \
   X(OP_SHL, "<<", '<')                                                                             \
   X(OP_SHR, ">>", '>')                                                                             \
+  X(OP_TOKEN_PASTE, "##", '#')                                                                     \
   X(OP_ADD_EQ, "+=", '+')                                                                          \
   X(OP_SUB_EQ, "-=", '-')                                                                          \
   X(OP_MUL_EQ, "*=", '*')                                                                          \
@@ -48,18 +38,24 @@ extern const bool is_sep_table[256];
   X(OP_AND_EQ, "&=", '&')                                                                          \
   X(OP_OR_EQ, "|=", '|')                                                                           \
   X(OP_XOR_EQ, "^=", '^')                                                                          \
+  X(OP_ARROW, "->", '-')                                                                           \
+  X(OP_ADD, "+", '+')                                                                              \
+  X(OP_SUB, "-", '-')                                                                              \
   X(OP_MUL, "*", '*')                                                                              \
   X(OP_DIV, "/", '/')                                                                              \
   X(OP_MOD, "%", '%')                                                                              \
   X(OP_ASSIGN, "=", '=')                                                                           \
   X(OP_LT, "<", '<')                                                                               \
   X(OP_GT, ">", '>')                                                                               \
+  X(OP_NOT, "!", '!')                                                                              \
   X(OP_BIT_AND, "&", '&')                                                                          \
   X(OP_BIT_OR, "|", '|')                                                                           \
   X(OP_BIT_XOR, "^", '^')                                                                          \
-  /* Postfix ops*/                                                                                 \
-  X(OP_INC, "++", '+')                                                                             \
-  X(OP_DEC, "--", '-')
+  X(OP_BIT_NOT, "~", '~')                                                                          \
+  X(OP_QUESTION, "?", '?')                                                                         \
+  X(OP_COLON, ":", ':')                                                                            \
+  X(OP_PREPROCESS, "#", '#')                                                                       \
+  X(OP_DOT, ".", '.')
 
 #define SEPARATORS(X)                                                                              \
   X(SEP_LPAREN, "(", '(')                                                                          \
