@@ -27,12 +27,12 @@ int main(int argc, char** argv) {
         preproc_new(lexerstream, sman, interner, paths, paths, arena, &onerror);
     Parser parser = parser_new(preprocstream, sman, interner, arena);
 
-    Expr* expr = parse_expr(&parser);
-    assert(expr);
-    print_expr(&parser, expr);
-    puts("");
+    // Expr* expr = parse_expr(&parser);
+    // assert(expr);
+    // print_expr(&parser, expr);
+    // puts("");
 
-    return 0;
+    // return 0;
 
     while (true) {
       ASTNode* node = parse_next(&parser);

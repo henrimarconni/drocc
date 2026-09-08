@@ -7,6 +7,7 @@ add_library(
   src/decl_spec.c
   src/declarator.c
   src/expr.c
+  src/stmt.c
   src/type.c
 )
 

@@ -31,13 +31,13 @@
 #define PARSER_H_
 
 #include "chucci_lex/token_stream.h"
-#include "chucci_parse/scope.h"
 #include "chucci_parse/type.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
 #include "core/slice.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
+#include "chucci_parse/typeinterner.h"
 #include <stdint.h>
 
 extern bool is_unary[_token_kind_count];
@@ -52,21 +52,21 @@ typedef enum {
 } ASTKind;
 
 typedef enum {
-  // data: op lhs(Expr) rhs(Expr)
+  // data: op lhs(Expr*) rhs(Expr*)
   EXPR_BINOP,
   // data: val(Token)
   EXPR_PRIMARY,
-  // data: cond(Expr) iftrue(Expr) else(Expr)
+  // data: cond(Expr*) iftrue(Expr*) else(Expr*)
   EXPR_TERNARY,
   // data: op operand(Expr*)
   EXPR_UNARY,
-  // data: op operand(Expr)
+  // data: op operand(Expr*)
   EXPR_POSTFIX,
-  // data: parent(Expr) child(InternID)
+  // data: parent(Expr*) child(InternID)
   EXPR_MEMBER_ACCESS,
-  // data: array(Expr) index(EXPR_PRIMARY)
+  // data: array(Expr*) index(EXPR_PRIMARY)
   EXPR_INDEX,
-  // data: num_params(uint8_t) params(Expr[])
+  // data: num_params(uint8_t) params(Expr*[])
   EXPR_CALL,
 } ExprKind;
 
@@ -80,13 +80,18 @@ typedef struct {
   Expr* rhs;
 } AssignNode;
 
+typedef enum {
+  // data: Expr*
+  STMT_RETURN  
+} StmtKind;
+
 typedef struct {
-  int i; // TODO
+  StmtKind kind;
+  uint8_t data[];
 } Stmt;
 
 typedef struct {
-  ScopeID scope;
-  slice(Stmt) stmts;
+  slice(Stmt*) stmts;
 } Block;
 
 typedef struct {
@@ -119,7 +124,6 @@ typedef struct {
 typedef struct Parser{
   TokenStream ts;
   SourceManager* sman;
-  vec(LocalScope) scopes;
   TypeInterner* tyint;
   StringInterner* interner;
   VMEMArena* arena;

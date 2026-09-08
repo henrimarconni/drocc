@@ -197,4 +197,4 @@ static Expr* parse_expr_bp(Parser* p, int bp) {
 }
 
 // +10 to get rid of any underflow issues
-Expr* parse_expr(Parser* p) { return parse_expr_bp(p, -INT_MAX + 10); }
+Expr* parse_expr(Parser* p) { return parse_expr_bp(p, 0); }

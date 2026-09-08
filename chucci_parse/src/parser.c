@@ -4,9 +4,11 @@
 #include "chucci_parse/declarator.h"
 #include "chucci_parse/expr.h"
 #include "chucci_parse/parser.h"
+#include "chucci_parse/stmt.h"
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
 #include "core/string_interner.h"
+#include "core/vec.h"
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <stddef.h>
@@ -49,9 +51,24 @@ static ASTNode* make_ast_node(Parser* p, void* data, size_t len, ASTKind kind) {
 }
 
 static Block parse_block(Parser* p) {
-  (void)p;
-  Block b = {0};
-  return b;
+  Block block = {0};
+  vec(Stmt*) stmts = {0};
+
+  Token token = ts_peek(&p->ts);
+  while (token.kind != SEP_RCURLY) {
+    vec_push(stmts, parse_stmt(p));
+    token = ts_peek(&p->ts);
+  }
+
+  block.stmts.n = stmts.n;
+  block.stmts.get = vmarena_alloc(p->arena, sizeof(Stmt*) * stmts.n);
+  memcpy(block.stmts.get, stmts.get, sizeof(Stmt*) * stmts.n);
+  vec_destroy(stmts);
+
+  Token rcurly = ts_next(&p->ts);
+  assert(rcurly.kind == SEP_RCURLY);
+
+  return block;
 }
 
 static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
@@ -124,7 +141,14 @@ void print_ast(Parser* p, ASTNode* ast) {
 
     printf("func_def[%s]", interner_fetch_str(p->interner, node.ident));
     print_func_type(p, type);
-    puts("");
+    puts(" {");
+
+    for (size_t i = 0; i < node.block.stmts.n; i++) {
+      printf("    ");
+      print_stmt(p, node.block.stmts.get[i]);
+    }
+
+    puts("}");
     break;
   }
 
