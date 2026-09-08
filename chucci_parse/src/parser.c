@@ -43,7 +43,7 @@ Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner,
 }
 
 static ASTNode* make_ast_node(Parser* p, void* data, size_t len, ASTKind kind) {
-  ASTNode* node = vmarena_alloc(p->arena, len + sizeof(ASTNode));
+  ASTNode* node = vmarena_alloc(p->parena, len + sizeof(ASTNode));
   node->kind = kind;
   memcpy(node->data, data, len);
 
@@ -52,7 +52,7 @@ static ASTNode* make_ast_node(Parser* p, void* data, size_t len, ASTKind kind) {
 
 static Block parse_block(Parser* p) {
   Block block = {0};
-  vec(Stmt*) stmts = {0};
+  vec(Stmt) stmts = {0};
 
   Token token = ts_peek(&p->ts);
   while (token.kind != SEP_RCURLY) {
@@ -61,8 +61,8 @@ static Block parse_block(Parser* p) {
   }
 
   block.stmts.n = stmts.n;
-  block.stmts.get = vmarena_alloc(p->arena, sizeof(Stmt*) * stmts.n);
-  memcpy(block.stmts.get, stmts.get, sizeof(Stmt*) * stmts.n);
+  block.stmts.get = vmarena_alloc(p->parena, sizeof(Stmt) * stmts.n);
+  memcpy(block.stmts.get, stmts.get, sizeof(Stmt) * stmts.n);
   vec_destroy(stmts);
 
   Token rcurly = ts_next(&p->ts);

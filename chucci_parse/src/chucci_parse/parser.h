@@ -32,6 +32,7 @@
 
 #include "chucci_lex/token_stream.h"
 #include "chucci_parse/type.h"
+#include "chucci_parse/stmt.h"
 #include "chucci_parse/typeinterner.h"
 #include "core/slice.h"
 #include "core/srcman.h"
@@ -44,18 +45,8 @@ extern bool is_binary[_token_kind_count];
 
 typedef enum { AST_VAR_DECL, AST_FUNC_DECL, AST_VAR_DEF, AST_FUNC_DEF, AST_TYPE_ADEF } ASTKind;
 
-typedef enum {
-  // data: vmptr(Expr)
-  STMT_RETURN
-} StmtKind;
-
 typedef struct {
-  StmtKind kind;
-  uint8_t data[];
-} Stmt;
-
-typedef struct {
-  slice(Stmt*) stmts;
+  slice(Stmt) stmts;
 } Block;
 
 typedef struct {

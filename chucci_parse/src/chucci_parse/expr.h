@@ -1,7 +1,11 @@
 #ifndef EXPR_H_
 #define EXPR_H_
 
-#include "chucci_parse/parser.h"
+#include "core/vmem_arena.h"
+#include "chucci_lex/token.h"
+#include "core/slice.h"
+
+typedef struct Parser Parser;
 
 #define UNARY_OPS(X)                                                                               \
   X(OP_ADD, "+")                                                                                   \
