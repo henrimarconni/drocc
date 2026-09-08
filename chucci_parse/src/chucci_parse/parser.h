@@ -7,8 +7,8 @@
   3) Expression (Expr)
 
   Here:
-  1) ASTNode can be: VarDeclNode, FuncDeclNode, VarDefNode (but RHS must be a constant value), FuncDefNode,
-  TypeDefNode (any type of definition, can be struct or enum or union or typedefs)
+  1) ASTNode can be: VarDeclNode, FuncDeclNode, VarDefNode (but RHS must be a constant value),
+  FuncDefNode, TypeDefNode (any type of definition, can be struct or enum or union or typedefs)
 
   2) Stmt can be: VarDefNode, VarDeclNode, FuncDeclNode, Expr.
 
@@ -17,13 +17,13 @@
   whenever parse_next() is called, it parses a single Top Level Declaration and returns ASTNode*.
 
   Here, Declarator is a tool used to parse types.
-  Types are stored using a faster, data oriented approach, instead of pointers, we have payload struct
-  with each element containing data in a certain pattern as calculated by the TypeKind:
+  Types are stored using a faster, data oriented approach, instead of pointers, we have payload
+  struct with each element containing data in a certain pattern as calculated by the TypeKind:
 
   for eg:
 
-  TY_FUNCTION: payload[] = return type id, param1 intern id, param1 type id, param2 internid, param2 typeid...... (internid = 0 if not specified)
-  TY_POINTER: payload = target type id
+  TY_FUNCTION: payload[] = return type id, param1 intern id, param1 type id, param2 internid, param2
+  typeid...... (internid = 0 if not specified) TY_POINTER: payload = target type id
   TY_INCOMPLETE_ARRAY: payload = target type id
 */
 
@@ -32,57 +32,21 @@
 
 #include "chucci_lex/token_stream.h"
 #include "chucci_parse/type.h"
+#include "chucci_parse/typeinterner.h"
+#include "core/slice.h"
 #include "core/srcman.h"
 #include "core/string_interner.h"
-#include "core/slice.h"
-#include "core/vec.h"
 #include "core/vmem_arena.h"
-#include "chucci_parse/typeinterner.h"
 #include <stdint.h>
 
 extern bool is_unary[_token_kind_count];
 extern bool is_binary[_token_kind_count];
 
-typedef enum {
-  AST_VAR_DECL,
-  AST_FUNC_DECL,
-  AST_VAR_DEF,
-  AST_FUNC_DEF,
-  AST_TYPE_ADEF
-} ASTKind;
+typedef enum { AST_VAR_DECL, AST_FUNC_DECL, AST_VAR_DEF, AST_FUNC_DEF, AST_TYPE_ADEF } ASTKind;
 
 typedef enum {
-  // data: op lhs(Expr*) rhs(Expr*)
-  EXPR_BINOP,
-  // data: val(Token)
-  EXPR_PRIMARY,
-  // data: cond(Expr*) iftrue(Expr*) else(Expr*)
-  EXPR_TERNARY,
-  // data: op operand(Expr*)
-  EXPR_UNARY,
-  // data: op operand(Expr*)
-  EXPR_POSTFIX,
-  // data: parent(Expr*) child(InternID)
-  EXPR_MEMBER_ACCESS,
-  // data: array(Expr*) index(EXPR_PRIMARY)
-  EXPR_INDEX,
-  // data: num_params(uint8_t) params(Expr*[])
-  EXPR_CALL,
-} ExprKind;
-
-typedef struct Expr {
-  ExprKind kind;
-  uint8_t data[];
-} Expr;
-
-typedef struct {
-  Expr* lhs;
-  Expr* rhs;
-} AssignNode;
-
-typedef enum {
-  // data: Expr*
-  STMT_RETURN  
+  // data: vmptr(Expr)
+  STMT_RETURN
 } StmtKind;
 
 typedef struct {
@@ -107,7 +71,7 @@ typedef struct {
 typedef struct {
   TypeID type;
   InternID ident;
-  Expr* val;
+  vmptr(Expr) val;
 } VarDefNode;
 
 typedef struct {
@@ -121,19 +85,20 @@ typedef struct {
   uint8_t data[];
 } ASTNode;
 
-typedef struct Parser{
+typedef struct Parser {
   TokenStream ts;
   SourceManager* sman;
   TypeInterner* tyint;
   StringInterner* interner;
   VMEMArena* arena;
-  VMEMArena* scratch;
+  // Arena specifically for parser related stuff
+  // This can be reset after every parser_next to save space
+  VMEMArena* parena;
 } Parser;
 
 Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner, VMEMArena* arena);
 ASTNode* parse_next(Parser* p);
 VarDeclNode parse_var_decl(Parser* p);
 void print_ast(Parser* p, ASTNode* ast);
-
 
 #endif

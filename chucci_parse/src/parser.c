@@ -25,7 +25,7 @@ Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner,
   p.ts = ts;
   p.interner = interner;
   p.tyint = ty_interner_new();
-  p.scratch = vmarena_new(128 * 1024);
+  p.parena = vmarena_new(128 * 1024);
 
   if (!is_unary[OP_NOT]) {
 #define X(kind, _) is_unary[kind] = true;

@@ -15,7 +15,7 @@
 static_assert(sizeof(uint32_t) == sizeof(TypeID));
 
 static Declarator* make_decl(Parser* p, DeclaratorKind kind) {
-  Declarator* decl = vmarena_alloc(p->scratch, sizeof(Declarator));
+  Declarator* decl = vmarena_alloc(p->parena, sizeof(Declarator));
   *decl = (Declarator){0};
   decl->kind = kind;
   return decl;

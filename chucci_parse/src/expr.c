@@ -13,31 +13,32 @@
 #include <stdio.h>
 #include <string.h>
 
-static Expr* parse_expr_bp(Parser* p, int bp);
+static Expr parse_expr_bp(Parser* p, int bp);
 
-void print_expr(Parser* p, Expr* expr) {
-  putchar('(');
-  switch (expr->kind) {
-  case EXPR_PRIMARY:
-    print_token(p->sman, ((Token*)expr->data));
-    break;
-  case EXPR_UNARY:
-    printf("%s", tok_to_str[*(TokenKind*)expr->data]);
-    Expr* inner = *(Expr**)(expr->data + sizeof(TokenKind));
-    print_expr(p, inner);
-    break;
-  case EXPR_BINOP:
-    Expr* lhs = *(Expr**)(expr->data + sizeof(TokenKind));
-    print_expr(p, lhs);
-    printf(" %s ", tok_to_str[*(TokenKind*)expr->data]);
-    Expr* rhs = *(Expr**)(expr->data + sizeof(TokenKind) + sizeof(Expr*));
-    print_expr(p, rhs);
-    break;
-  default:
-    printf("NOT IMPLEMENTED\n");
+void print_expr(Parser* p, Expr expr) {
+  switch (expr.kind) {
+  case EXPR_PRIMARY: {
+    ExprPrimary* prim = vmderef(p->parena, expr.data);
+    print_token(p->sman, &prim->val);
     break;
   }
-  putchar(')');
+  case EXPR_UNARY: {
+    ExprUnary* unary = vmderef(p->parena, expr.data);
+    printf("%s(", tok_to_str[unary->op]);
+    print_expr(p, unary->inner);
+    putchar(')');
+    break;
+  }
+  case EXPR_BINOP: {
+    ExprBinop* binary = vmderef(p->parena, expr.data);
+    print_expr(p, binary->lhs);
+    printf(" %s ", tok_to_str[binary->op]);
+    print_expr(p, binary->rhs);
+    putchar(')');
+    break;
+  }
+  default:
+  }
 }
 
 static int prefix_binding_power(TokenKind kind) {
@@ -126,47 +127,49 @@ static int infix_binding_power(TokenKind kind) {
   }
 }
 
-static Expr* make_expr(Parser* p, ExprKind kind, void* data, size_t size) {
-  Expr* expr = vmarena_alloc(p->arena, sizeof(Expr) + size);
-  memcpy(expr->data, data, size);
-  expr->kind = kind;
+static Expr make_expr(Parser* p, ExprKind kind, void* data, size_t size) {
+  Expr expr = {0};
+  expr.kind = kind;
+  expr.data = vmarena_vmalloc(p->parena, size);
+  void* ptr = vmderef(p->parena, expr.data);
+  memcpy(ptr, data, size);
   return expr;
 }
 
-static Expr* left_denotation(Parser* p, Expr* left, Token op) {
-#define data_size sizeof(TokenKind) + sizeof(Expr*) * 2
+static Expr left_denotation(Parser* p, Expr left, Token op) {
   if (is_binary[op.kind]) {
-    Expr* rhs = parse_expr_bp(p, infix_binding_power(op.kind));
+    Expr rhs = parse_expr_bp(p, infix_binding_power(op.kind));
 
-    uint8_t data[data_size] = {0};
-    *(TokenKind*)data = op.kind;
-    *(Expr**)(data + sizeof(TokenKind)) = left;
-    *(Expr**)(data + sizeof(TokenKind) + sizeof(Expr*)) = rhs;
+    ExprBinop binop = {0};
+    binop.lhs = left;
+    binop.op = op.kind;
+    binop.rhs = rhs;
 
-    return make_expr(p, EXPR_BINOP, data, data_size);
+    return make_expr(p, EXPR_BINOP, &binop, sizeof(ExprBinop));
   }
   assert(false && "NOT IMPLEMENTED");
-  return NULL;
-#undef data_size
+  return (Expr){0};
 }
 
-static Expr* null_denotation(Parser* p, Token token) {
-#define data_size sizeof(TokenKind) + sizeof(Expr*)
-  if (token.kind == TOK_VAL || token.kind == TOK_STR || token.kind == TOK_IDENT)
-    return make_expr(p, EXPR_PRIMARY, &token, sizeof(token));
+static Expr null_denotation(Parser* p, Token token) {
+  if (token.kind == TOK_VAL || token.kind == TOK_STR || token.kind == TOK_IDENT) {
+    ExprPrimary prim = {0};
+    prim.val = token;
+    return make_expr(p, EXPR_PRIMARY, &prim, sizeof(prim));
+  }
 
   if (is_unary[token.kind]) {
-    Expr* inner = parse_expr_bp(p, prefix_binding_power(token.kind));
+    Expr inner = parse_expr_bp(p, prefix_binding_power(token.kind));
 
-    uint8_t data[data_size] = {0};
-    *(TokenKind*)data = token.kind;
-    *(Expr**)(data + sizeof(TokenKind)) = inner;
+    ExprUnary unary = {0};
+    unary.inner = inner;
+    unary.op = token.kind;
 
-    return make_expr(p, EXPR_UNARY, data, data_size);
+    return make_expr(p, EXPR_UNARY, &unary, sizeof(ExprUnary));
   }
 
   if (token.kind == SEP_LPAREN) {
-    Expr* expr = parse_expr_bp(p, 0);
+    Expr expr = parse_expr_bp(p, 0);
     // TODO: ts_expect
     Token next = ts_next(&p->ts);
     assert(next.kind == SEP_RPAREN);
@@ -174,15 +177,14 @@ static Expr* null_denotation(Parser* p, Token token) {
   }
 
   assert(false && "BAD LEFT_DENOTATION");
-  return NULL;
-#undef data_size
+  return (Expr){0};
 }
 
-static Expr* parse_expr_bp(Parser* p, int bp) {
+static Expr parse_expr_bp(Parser* p, int bp) {
   Token token = ts_next(&p->ts);
 
   // Handle prefix tokens (numbers, variables, prefix '-' or '!')
-  Expr* left = null_denotation(p, token);
+  Expr left = null_denotation(p, token);
 
   Token peeked = ts_peek(&p->ts);
 
@@ -197,4 +199,4 @@ static Expr* parse_expr_bp(Parser* p, int bp) {
 }
 
 // +10 to get rid of any underflow issues
-Expr* parse_expr(Parser* p) { return parse_expr_bp(p, 0); }
+Expr parse_expr(Parser* p) { return parse_expr_bp(p, 0); }

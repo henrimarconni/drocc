@@ -125,6 +125,21 @@ void os_vm_free(void* ptr, size_t size) {
 #endif
 }
 
+vmptr_t vmarena_vmalloc(VMEMArena* arena, size_t size) {
+  arena->pos = ALIGN_UP(arena->pos, DEFAULT_ALIGNMENT);
+
+  while (arena->pos + size > arena->committed_len) {
+    void* commit_ptr = (char*)arena->data + arena->committed_len;
+    os_vm_commit(commit_ptr, COMMIT_SIZE);
+    arena->committed_len += COMMIT_SIZE;
+  }
+
+  assert(arena->cap - arena->pos >= size && arena->data);
+  uint32_t pos = arena->pos;
+  arena->pos += size;
+  return pos;
+}
+
 VMEMArena* vmarena_new(size_t cap) {
   VMEMArena* arena = malloc(sizeof(VMEMArena));
   arena->pos = 0;

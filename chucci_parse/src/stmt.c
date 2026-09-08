@@ -18,13 +18,13 @@ Stmt* parse_stmt(Parser* p) {
 
   Token token = ts_next(&p->ts);
   if (token.kind == KW_RETURN) {
-    Expr* expr = parse_expr(p);
-    uint8_t data[sizeof(Expr*)] = {0};
-    *(Expr**)data = expr;
+    Expr expr = parse_expr(p);
+    uint8_t data[sizeof(Expr)] = {0};
+    *(Expr*)data = expr;
     Token semi = ts_next(&p->ts);
     assert(semi.kind == SEP_SEMI);
 
-    return make_stmt(p, STMT_RETURN, data, sizeof(Expr*));
+    return make_stmt(p, STMT_RETURN, data, sizeof(Expr));
   }
 
   assert(false);
@@ -35,7 +35,7 @@ void print_stmt(Parser* p, Stmt* stmt) {
   switch (stmt->kind) {
   case STMT_RETURN:
     printf("return ");
-    print_expr(p, *(Expr**)stmt->data);
+    print_expr(p, *(Expr*)stmt->data);
     puts(";");
     break;
   }
