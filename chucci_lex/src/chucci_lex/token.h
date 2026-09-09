@@ -120,7 +120,7 @@ typedef enum TokenKind {
   _op_sep_end,
   TOK_EOF,   //< End-of-File
   TOK_IDENT, //< Variable/Function/... names
-  TOK_STR,   //< String literals
+  TOK_STR,   //< String literals || Characters ('' == char, "" == string)
   TOK_VAL,   //< Numerical value
   TOK_ANGLE, //< Preprocessor Angle strings <>
   _token_kind_count,

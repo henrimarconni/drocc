@@ -1,6 +1,7 @@
 #include "chucci_lex/token.h"
 #include "chucci_lex/token_stream.h"
 #include "chucci_parse/declarator.h"
+#include "chucci_parse/parser.h"
 #include "chucci_parse/type.h"
 #include "chucci_parse/typeinterner.h"
 #include "core/vec.h"
@@ -14,10 +15,35 @@
 static_assert(sizeof(uint32_t) == sizeof(TypeID));
 
 static Declarator* make_decl(Parser* p, DeclaratorKind kind) {
-  Declarator* decl = vmarena_alloc(p->scratch, sizeof(Declarator));
+  Declarator* decl = vmarena_alloc(p->parena, sizeof(Declarator));
   *decl = (Declarator){0};
   decl->kind = kind;
   return decl;
+}
+
+static void parse_decl_func_params(Parser* p, Declarator* decl) {
+  // Reserve space at index 0 for the return type (filled during unwind)
+  vec_push(decl->params, 0);
+
+  Token token = ts_peek(&p->ts);
+  while (token.kind != SEP_RPAREN) {
+    VarDeclNode node = parse_var_decl(p);
+
+    vec_push(decl->params, node.ident);
+    vec_push(decl->params, *(uint32_t*)&node.type);
+
+    token = ts_peek(&p->ts);
+
+    // Handle comma separation between arguments
+    if (token.kind == SEP_COMMA) {
+      ts_next(&p->ts);
+      token = ts_peek(&p->ts);
+    } else if (token.kind != SEP_RPAREN) {
+      assert(false && "Expected ',' or ')' in function parameters");
+    }
+  }
+
+  ts_next(&p->ts);
 }
 
 static Declarator* parse_declarator_direct(Parser* p) {
@@ -31,7 +57,6 @@ static Declarator* parse_declarator_direct(Parser* p) {
   }
 
   // grouped types like (*fn)
-  // TODO: WHY THE FUCK DOES THIS WORK!!!!
   else if (token.kind == SEP_LPAREN) {
     ts_next(&p->ts);
     decl = parse_declarator(p);
@@ -62,7 +87,7 @@ static Declarator* parse_declarator_direct(Parser* p) {
       Declarator* func = make_decl(p, DECL_FUNCTION);
       func->inner = decl;
       decl = func;
-      assert(ts_next(&p->ts).kind == SEP_RPAREN);
+      parse_decl_func_params(p, decl);
     }
     token = ts_peek(&p->ts);
   }
@@ -106,8 +131,8 @@ void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p
       break;
     }
     case DECL_FUNCTION: {
-      // param1_name, param1_ty, param2_name, param2_ty ..... return_ty
-      vec_push(decl->params, tyid_to_uint32_t(current));
+      // Overwrite the dummy 0 we pushed with the actual return type
+      decl->params.get[0] = tyid_to_uint32_t(current);
 
       // function cannot be const, restrict or volatile
       current = ty_intern(
@@ -117,7 +142,7 @@ void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p
     }
     case DECL_POINTER: {
       uint32_t payload[] = {tyid_to_uint32_t(current)};
-      ty_intern(
+      current = ty_intern(
           p->tyint,
           TY_POINTER,
           decl->ptrqual.is_const,
@@ -129,7 +154,7 @@ void unwind_declarator(TypeID* tyid, InternID* name, Declarator* decl, Parser* p
     }
     case DECL_INCOMPLETE_ARRAY: {
       uint32_t payload[] = {tyid_to_uint32_t(current)};
-      ty_intern(p->tyint, TY_POINTER, false, false, false, payload, 1);
+      current = ty_intern(p->tyint, TY_POINTER, false, false, false, payload, 1);
       break;
     }
     default:

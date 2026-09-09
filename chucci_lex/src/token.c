@@ -42,7 +42,7 @@ void print_token(SourceManager* sman, Token* token) {
     return;
   }
   StringView sv = span_sv(sman, token->span);
-  printf("%s(%.*s)", tok_to_str[token->kind], sv.len, sv.str);
+  printf("%.*s", sv.len, sv.str);
 }
 
 Token token_new(Span span, TokenKind kind) {

@@ -7,28 +7,31 @@
 
 typedef struct TypeInterner TypeInterner;
 
+#define TY_PRIMITIVES(X)                                                                           \
+  X(TY_VOID, "void")                                                                               \
+  X(TY_BOOL, "bool")                                                                               \
+  X(TY_I8, "i8")                                                                                   \
+  X(TY_U8, "u8")                                                                                   \
+  X(TY_I16, "i16")                                                                                 \
+  X(TY_U16, "u16")                                                                                 \
+  X(TY_I32, "i32")                                                                                 \
+  X(TY_U32, "u32")                                                                                 \
+  X(TY_I64, "i64")                                                                                 \
+  X(TY_U64, "u64")                                                                                 \
+  X(TY_F32, "f32")                                                                                 \
+  X(TY_F64, "f64")                                                                                 \
+  X(TY_FL, "fl")
+
 typedef enum {
   TY_FUNCTION,
   TY_POINTER,
   TY_ARRAY,
   TY_INCOMPLETE_ARRAY,
 
-  // Primitives
-  TY_VOID,
-  TY_BOOL,
-
-  TY_I8,
-  TY_U8, // char,  unsigned char
-  TY_I16,
-  TY_U16, // short, unsigned short
-  TY_I32,
-  TY_U32, // int,   unsigned int
-  TY_I64,
-  TY_U64, // long,  unsigned long
-
-  TY_F32,
-  TY_F64, // float, double
-  TY_FL,  // long double (no of bits is dependent on hardware)
+// Primitives
+#define X(a, b) a,
+  TY_PRIMITIVES(X)
+#undef X
 
   // Compound types
   TY_STRUCT,
@@ -63,5 +66,9 @@ typedef enum {
   // SC_AUTO // DEPRECATED
 } StorageClass;
 
+typedef struct Parser Parser;
+
+void print_type(Parser* p, Type* type);
+void print_func_type(Parser* p, Type* type);
 
 #endif

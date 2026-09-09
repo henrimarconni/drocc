@@ -24,6 +24,11 @@ typedef struct VMEMArenaMark {
   size_t pos;
 } VMEMArenaMark;
 
+typedef uint32_t vmptr_t;
+#define vmptr(T) vmptr_t
+#define vmderef(arena, ptr) (void*)((arena)->data + ptr);
+vmptr_t vmarena_vmalloc(VMEMArena* arena, size_t size);
+
 VMEMArena* vmarena_new(size_t cap);
 void* _vmarena_alloc(VMEMArena* arena, size_t size);
 void* _vmarena_calloc(VMEMArena* arena, size_t size);
