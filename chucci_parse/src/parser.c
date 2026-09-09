@@ -104,6 +104,13 @@ static ASTNode parse_func(Parser* p, InternID id, TypeID tyid) {
 }
 
 ASTNode parse_next(Parser* p) {
+
+  // Check if eof occurs
+  Token token = ts_peek(&p->ts);
+  if (token.kind == TOK_EOF)
+    return EOF_AST;
+
+  // Parse declarator
   TypeID tyid;
   StorageClass sc;
   parse_decl_specifier(p, &tyid, &sc);
@@ -120,7 +127,7 @@ ASTNode parse_next(Parser* p) {
   if (type->kind == TY_FUNCTION)
     return parse_func(p, name, tyid);
 
-  return (ASTNode){0};
+  return EOF_AST;
 }
 
 void print_ast(Parser* p, ASTNode ast) {

@@ -69,7 +69,9 @@ typedef struct {
   Block block;
 } FuncDefNode;
 
-typedef enum { AST_VAR_DECL, AST_FUNC_DECL, AST_VAR_DEF, AST_FUNC_DEF } ASTKind;
+typedef enum { AST_VAR_DECL, AST_FUNC_DECL, AST_VAR_DEF, AST_FUNC_DEF, AST_EOF } ASTKind;
+
+#define EOF_AST (ASTNode){ .kind = AST_EOF, 0 }
 
 typedef struct {
   ASTKind kind;

@@ -36,8 +36,9 @@ int main(int argc, char** argv) {
 
     while (true) {
       ASTNode node = parse_next(&parser);
+      if (node.kind == AST_EOF)
+        break;
       print_ast(&parser, node);
-      break;
     }
   }
 }
