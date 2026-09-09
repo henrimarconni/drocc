@@ -73,7 +73,6 @@ static Block parse_block(Parser* p) {
 }
 
 static ASTNode parse_func_def(Parser* p, InternID id, TypeID tyid) {
-  printf("Parsing func def\n");
   Block block = parse_block(p);
   FuncDefNode node = {0};
   node.block = block;

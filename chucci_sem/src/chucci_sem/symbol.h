@@ -2,17 +2,26 @@
 #define SYMBOL_H_
 
 #include "chucci_parse/typeinterner.h"
-#include "core/infvec.h"
+#include "chucci_sem/scope.h"
 #include "core/string_interner.h"
+#include "core/vec.h"
+#include <stddef.h>
+
+typedef uint32_t SymbolID;
 
 typedef struct {
-  TypeID type;
+  TypeID tyid;
+  ScopeID scope;
+  InternID intid;
 } Symbol;
 
 typedef struct {
-  infvec(Symbol) symbols;
+  vec(Symbol) symbols;
+  uint32_t len, cap;
 } SymbolTable;
 
-Symbol sym_fetch(SymbolTable* table, InternID id);
+SymbolTable* symtable_new();
+SymbolID add_sym(SymbolTable* table, InternID intid, TypeID tyid, ScopeID scope);
+Symbol sym_fetch(SymbolTable* table, SymbolID id);
 
 #endif

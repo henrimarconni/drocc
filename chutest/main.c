@@ -34,11 +34,10 @@ int main(int argc, char** argv) {
 
     // return 0;
 
-    while (true) {
-      ASTNode node = parse_next(&parser);
-      if (node.kind == AST_EOF)
-        break;
+    ASTNode node = parse_next(&parser);
+    while (node.kind != AST_EOF) {
       print_ast(&parser, node);
+      node = parse_next(&parser);
     }
   }
 }

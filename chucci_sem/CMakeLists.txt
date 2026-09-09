@@ -2,6 +2,8 @@
 add_library(
   chucci_sem
   src/symbol.c
+  src/analyzer.c
+  src/scope.c
 )
 
 target_include_directories(

@@ -10,7 +10,7 @@ typedef struct {
   SymbolTable* syms;  
 } SemAnalyzer;
 
-SemAnalyzer new_
+SemAnalyzer new_analyzer(VMEMArena* arena, SymbolTable* table);
 void sem_analyze(SemAnalyzer* analyzer, ASTNode ast);
 
 #endif
