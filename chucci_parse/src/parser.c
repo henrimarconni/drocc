@@ -42,11 +42,12 @@ Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner,
   return p;
 }
 
-static ASTNode* make_ast_node(Parser* p, void* data, size_t len, ASTKind kind) {
-  ASTNode* node = vmarena_alloc(p->parena, len + sizeof(ASTNode));
-  node->kind = kind;
-  memcpy(node->data, data, len);
-
+static ASTNode make_ast_node(Parser* p, void* data, size_t size, ASTKind kind) {
+  ASTNode node = {0};
+  node.kind = kind;
+  node.data = vmarena_vmalloc(p->parena, size);
+  void* ptr = vmderef(p->parena, node.data);
+  memcpy(ptr, data, size);
   return node;
 }
 
@@ -71,7 +72,7 @@ static Block parse_block(Parser* p) {
   return block;
 }
 
-static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
+static ASTNode parse_func_def(Parser* p, InternID id, TypeID tyid) {
   printf("Parsing func def\n");
   Block block = parse_block(p);
   FuncDefNode node = {0};
@@ -82,7 +83,7 @@ static ASTNode* parse_func_def(Parser* p, InternID id, TypeID tyid) {
   return make_ast_node(p, &node, sizeof(FuncDefNode), AST_FUNC_DEF);
 }
 
-static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid) {
+static ASTNode parse_func_decl(Parser* p, InternID id, TypeID tyid) {
 
   FuncDeclNode node = {0};
   node.ident = id;
@@ -91,7 +92,7 @@ static ASTNode* parse_func_decl(Parser* p, InternID id, TypeID tyid) {
   return make_ast_node(p, &node, sizeof(FuncDeclNode), AST_FUNC_DECL);
 }
 
-static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid) {
+static ASTNode parse_func(Parser* p, InternID id, TypeID tyid) {
   Token token = ts_next(&p->ts);
   if (token.kind == SEP_LCURLY)
     return parse_func_def(p, id, tyid);
@@ -102,7 +103,7 @@ static ASTNode* parse_func(Parser* p, InternID id, TypeID tyid) {
   __builtin_unreachable();
 }
 
-ASTNode* parse_next(Parser* p) {
+ASTNode parse_next(Parser* p) {
   TypeID tyid;
   StorageClass sc;
   parse_decl_specifier(p, &tyid, &sc);
@@ -119,33 +120,33 @@ ASTNode* parse_next(Parser* p) {
   if (type->kind == TY_FUNCTION)
     return parse_func(p, name, tyid);
 
-  return NULL;
+  return (ASTNode){0};
 }
 
-void print_ast(Parser* p, ASTNode* ast) {
-  switch (ast->kind) {
+void print_ast(Parser* p, ASTNode ast) {
+  switch (ast.kind) {
   case AST_FUNC_DECL: {
-    FuncDeclNode node = *(FuncDeclNode*)&ast->data;
-    printf("func_decl[%s]", interner_fetch_str(p->interner, node.ident));
-    Type* type = ty_fetch(p->tyint, node.type);
+    FuncDeclNode* node = vmderef(p->parena, ast.data);
+    printf("func_decl[%s]", interner_fetch_str(p->interner, node->ident));
+    Type* type = ty_fetch(p->tyint, node->type);
 
-    printf("func_def[%s](", interner_fetch_str(p->interner, node.ident));
+    printf("func_def[%s](", interner_fetch_str(p->interner, node->ident));
     print_func_type(p, type);
     puts("");
     break;
   }
 
   case AST_FUNC_DEF: {
-    FuncDefNode node = *(FuncDefNode*)&ast->data;
-    Type* type = ty_fetch(p->tyint, node.type);
+    FuncDefNode* node = vmderef(p->parena, ast.data);
+    Type* type = ty_fetch(p->tyint, node->type);
 
-    printf("func_def[%s]", interner_fetch_str(p->interner, node.ident));
+    printf("func_def[%s]", interner_fetch_str(p->interner, node->ident));
     print_func_type(p, type);
     puts(" {");
 
-    for (size_t i = 0; i < node.block.stmts.n; i++) {
+    for (size_t i = 0; i < node->block.stmts.n; i++) {
       printf("    ");
-      print_stmt(p, node.block.stmts.get[i]);
+      print_stmt(p, node->block.stmts.get[i]);
     }
 
     puts("}");

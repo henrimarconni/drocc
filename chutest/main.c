@@ -35,10 +35,9 @@ int main(int argc, char** argv) {
     // return 0;
 
     while (true) {
-      ASTNode* node = parse_next(&parser);
-      if (!node)
-        break;
+      ASTNode node = parse_next(&parser);
       print_ast(&parser, node);
+      break;
     }
   }
 }

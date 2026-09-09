@@ -14,7 +14,7 @@
 
   3) Expr can be: BinOpNode, UnaryOpNode, FuncCallNode, AssignmentNode
 
-  whenever parse_next() is called, it parses a single Top Level Declaration and returns ASTNode*.
+  whenever parse_next() is called, it parses a single Top Level Declaration and returns ASTNode.
 
   Here, Declarator is a tool used to parse types.
   Types are stored using a faster, data oriented approach, instead of pointers, we have payload
@@ -43,8 +43,6 @@
 extern bool is_unary[_token_kind_count];
 extern bool is_binary[_token_kind_count];
 
-typedef enum { AST_VAR_DECL, AST_FUNC_DECL, AST_VAR_DEF, AST_FUNC_DEF, AST_TYPE_ADEF } ASTKind;
-
 typedef struct {
   slice(Stmt) stmts;
 } Block;
@@ -71,9 +69,11 @@ typedef struct {
   Block block;
 } FuncDefNode;
 
+typedef enum { AST_VAR_DECL, AST_FUNC_DECL, AST_VAR_DEF, AST_FUNC_DEF } ASTKind;
+
 typedef struct {
   ASTKind kind;
-  uint8_t data[];
+  vmptr(void) data;
 } ASTNode;
 
 typedef struct Parser {
@@ -88,8 +88,8 @@ typedef struct Parser {
 } Parser;
 
 Parser parser_new(TokenStream ts, SourceManager* sman, StringInterner* interner, VMEMArena* arena);
-ASTNode* parse_next(Parser* p);
+ASTNode parse_next(Parser* p);
 VarDeclNode parse_var_decl(Parser* p);
-void print_ast(Parser* p, ASTNode* ast);
+void print_ast(Parser* p, ASTNode ast);
 
 #endif
