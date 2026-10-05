@@ -22,5 +22,6 @@ TokenStream lexer_new(SourceManager* sman, SrcScanner scanner, StringInterner* i
 Token lexer_next(void* lexer);
 Token lexer_peek(void* lexer);
 void lexer_free(void** lexer);
+void lexer_reset(void* lexer);
 
 #endif

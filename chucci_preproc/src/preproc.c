@@ -1,16 +1,17 @@
 #include "chucci_diag/cc_diag.h"
 #include "chucci_lex/token.h"
 #include "chucci_lex/token_stream.h"
+#include "chucci_preproc/define.h"
 #include "chucci_preproc/include.h"
 #include "chucci_preproc/preproc.h"
 #include "core/diagnostics.h"
+#include "core/infvec.h"
 #include "core/string_interner.h"
 #include "core/vec.h"
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <setjmp.h>
 #include <stdio.h>
-#include <string.h>
 
 static InternID preproc_ids[_preproc_cmd_count] = {0};
 
@@ -47,6 +48,8 @@ TokenStream preproc_new(
   preproc->search = search;
   preproc->is_peeked = false;
   preproc->engine = new_engine(cc_diaginfos, _cc_diaginfos_len, sman, onerror);
+  preproc->initial_ts = ts;
+  infvec_init(preproc->tokencache, 1024);
 
   if (preproc_ids[0] == 0) {
 #define X(kind, str) preproc_ids[kind] = intern(strview(str), preproc->interner);
@@ -55,8 +58,19 @@ TokenStream preproc_new(
   }
 
   vec_push(preproc->stack, ts);
-  TokenStream pp_ts = ts_from_func(preproc, preproc_next, preproc_peek, preproc_free);
+  TokenStream pp_ts =
+      ts_from_func(preproc, preproc_next, preproc_peek, preproc_free, preproc_reset);
   return pp_ts;
+}
+
+void preproc_reset(void* pp) {
+  Preprocessor* p = pp;
+  p->is_peeked = false;
+  p->macros.n = 0;
+  p->tokencache.n = 0;
+  p->stack.n = 0;
+  ts_reset(&p->initial_ts);
+  vec_push(p->stack, p->initial_ts);
 }
 
 static Token preproc_stmt(Preprocessor* pp) {
@@ -66,6 +80,10 @@ static Token preproc_stmt(Preprocessor* pp) {
   case PP_INCLUDE:
     TokenStream ts = preproc_parse_include(pp);
     vec_push(pp->stack, ts);
+    token = tstack_next(&pp->stack);
+    break;
+  case PP_DEFINE:
+    define_macro(pp);
     token = tstack_next(&pp->stack);
     break;
   default:
@@ -87,6 +105,9 @@ Token preproc_next(void* ctx) {
   // Found preprocessor statement
   if (token.kind == OP_PREPROCESS) {
     return preproc_stmt(pp);
+  }
+
+  if (token.kind == TOK_IDENT && pp->macros.get[token.ident]) {
   }
 
   // else return the token

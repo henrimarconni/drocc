@@ -14,7 +14,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 static InternID keyword_ids[_keyword_count];
 
@@ -42,7 +41,13 @@ TokenStream lexer_new(
 #undef X
   }
 
-  return ts_from_func(lexer, lexer_next, lexer_peek, lexer_free);
+  return ts_from_func(lexer, lexer_next, lexer_peek, lexer_free, lexer_reset);
+}
+
+void lexer_reset(void* lexer) {
+  Lexer* l = lexer;
+  l->scanner.id = 0;
+  l->in_pp_directive = false;
 }
 
 static Token lex_op_sep(Lexer* l, int ch) {

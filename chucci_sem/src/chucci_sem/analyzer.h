@@ -3,14 +3,13 @@
 
 #include "chucci_parse/parser.h"
 #include "chucci_sem/symbol.h"
-#include "core/vmem_arena.h"
 
 typedef struct {
-  VMEMArena* arena;
+  Parser* p;
   SymbolTable* syms;  
 } SemAnalyzer;
 
-SemAnalyzer new_analyzer(VMEMArena* arena, SymbolTable* table);
+SemAnalyzer new_analyzer(Parser* parser, SymbolTable* table);
 void sem_analyze(SemAnalyzer* analyzer, ASTNode ast);
 
 #endif

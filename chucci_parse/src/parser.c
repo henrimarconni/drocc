@@ -115,7 +115,6 @@ ASTNode parse_next(Parser* p) {
   parse_decl_specifier(p, &tyid, &sc);
 
   Declarator* decl = parse_declarator(p);
-  print_decl(p, decl);
 
   InternID name = 0;
   unwind_declarator(&tyid, &name, decl, p, tyid);

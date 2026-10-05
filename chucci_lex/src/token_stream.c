@@ -20,15 +20,19 @@ TokenStream ts_from_token(Token token) {
   return ts;
 }
 
-TokenStream ts_from_func(void* ctx, TSNextFn next, TSPeekFn peek, TSFreeCtxFn free) {
+TokenStream
+ts_from_func(void* ctx, TSNextFn next, TSPeekFn peek, TSFreeCtxFn free, TSResetFn reset) {
   TokenStream ts = {0};
   ts.kind = TS_FUNC;
+  ts.fstream.reset = reset;
   ts.fstream.next = next;
   ts.fstream.peek = peek;
   ts.fstream.free = free;
   ts.fstream.ctx = ctx;
   return ts;
 }
+
+void ts_reset(TokenStream* ts) { ts->fstream.reset(ts->fstream.ctx); }
 
 Token ts_next(TokenStream* ts) {
   if (ts->is_consumed)

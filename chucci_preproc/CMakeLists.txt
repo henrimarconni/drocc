@@ -3,6 +3,7 @@ add_library(
   chucci_preproc
   src/preproc.c
   src/include.c
+  src/define.c
 )
 
 target_include_directories(
