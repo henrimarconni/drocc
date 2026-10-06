@@ -66,7 +66,8 @@ TokenStream preproc_new(
 void preproc_reset(void* pp) {
   Preprocessor* p = pp;
   p->is_peeked = false;
-  p->macros.n = 0;
+  // TODO
+  // p->macros.n = 0;
   p->tokencache.n = 0;
   p->stack.n = 0;
   ts_reset(&p->initial_ts);
@@ -107,8 +108,9 @@ Token preproc_next(void* ctx) {
     return preproc_stmt(pp);
   }
 
-  if (token.kind == TOK_IDENT && pp->macros.get[token.ident]) {
-  }
+  // TODO
+  // if (token.kind == TOK_IDENT && pp->macros.get[token.ident]) {
+  // }
 
   // else return the token
   return token;

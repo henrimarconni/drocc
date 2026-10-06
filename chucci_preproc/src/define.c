@@ -58,7 +58,11 @@ void define_macro(Preprocessor* pp) {
   vec_push(pp->stack, ts);
 }
 
-MacroManager* macroman_new() { MacroManager* man = malloc(sizeof(MacroManager)); }
+// TODO
+MacroManager* macroman_new() {
+  MacroManager* man = malloc(sizeof(MacroManager));
+  return man;
+}
 void macroman_free(MacroManager* man);
 void macroman_add(MacroManager* man, InternID name, TokenStream ts);
 void macroman_remove(MacroManager* man, InternID name);

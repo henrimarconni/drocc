@@ -180,7 +180,7 @@ Token lexer_next(void* ctx) {
       chucci_nextch(&l->scanner);
       ch = peekch(&l->scanner);
     }
-    span_end(&span, &l->scanner); // FIX: Added missing span_end!
+    span_end(&span, &l->scanner);
     return token_new(span, TOK_VAL);
   }
 

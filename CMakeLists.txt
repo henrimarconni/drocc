@@ -60,6 +60,9 @@ add_subdirectory(chucci_parse)
 add_subdirectory(chucci_sem)
 add_subdirectory(chucci_ir)
 
+add_subdirectory(chu80)
+add_subdirectory(chasm)
+
 # chuviz
 add_subdirectory(chuviz)
 
