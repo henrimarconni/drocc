@@ -16,12 +16,17 @@
   X(OP_ORA, "ora", 1)                                                                              \
   X(OP_SUB, "sub", 1)                                                                              \
   X(OP_SBB, "sbb", 1)                                                                              \
-  X(OP_RET, "ret", 1)                                                                              \
-  X(OP_PUSH, "push", 1)                                                                            \
-  X(OP_POP, "pop", 1)                                                                              \
   X(OP_LDAX, "ldax", 1)                                                                            \
   X(OP_STAX, "stax", 1)                                                                            \
   X(OP_HLT, "hlt", 1)                                                                              \
+  X(OP_CMP, "cmp", 1)                                                                              \
+  X(OP_RLC, "rlc", 1)                                                                              \
+  X(OP_RRC, "rrc", 1)                                                                              \
+  X(OP_RAL, "ral", 1)                                                                              \
+  X(OP_RAR, "rar", 1)                                                                              \
+  X(OP_RET, "ret", 1)                                                                              \
+  X(OP_PUSH, "push", 1)                                                                            \
+  X(OP_POP, "pop", 1)                                                                              \
   /* 2-byte */                                                                                     \
   X(OP_MVI, "mvi", 2)                                                                              \
   X(OP_ADI, "adi", 2)                                                                              \
@@ -52,6 +57,8 @@ typedef enum {
   C80REG_M,
   C80REG_A,
   C80REG_END,
+
+  C80_PSW,
 
   C80_OPCODE_START,
 #define X(a, b, c) a,

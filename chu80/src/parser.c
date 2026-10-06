@@ -7,6 +7,7 @@
 #include "core/vec.h"
 #include "core/vmem_arena.h"
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 
 C80Parser c80_new(C80Lexer l) {
@@ -42,6 +43,19 @@ static uint8_t reg_code(C80Parser* p, C80Token reg) {
   if (reg.kind <= C80REG_START || reg.kind >= C80REG_END)
     throw_diag(&p->l.engine, reg.span, C80_ERR_INVALID_REG);
   return reg.kind - C80REG_B;
+}
+
+static uint8_t rp_code(C80Parser* p, C80Token reg) {
+  if (reg.kind == C80REG_B)
+    return 00;
+  if (reg.kind == C80REG_D)
+    return 01;
+  if (reg.kind == C80REG_H)
+    return 10;
+  if (reg.kind == C80_PSW)
+    return 11;
+
+  throw_diag(&p->l.engine, reg.span, C80_ERR_INVALID_REG);
 }
 
 static void emit_mov(C80Parser* p) {
@@ -125,12 +139,35 @@ static void emit_ora(C80Parser* p) {
   vec_push(p->emitted, code);
 }
 
+static void emit_cmp(C80Parser* p) {
+  C80Token reg = c80_lex(&p->l);
+  uint8_t code = 0b10111000;
+  code |= reg_code(p, reg);
+  vec_push(p->emitted, code);
+}
+
 static void emit_stax(C80Parser* p) { emit_stax_ldax(p, false); }
+
+static void emit_push(C80Parser* p) {
+  uint8_t code = 0b11000101;
+  code |= rp_code(p, c80_lex(&p->l)) << 4;
+  vec_push(p->emitted, code);
+}
+
+static void emit_pop(C80Parser* p) {
+  uint8_t code = 0b11000001;
+  code |= rp_code(p, c80_lex(&p->l)) << 4;
+  vec_push(p->emitted, code);
+}
+
+static void emit_rlc(C80Parser* p) { vec_push(p->emitted, 0b00000111); }
+static void emit_rrc(C80Parser* p) { vec_push(p->emitted, 0b00001111); }
+static void emit_ral(C80Parser* p) { vec_push(p->emitted, 0b00010111); }
+static void emit_rar(C80Parser* p) { vec_push(p->emitted, 0b00011111); }
 
 static void emit_ldax(C80Parser* p) { emit_stax_ldax(p, true); }
 
 static void emit_hlt(C80Parser* p) { vec_push(p->emitted, 0b01110110); }
-
 static void emit_op(C80Parser* p, C80Token op) {
   switch (op.kind) {
   case OP_NOP:
@@ -168,6 +205,27 @@ static void emit_op(C80Parser* p, C80Token op) {
     return;
   case OP_ORA:
     emit_ora(p);
+    return;
+  case OP_CMP:
+    emit_cmp(p);
+    return;
+  case OP_RLC:
+    emit_rlc(p);
+    return;
+  case OP_RRC:
+    emit_rrc(p);
+    return;
+  case OP_RAL:
+    emit_ral(p);
+    return;
+  case OP_RAR:
+    emit_rar(p);
+    return;
+  case OP_PUSH:
+    emit_push(p);
+    return;
+  case OP_POP:
+    emit_pop(p);
     return;
   default:
     assert(false && "Unimplemented");

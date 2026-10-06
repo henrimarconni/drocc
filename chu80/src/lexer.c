@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 static const unsigned char instruction_sizes[] = {
     0, // C80_OPCODE_START
@@ -28,6 +29,8 @@ static C80TokenKind lookup_keyword(StringView sv) {
     return a;
   TOKENS(X)
 #undef X
+  if (3 == sv.len && strncasecmp("psw", sv.str, 3) == 0)
+    return C80_PSW;
   return C80_IDENT;
 }
 
