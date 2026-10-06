@@ -29,24 +29,20 @@ static GetoptData ce_data = {
     .opts = {{0}},
 };
 
-static Opt nullopt = {0};
-
 /*
-  Maps [A..Z] [a..z] and '0-9' to a number [0..61]
-  Returns -1 on invalid character
+  Maps [a..z], [A..Z], and [0..9] to array index [0..61]
 */
 static int ce_translate(char ch) {
-  if (ch <= 'z' && ch >= 'a')
+  if (ch >= 'a' && ch <= 'z')
     return ch - 'a';
-  else if (ch <= 'Z' && ch >= 'A')
-    return 26 + ch - 'A';
-  else if (ch <= '9' && ch >= '0')
-    return 26 + 26 + ch - '9';
-  else
-    return -1;
+  if (ch >= 'A' && ch <= 'Z')
+    return 26 + (ch - 'A');
+  if (ch >= '0' && ch <= '9')
+    return 52 + (ch - '0');
+  return -1;
 }
 
-static bool is_opt_empty(const Opt* opt) { return memcmp(opt, &nullopt, sizeof(Opt)) == 0; }
+static bool is_opt_empty(const Opt* opt) { return opt->shorthand == 0 && opt->longhand == NULL; }
 
 static Opt* get_opt(char ch) {
   int idx = ce_translate(ch);
@@ -64,16 +60,17 @@ void ce_add_meta(bstr name, bstr desc, bstr usage) {
 void ce_initopt(int argc, char** argv) {
   ce_data.argv = argv;
   ce_data.argc = argc;
+  ce_data.curr = 1;
 }
 
 void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc) {
   Opt* opt = get_opt(shorthand);
   if (!opt) {
-    printf("Error: shorthand isnt an alphabet or number\n");
+    printf("Error: shorthand isn't an alphanumeric character\n");
     abort();
   }
   if (!is_opt_empty(opt)) {
-    printf("Error: shorthand already exists\n");
+    printf("Error: shorthand '%c' already exists\n", shorthand);
     abort();
   }
   *opt = (Opt){longhand, shorthand, val_format, desc};
@@ -85,15 +82,15 @@ void ce_printhelp(void) {
   if (ce_data.usage)
     printf("Usage: %s\n", ce_data.usage);
 
-  int format_spaces = FORMAT_SPACES;
   for (size_t i = 0; i < MAX_OPTS; i++) {
     Opt* opt = &ce_data.opts[i];
     if (!is_opt_empty(opt)) {
-      format_spaces -= printf("-%c, --%s", opt->shorthand, opt->longhand);
-      while (format_spaces > 0 && format_spaces--)
+      int printed = printf("-%c, --%s", opt->shorthand, opt->longhand);
+      int spaces = FORMAT_SPACES - printed;
+      while (spaces-- > 0) {
         putchar(' ');
+      }
       printf(": %s\n", opt->desc);
-      format_spaces = FORMAT_SPACES;
     }
   }
 }
@@ -142,7 +139,8 @@ bool ce_getopt(char* ch, ParsedOpt* popt) {
     return false;
 
   bstr str = ce_data.argv[ce_data.curr++];
-  if (str[0] != '-') {
+
+  if (str[0] != '-' || strcmp(str, "-") == 0) {
     *ch = CE_PLAIN_VALUE;
     popt->s = str;
     return true;
@@ -154,7 +152,7 @@ bool ce_getopt(char* ch, ParsedOpt* popt) {
     Opt* opt = get_opt(shorthand);
     if (!opt) {
       printf("Error: invalid argument: -%c\n", shorthand);
-      return false;
+      exit(-1);
     }
     *ch = shorthand;
     parse_opt(opt, popt);
@@ -162,7 +160,7 @@ bool ce_getopt(char* ch, ParsedOpt* popt) {
   }
 
   if (str[1] != '-') {
-    printf("Error: Unxpected option `%s`\n", str);
+    printf("Error: Unexpected option `%s`\n", str);
     exit(-1);
   }
 

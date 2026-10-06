@@ -8,7 +8,7 @@
 #include "core/vmem_arena.h"
 #include <assert.h>
 #include <stdint.h>
-#include <stdio.h>
+// #include <stdio.h>
 
 C80Parser c80_new(C80Lexer l) {
   C80Parser p = {0};
@@ -242,7 +242,7 @@ void c80_pass2(C80Parser* p) {
     tok = c80_lex(&p->l);
   }
 
-  for (uint32_t i = 0; i < p->emitted.n; i++)
-    printf("%x ", p->emitted.get[i]);
-  puts("");
+  // for (uint32_t i = 0; i < p->emitted.n; i++)
+  //   printf("%x ", p->emitted.get[i]);
+  // puts("");
 }
