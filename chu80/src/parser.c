@@ -28,12 +28,13 @@ void c80_pass1(C80Parser* p) {
       strmap_put(p->map, info.sv, p->pc);
     }
 
-    int bytes = c80_token_instruction_size(tok.kind);
+    int bytes = c80_token_instruction_size(tok);
     p->pc += bytes;
 
     tok = c80_lex(&p->l);
   }
 
+  p->pc = 0;
   c80lex_reset(&p->l);
 }
 
@@ -215,17 +216,20 @@ static void emit_lxi(C80Parser* p) {
 
 // -------------------------------- PASS 2 DISPATCH ---------------------------------
 
-static void emit_org(C80Parser* p) {
-  C80Token tok = c80_lex(&p->l);
-  if (p->pc > tok.num || tok.kind != C80_INT)
+static void emit_org(C80Parser* p, C80Token tok) {
+  if (p->pc > tok.org_num)
     throw_diag(&p->l.engine, tok.span, C80_ERR_INVALID_INT);
 
-  int i = tok.num - p->pc;
+  int i = tok.org_num - p->pc;
   while (i--)
     vec_push(p->emitted, 0xFF);
 }
 
 static void emit_op(C80Parser* p, C80Token op) {
+  if (op.kind == PSEUDO_ORG) {
+    emit_org(p, op);
+    return;
+  }
   switch (op.kind) {
 #define X(kind, name, size, func)                                                                  \
   case kind:                                                                                       \
@@ -247,6 +251,7 @@ void c80_pass2(C80Parser* p) {
       continue;
     }
     emit_op(p, tok);
+    p->pc += c80_token_instruction_size(tok);
     tok = c80_lex(&p->l);
   }
 

@@ -16,9 +16,11 @@ static const unsigned char instruction_sizes[] = {
 #undef X
 };
 
-int c80_token_instruction_size(C80TokenKind kind) {
-  if (c80_is_opcode(kind)) {
-    return instruction_sizes[kind - C80_OPCODE_START];
+int c80_token_instruction_size(C80Token tok) {
+  if (tok.kind == PSEUDO_ORG)
+    return tok.org_num;
+  if (c80_is_opcode(tok.kind)) {
+    return instruction_sizes[tok.kind - C80_OPCODE_START];
   }
   return 0; // Not an instruction
 }
@@ -106,6 +108,14 @@ C80Token c80_lex(C80Lexer* l) {
         kind = C80REG_M;
         break;
       }
+    }
+
+    if (info.sv.len == 3 && strncasecmp("org", info.sv.str, 3) == 0) {
+      C80Token num = c80_lex(l);
+      if (num.kind != C80_INT)
+        throw_diag(&l->engine, num.span, C80_ERR_INVALID_INT);
+      kind = PSEUDO_ORG;
+      tok.org_num = num.num;
     }
 
     tok.kind = kind;

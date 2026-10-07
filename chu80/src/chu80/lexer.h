@@ -45,7 +45,6 @@
   X(OP_ORI, "ori", 2, emit_ori)                                                                    \
   X(OP_IN, "in", 2, emit_in)                                                                       \
   X(OP_OUT, "out", 2, emit_out)                                                                    \
-  X(PSEUDO_ORG, "org", 0, emit_org)                                                                \
   /* 3-byte */                                                                                     \
   X(OP_JMP, "jmp", 3, emit_jmp)                                                                    \
   X(OP_JC, "jc", 3, emit_jc)                                                                       \
@@ -71,6 +70,7 @@ typedef enum {
   C80_INT,
   C80_PC,
   C80_EOF,
+  PSEUDO_ORG,
 
   C80REG_START,
   C80REG_B,
@@ -98,6 +98,7 @@ typedef struct {
   Span span;
   union {
     uint16_t num;
+    uint16_t org_num;
   };
 } C80Token;
 
@@ -109,9 +110,9 @@ typedef struct {
 } C80Lexer;
 
 C80Lexer c80lex_new(SrcScanner scanner, SourceManager* sman, jmp_buf* onerror);
-int c80_token_instruction_size(C80TokenKind kind);
+int c80_token_instruction_size(C80Token tok);
 static inline int c80_is_opcode(C80TokenKind kind) {
-  return kind > C80_OPCODE_START && kind < C80_OPCODE_END;
+  return (kind > C80_OPCODE_START && kind < C80_OPCODE_END) || PSEUDO_ORG == kind;
 }
 void c80lex_reset(C80Lexer* l);
 C80Token c80_lex(C80Lexer* l);
