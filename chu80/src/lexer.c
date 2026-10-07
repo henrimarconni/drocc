@@ -11,7 +11,7 @@
 
 static const unsigned char instruction_sizes[] = {
     0, // C80_OPCODE_START
-#define X(a, b, size) size,
+#define X(a, b, size, d) size,
     TOKENS(X)
 #undef X
 };
@@ -24,12 +24,14 @@ int c80_token_instruction_size(C80TokenKind kind) {
 }
 
 static C80TokenKind lookup_keyword(StringView sv) {
-#define X(a, name, size)                                                                           \
+#define X(a, name, size, d)                                                                        \
   if (strlen(name) == sv.len && strncasecmp(sv.str, name, sv.len) == 0)                            \
     return a;
   TOKENS(X)
 #undef X
   if (3 == sv.len && strncasecmp("psw", sv.str, 3) == 0)
+    return C80_PSW;
+  if (3 == sv.len && strncasecmp("sp", sv.str, 3) == 0)
     return C80_PSW;
   return C80_IDENT;
 }
@@ -48,10 +50,9 @@ C80Token c80_lex(C80Lexer* l) {
   C80Token tok = {0};
 
   Span span = span_begin(&l->scanner);
-  char ch = nextch(&l->scanner);
+  char ch = peekch(&l->scanner);
 
   if (isalpha(ch) || ch == '?' || ch == '!') {
-    ch = peekch(&l->scanner);
     while (!isspace(ch) && ch != EOF && ch != ',' && ch != ':') {
       nextch(&l->scanner);
       ch = peekch(&l->scanner);
@@ -65,34 +66,42 @@ C80Token c80_lex(C80Lexer* l) {
     if (ch == ':') {
       nextch(&l->scanner);
       ch = peekch(&l->scanner);
-      tok.kind = C80_LABEL;
+      kind = C80_LABEL;
       if (c80_is_opcode(kind))
         throw_diag(&l->engine, span, C80_ERR_INVALID_LABEL, info.sv);
     }
 
     if (span.len == 1) {
       switch (info.sv.str[0]) {
+      case 'a':
       case 'A':
         kind = C80REG_A;
         break;
+      case 'b':
       case 'B':
         kind = C80REG_B;
         break;
+      case 'c':
       case 'C':
         kind = C80REG_C;
         break;
+      case 'd':
       case 'D':
         kind = C80REG_D;
         break;
+      case 'e':
       case 'E':
         kind = C80REG_E;
         break;
+      case 'h':
       case 'H':
         kind = C80REG_H;
         break;
+      case 'l':
       case 'L':
         kind = C80REG_L;
         break;
+      case 'm':
       case 'M':
         kind = C80REG_M;
         break;
@@ -105,13 +114,30 @@ C80Token c80_lex(C80Lexer* l) {
 
   // Number
   if (isdigit(ch)) {
-    while (isalnum(ch)) {
-      nextch(&l->scanner);
+    char buf[32];
+    int len = 0;
+
+    while ((isalnum(ch)) && len < 31) {
+      buf[len++] = ch;
+      ch = nextch(&l->scanner);
       ch = peekch(&l->scanner);
     }
+    buf[len] = '\0';
+
+    uint16_t num = 0;
+    char* endptr;
+
+    if (len > 0 && (buf[len - 1] == 'h' || buf[len - 1] == 'H')) {
+      buf[len - 1] = '\0';
+      num = (uint16_t)strtol(buf, &endptr, 16);
+    } else {
+      num = (uint16_t)strtol(buf, &endptr, 10);
+    }
+
     span_end(&span, &l->scanner);
     tok.kind = C80_INT;
     tok.span = span;
+    tok.num = num;
     return tok;
   }
 

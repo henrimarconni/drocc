@@ -22,6 +22,7 @@
 #define FORMAT_SPECS(X)                                                                            \
   X("%sv", print_sv, StringView)                                                                   \
   X("%s", print_str, bstr)                                                                         \
+  X("%d", print_int, int)                                                                          \
   X("%c", putchar, int)
 
 typedef enum {
@@ -76,8 +77,8 @@ _*/
 void _print_diag(DiagEngine* eng, Span span, int diag_type, ...);
 
 /// Populates DiagEngine with the given parameters
-DiagEngine new_engine(const DiagInfo* infos, size_t info_len, SourceManager* sman,
-                      jmp_buf* onerror);
+DiagEngine
+new_engine(const DiagInfo* infos, size_t info_len, SourceManager* sman, jmp_buf* onerror);
 
 /**
   Throws a diagnostic exception containing additional caller information.

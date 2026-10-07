@@ -22,6 +22,8 @@ static void print_sv(StringView sv) {
     putchar(*sv.str++);
 }
 
+static void print_int(int i) { printf("%d", i); }
+
 static void vformat(bstr str, va_list args) {
   while (*str) {
     if (0)
