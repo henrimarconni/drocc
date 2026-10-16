@@ -1,0 +1,167 @@
+#include <setjmp.h>
+$c {
+#include "lexer/lexer.h"
+#include "lexer/token_stream.h"
+#include "core/srcman.h"
+#include "core/string_interner.h"
+#include "core/vmem_arena.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+  // Flip the `if (false)` in the test to regenerate the expected string.
+  static void test_generate_token_str(TokenStream *ts) {
+    Token tok = ts_next(ts);
+    printf("const char* res = \"");
+    while (tok.kind != TOK_EOF) {
+      if (tok.kind != SEP_NEWLINE)
+        printf("%s ", tok_to_str[tok.kind]);
+      else
+        printf("\\n\"\n\"");
+      tok = ts_next(ts);
+    }
+    printf("\";");
+
+    fflush(stdout);
+    exit(1);
+  }
+
+  // Expected format: every token is followed by one space,
+  // newline tokens are a bare '\n' with no trailing space.
+  static bool match_str(Token tok, size_t *i, const char *str, size_t len) {
+    if (*i >= len)
+      return false;
+
+    if (tok.kind == SEP_NEWLINE) {
+      if (str[*i] != '\n')
+        return false;
+      *i += 1;
+      return true;
+    }
+
+    const char *want = tok_to_str[tok.kind];
+    size_t want_len = strlen(want);
+
+    if (*i + want_len + 1 > len)
+      return false;
+
+    bool ok = strncmp(want, str + *i, want_len) == 0 && str[*i + want_len] == ' ';
+    if (!ok) {
+      size_t remaining = len - *i;
+      int shown = (int)(want_len + 4 > remaining ? remaining : want_len + 4);
+      fprintf(stderr, "Mismatch at %zu: got '%s', expected '%.*s'\n",
+              *i, want, shown, str + *i);
+    }
+
+    *i += want_len + 1;
+    return ok;
+  }
+}
+
+$test "Lexer test" : vole_lex(lexer) {
+  jmp_buf onerror;
+  VMEMArena *arena = vmarena_new(128 * 1024);
+  StringInterner *interner = interner_new(arena);
+  SourceManager *sman = sman_new();
+  bstr str =
+      "  // 1. Preprocessor & Angle Brackets (tests your TOK_ANGLE logic!)\n"
+      "#include <stdio.h>\n"
+      "#include \" my_local_header.h\""
+      "\n"
+      "\n"
+      "#define MAX_BUFFER 1024\n"
+      "\n"
+      "/* 2. Multi-line comment testing\n"
+      "   Let's put some weird chars here: @ $ % ! \n"
+      "   And a pseudo-nested comment to make sure it doesn't break: /* \n"
+      "*/\n"
+      "typedef struct {\n"
+      "    const char* name;\n"
+      "    int id;\n"
+      "    float val;\n"
+      "} TokenData;\n"
+      "\n"
+      "// 3. Pointers and operators\n"
+      "static TokenData* create_token(int new_id) {\n"
+      "    TokenData* t = malloc(sizeof(TokenData));\n"
+      "    if (t == NULL) return NULL;\n"
+      "    t->id = new_id;\n"
+      "    t->val = 3.14159;  // float literal\n"
+      "    // 4. String literal with escape characters\n"
+      "    t->name = \" String with \\\"escaped\\\" quotes and \\\n new lines!\"; "
+      "    return t;\n"
+      "}\n"
+      "\n"
+      "int main(int argc, char **argv) {\n"
+      "    // 5. Numeric bases and multi-character operators\n"
+      "    int hex_val = 0xDEADBEEF;\n"
+      "    int shift_val = 1 << 4;\n"
+      "    \n"
+      "    shift_val <<= 1;\n"
+      "    shift_val ^= 0xFF; \n"
+      "\n"
+      "    if (hex_val == 0xDEADBEEF && shift_val != 0) {\n"
+      "        hex_val++;\n"
+      "        --shift_val;\n"
+      "    }\n"
+      "\n"
+      "    // 6. Array indexing and ternary operators\n"
+      "    int arr[5] = {1, 2, 3, 4, 5, 'h'};\n"
+      "    int result = (arr[0] <= arr[4]) ? arr[1] : arr[2];\n"
+      "\n"
+      "    // 7. Horrible spacing to stress-test `skip_unwanted` logic\n"
+      "    int    spaced_out   =    (  10   * 5)   +   2;\n"
+      "\n"
+      "    return 0;\n"
+      "}\n";
+  size_t len = strlen(str);
+  SrcScanner scanner = sman_str(sman, "scratch", str, len);
+
+  if (setjmp(onerror) != 0) {
+    fprintf(stderr, "Lexer reported an error\n");
+    abort();
+  }
+
+  TokenStream ts = lexer_new(sman, scanner, interner, arena, &onerror);
+
+  if (false)
+    test_generate_token_str(&ts);
+
+  const char *res =
+      "# ident anglestr \n"
+      "# ident string \n"
+      "# ident ident value \n"
+      "typedef struct { const char * ident ; int ident ; float ident ; } ident ; "
+      "static ident * ident ( int ident ) "
+      "{ ident * ident = ident ( sizeof ( ident ) ) ; if ( ident == ident ) return ident ; "
+      "ident -> ident = ident ; ident -> ident = value ; ident -> ident = string ; "
+      "return ident ; } "
+      "int ident ( int ident , char * * ident ) "
+      "{ int ident = value ; int ident = value << value ; ident <<= value ; ident ^= value ; "
+      "if ( ident == value && ident != value ) "
+      "{ ident ++ ; -- ident ; } "
+      "int ident [ value ] = { value , value , value , value , value , value } ; "
+      "int ident = ( ident [ value ] <= ident [ value ] ) ? ident [ value ] : ident [ value ] ; "
+      "int ident = ( value * value ) + value ; return value ; } ";
+  size_t reslen = strlen(res);
+
+  size_t i = 0;
+  Token token = ts_next(&ts);
+  while (token.kind != TOK_EOF) {
+    bool ok = match_str(token, &i, res, reslen);
+    assert(ok);
+    if (!ok)
+      abort();
+    token = ts_next(&ts);
+  }
+
+  assert(i == reslen);
+  if (i != reslen)
+    abort();
+
+  ts_free(&ts);
+  sman_free(sman);
+  interner_free(interner);
+  vmarena_free(arena);
+}
