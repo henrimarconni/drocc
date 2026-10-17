@@ -31,7 +31,8 @@ void sg_load(SGRunnerOptions* rs, bstr name) {
   rs->lib.tests_len = *tests_len;
   return;
 
-  throw : clid_throw_diag(CLID_ERROR, SGRE_CANT_OPEN_LIB, "Cannot open test library %s", name);
+  throw : sgdl_error();
+  clid_throw_diag(CLID_ERROR, SGRE_CANT_OPEN_LIB, "Cannot open test library %s", name);
 }
 
 void sg_unload(SGTestLib* lib) { sgdl_unload(lib->handle); }

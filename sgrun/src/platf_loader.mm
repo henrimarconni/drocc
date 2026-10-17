@@ -8,6 +8,8 @@ $interface SGDll as Static {
 
 # void* sgdl_get(void*, bstr);
   sgdl_get
+
+# void sgdl_error()
 }
 
 $impl WinDll as SGDll {
@@ -15,6 +17,7 @@ $impl WinDll as SGDll {
   sgdl_load   = windl_load
   sgdl_unload = windl_unload
   sgdl_get    = windl_get
+  sgdl_error  = windl_error
 }
 
 $impl PosixDll as SGDll {
@@ -22,4 +25,5 @@ $impl PosixDll as SGDll {
   sgdl_load   = posixdl_load
   sgdl_unload = posixdl_unload
   sgdl_get    = posixdl_get
+  sgdl_error  = posixdl_error
 }

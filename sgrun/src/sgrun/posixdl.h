@@ -11,6 +11,7 @@
 void* posixdl_load(bstr name);
 void posixdl_unload(void* handle);
 void* posixdl_get(void* handle, bstr name);
+void posixdl_error();
 
 
 #endif
