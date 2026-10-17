@@ -16,6 +16,7 @@ add_library(
   src/strutils.c
   src/string_interner.c
   src/signals.c
+  src/bitarr.c
 )
 
 target_link_libraries(

@@ -1,0 +1,61 @@
+#include "core/span.h"
+#include "core/srcman.h"
+#include "core/string_interner.h"
+#include "core/stringdef.h"
+#include "lexer/token.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+
+const char* tok_to_str[_token_kind_count] = {
+#define X(a, b) b,
+    KEYWORDS(X)
+#undef X
+        "_keyword_count",
+#define X(a, b, c) b,
+    OPERATORS(X)
+#undef X
+#define X(a, b, c) b,
+        SEPARATORS(X)
+#undef X
+    // NOTE: Update this if you add more token types
+    "_op_sep_end",
+    "eof",
+    "ident",
+    "string",
+    "value",
+    "anglestr"};
+#define X(a, b, c) [(unsigned char) c] = true,
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverride-init"
+
+const bool is_op_table[256] = {OPERATORS(X)};
+const bool is_sep_table[256] = {SEPARATORS(X)};
+
+#pragma GCC diagnostic pop
+#undef X
+
+void print_token(SourceManager* sman, Token* token) {
+  if (token->span.srcid == INVALID_SRC_ID) {
+    printf("eof");
+    return;
+  }
+  StringView sv = span_sv(sman, token->span);
+  printf("%.*s", sv.len, sv.str);
+}
+
+Token token_new(Span span, TokenKind kind) {
+  Token token = {0};
+  token.span = span;
+  token.kind = kind;
+  return token;
+}
+
+Token token_new_ident(Span span, TokenKind kind, InternID ident) {
+  Token token = {0};
+  token.span = span;
+  token.kind = kind;
+  token.ident = ident;
+  return token;
+}

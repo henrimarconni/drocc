@@ -53,16 +53,10 @@ add_subdirectory(amalgamator)
 add_subdirectory(macromancer)
 add_subdirectory(saulgood)
 add_subdirectory(sgrun)
-add_subdirectory(chucci_diag)
-add_subdirectory(chucci_lex)
-add_subdirectory(chucci_preproc)
-add_subdirectory(chucci_parse)
+add_subdirectory(vole)
 
-# chuviz
-add_subdirectory(chuviz)
+add_subdirectory(chu80)
+add_subdirectory(chasm)
 
 # Tests
 add_subdirectory(macromancer/tests macromancer_tests)
-add_subdirectory(chucci_lex/tests chucci_lex_tests)
-add_subdirectory(chucci_parse/tests chucci_parse_tests)
-add_subdirectory(chutest chutest)

@@ -50,7 +50,7 @@ jobs:
         run: |
           shopt -s nullglob
           
-          TEST_LIBS=(build/*_tests/*${{ matrix.lib_ext }})
+          TEST_LIBS=(build/**/*_tests/*${{ matrix.lib_ext }})
           
           if [ ${#TEST_LIBS[@]} -eq 0 ]; then
             echo "Error: No test libraries found"
