@@ -17,6 +17,7 @@ target_link_libraries(
   volexer
   PUBLIC
   core
+  volecore
   drocc_warn
 )
 

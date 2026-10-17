@@ -255,7 +255,7 @@ void c80_pass2(C80Parser* p) {
     tok = c80_lex(&p->l);
   }
 
-  for (uint i = 0; i < p->emitted.n; i++) {
+  for (uint32_t i = 0; i < p->emitted.n; i++) {
     printf(" %x ", p->emitted.get[i]);
   }
   puts("");

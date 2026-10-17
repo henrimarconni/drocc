@@ -8,6 +8,7 @@
 #include "lexer/lexer.h"
 #include "lexer/token.h"
 #include "lexer/token_stream.h"
+#include "volecore/diag.h"
 #include <assert.h>
 #include <ctype.h>
 #include <setjmp.h>
@@ -28,10 +29,7 @@ TokenStream lexer_new(
   lexer->sman = sman;
   lexer->scanner = scanner;
   lexer->interner = interner;
-  // lexer->engine = new_engine(cc_diaginfos, _cc_diaginfos_len, sman, onerror);
-
-  // TODO: Relative caching (instead of kind, do (kind - first keyword), so that order doesnt
-  // matter) (see token.h for the minor problem with current approach)
+  lexer->engine = new_engine(vole_diaginfos, __vole_diaginfos_len, sman, onerror);
 
   // 0 id reserved as empty InternID
   // we only cache once
@@ -91,7 +89,7 @@ static void skip_unwanted(DiagEngine* engine, SrcScanner* scanner) {
     int res = skip_c_comments(scanner);
     if (res < 0) {
       span_end(&span, scanner);
-      // throw_diag(engine, span, CC_LEX_INVALID_C_BLOCK_COMMENT);
+      throw_diag(engine, span, CC_LEX_INVALID_C_BLOCK_COMMENT);
     }
     skip_space(scanner);
   } while (scanner->id != last_id && peekch(scanner) != EOF);
@@ -104,7 +102,7 @@ static void skip_unwanted_except_newline(DiagEngine* engine, SrcScanner* scanner
     Span span = span_begin(scanner);
     if (skip_c_comments(scanner) < 0) {
       span_end(&span, scanner);
-      // throw_diag(engine, span, CC_LEX_INVALID_C_BLOCK_COMMENT);
+      throw_diag(engine, span, CC_LEX_INVALID_C_BLOCK_COMMENT);
     }
 
     int ch;
@@ -238,13 +236,12 @@ Token lexer_next(void* ctx) {
     Span span = span_begin(&l->scanner);
     int res = lex_cstr(&l->scanner);
     span_end(&span, &l->scanner);
-    // if (res < 0)
-    //   throw_diag(&l->engine, span, CC_LEX_INVALID_STRING);
+    if (res < 0)
+      throw_diag(&l->engine, span, CC_LEX_INVALID_STRING);
     return token_new(span, TOK_STR);
   }
 
-  printf("Ye he woh: %c\n", ch);
-  // throw_diag(&l->engine, span_begin(&l->scanner), CC_LEX_UNEXPECTED_CHAR, ch);
+  throw_diag(&l->engine, span_begin(&l->scanner), CC_LEX_UNEXPECTED_CHAR, ch);
   assert(false && "TODO");
 }
 

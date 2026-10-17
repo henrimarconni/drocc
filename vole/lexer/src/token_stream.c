@@ -2,6 +2,7 @@
 #include "core/vec.h"
 #include "lexer/token.h"
 #include "lexer/token_stream.h"
+#include "volecore/diag.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -84,10 +85,10 @@ Token ts_peek(TokenStream* ts) {
 
 Token ts_expect(TokenStream* ts, TokenKind kind, DiagEngine* engine) {
   Token token = ts_next(ts);
-  // if (token.kind != kind) {
-  //   throw_diag(
-  //       engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind], tok_to_str[token.kind]);
-  // }
+  if (token.kind != kind) {
+    throw_diag(
+        engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind], tok_to_str[token.kind]);
+  }
 
   return token;
 }
@@ -107,10 +108,10 @@ void _ts_free(TokenStream* ts) {
 
 Token tstack_expect(TokenStreamStack* stack, TokenKind kind, DiagEngine* engine) {
   Token token = tstack_next(stack);
-  // if (token.kind != kind) {
-  //   throw_diag(
-  //       engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind], tok_to_str[token.kind]);
-  // }
+  if (token.kind != kind) {
+    throw_diag(
+        engine, token.span, CC_ERR_UNEXPECTED_TOKEN, tok_to_str[kind], tok_to_str[token.kind]);
+  }
 
   return token;
 }
