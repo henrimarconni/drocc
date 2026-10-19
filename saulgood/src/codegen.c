@@ -97,4 +97,7 @@ void generate_code(SGCodegen* c, ParserState* state) {
   append_ch(&c->output, '\0');
 }
 
-void codegen_destroy(SGCodegen* c) { vec_destroy(c->output); }
+void codegen_destroy(SGCodegen* c) {
+  if (c->output.get)
+    vec_destroy(c->output);
+}

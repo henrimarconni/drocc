@@ -3,52 +3,17 @@
   Clean and lightweight diagnostics engine
 */
 
-#ifndef CORE_DIAGNOSTICS_H
-#define CORE_DIAGNOSTICS_H
+#ifndef DIAGNOSTICS_H_
+#define DIAGNOSTICS_H_
 
 #include "core/srcman.h"
-#include "core/stringdef.h"
-#include "core/vec.h"
+#include "core/diag_core.h"
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdio.h> // IWYU pragma: keep
 
-#define ERROR_STR ANSI_RED "Error: " ANSI_RESET
-#define NOTE_STR ANSI_YELLOW "Note: " ANSI_RESET
-
-/**
-  Format specifiers X-macro, containing all the format specifiers
-*/
-#define FORMAT_SPECS(X)                                                                            \
-  X("%sv", print_sv, StringView)                                                                   \
-  X("%s", print_str, bstr)                                                                         \
-  X("%d", print_int, int)                                                                          \
-  X("%c", putchar, int)
-
-typedef enum {
-  DL_NOTE,
-  DL_ERROR,
-} DiagLevel;
-
-/**
-  Contains all information about diagnostics
-*/
-typedef struct {
-  DiagLevel level;
-
-  /**
-    msg can contain format specifiers as defined in FORMAT_SPECS(X)
-    @see FORMAT_SPECS
-  */
-  bstr msg;
-} DiagInfo;
-
-/// Opaque id to the DiagInfo array (DiagEngine.infos)
-typedef struct Diag Diag;
-
 typedef struct {
   const DiagInfo* infos;
-  vec(Diag) diags;
   size_t info_len;
   jmp_buf* onerror;
   SourceManager* sman;

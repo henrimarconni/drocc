@@ -1,3 +1,4 @@
+#include "core/ce_getopt.h"
 #include "core/cli_diag.h"
 #include "core/fs.h"
 #include "core/srcman.h"
@@ -6,34 +7,40 @@
 #include "core/vmem_arena.h"
 #include "macromancer/codegen.h"
 #include "macromancer/mm_arg.h"
+#include "macromancer/mm_diag.h"
 #include "macromancer/parser.h"
 #include <assert.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdio.h>
 
-static int emit_output(bstr output_path, MMCodegen* c) {
+static int emit_output(bstr output_path, MMCodegen* c, CLIDiagEngine* clid) {
   if (!output_path) {
     printf("%s\n", c->output.get);
     return 0;
   }
   int res = write_out(output_path, c->output.get);
-  if (res < 0) {
-    clid_print_diag(CLID_ERROR, "Cannot open file: `%s` for writing", output_path);
-    return MMCLI_ERR_CANT_OPEN_OUTFILE;
-  }
+  if (res < 0)
+    clid_throw_diag(clid, MM_CLI_CANNOT_OPEN_FILE_FOR_WRITING, output_path);
   return 0;
 }
 
 int main(int argc, char** argv) {
+  // On cli error
+  jmp_buf onerror;
+  if (setjmp(onerror) != 0) {
+    ce_printhelp();
+    return -1;
+  }
+
   // Argument parsing
+  CLIDiagEngine clid = clid_engine_new(mm_diaginfos, __mm_diagtype_len, &onerror);
   bstr confpath = NULL;
   bstr output_path = NULL;
   ExportOverrideVec export_overrides = {};
-  parse_arg(argc, argv, &output_path, &confpath, &export_overrides);
+  parse_arg(argc, argv, &output_path, &confpath, &export_overrides, &clid);
 
   // Setup
-  jmp_buf onerror;
   MMParser p;
   SourceManager* sman = sman_new();
   VMEMArena* arena = vmarena_new(1024 * 128);
@@ -51,7 +58,7 @@ int main(int argc, char** argv) {
   MMCodegen c;
   generate_code(&c, &p);
 
-  int res = emit_output(output_path, &c);
+  int res = emit_output(output_path, &c, &clid);
 
   // Cleanup
   vec_destroy(export_overrides);

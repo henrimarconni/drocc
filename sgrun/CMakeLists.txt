@@ -5,6 +5,8 @@ add_executable(
   src/loader.c
   src/sg_fmt.c
   src/runner.c
+  src/diag.c
+  src/arg.c
   src/sg_scheduler.c
   src/testctx.c
 )

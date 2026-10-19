@@ -12,6 +12,7 @@ add_library(
   src/scanner.c
   src/clexer_utils.c
   src/diagnostics.c
+  src/diag_core.c
   src/cli_diag.c
   src/strutils.c
   src/string_interner.c
