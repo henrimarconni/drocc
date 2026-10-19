@@ -77,6 +77,7 @@ void ce_addopt(bstr longhand, char shorthand, char val_format, bstr desc) {
 }
 
 void ce_printhelp(void) {
+  puts("");
   if (ce_data.name && ce_data.desc)
     printf("%s: %s\n", ce_data.name, ce_data.desc);
   if (ce_data.usage)
