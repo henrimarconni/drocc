@@ -1,11 +1,12 @@
 #include "core/cli_diag.h"
 #include "platf_loader.h"
 #include "sgrun/capture.h"
+#include "sgrun/diag.h"
 #include "sgrun/loader.h"
 #include "sgrun/runner.h"
 #include <stdint.h>
 
-void sg_load(SGRunnerOptions* rs, bstr name) {
+void sg_load(SGRunnerOptions* rs, bstr name, CLIDiagEngine* clid) {
   void* handle = sgdl_load(name);
   if (!handle)
     goto throw;
@@ -32,7 +33,7 @@ void sg_load(SGRunnerOptions* rs, bstr name) {
   return;
 
   throw : sgdl_error();
-  clid_throw_diag(CLID_ERROR, SGRE_CANT_OPEN_LIB, "Cannot open test library %s", name);
+  clid_throw_diag(clid, SGR_CLI_CANNOT_OPEN_TEST_LIB, name);
 }
 
 void sg_unload(SGTestLib* lib) { sgdl_unload(lib->handle); }

@@ -3,19 +3,24 @@
 #include "core/stringdef.h"
 #include "core/vec.h"
 #include "macromancer/mm_arg.h"
+#include "macromancer/mm_diag.h"
 #include "macromancer/parser.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 
-inline static void handle_arg(char ch, ParsedOpt popt, bstr* output_path, bstr* confpath,
-                              ExportOverrideVec* overrides) {
+inline static void handle_arg(
+    char ch,
+    ParsedOpt popt,
+    bstr* output_path,
+    bstr* confpath,
+    ExportOverrideVec* overrides,
+    CLIDiagEngine* clid) {
   switch (ch) {
   case 'o': {
     if (*output_path) {
       vec_destroy(*overrides);
-      clid_throw_diag(CLID_ERROR, MMCLI_ERR_OUTPUT_FLAG_MISUSE,
-                      "Output flag can only be used once");
+      clid_throw_diag(clid, MM_CLI_OUTPUT_FLAG_MISUSE, "Output flag can only be used once");
     }
     *output_path = popt.s;
     break;
@@ -33,9 +38,11 @@ inline static void handle_arg(char ch, ParsedOpt popt, bstr* output_path, bstr* 
       str++;
     if (*str == '\0') {
       vec_destroy(*overrides);
-      clid_throw_diag(CLID_ERROR, MMCLI_ERR_INVALID_EXPORT_CMD,
-                      "Expected `--export interface=implementation`, found `--export %s`\n",
-                      ov.iface);
+      clid_throw_diag(
+          clid,
+          MM_CLI_INVALID_EXPORT_CMD,
+          "Expected `--export interface=implementation`, found `--export %s`\n",
+          ov.iface);
     }
     *str = '\0';
     ov.impl = str + 1;
@@ -46,9 +53,12 @@ inline static void handle_arg(char ch, ParsedOpt popt, bstr* output_path, bstr* 
   case CE_PLAIN_VALUE: {
     if (*confpath) {
       vec_destroy(*overrides);
-      clid_throw_diag(CLID_ERROR, MMCLI_ERR_MULTIPLE_INPUT_FILES,
-                      "Input file already specified: %s, cannot overwrite it with: %s\n", *confpath,
-                      popt.s);
+      clid_throw_diag(
+          clid,
+          MM_CLI_MULTIPLE_INPUT_FILES,
+          "Input file already specified: %s, cannot overwrite it with: %s\n",
+          *confpath,
+          popt.s);
     }
     *confpath = popt.s;
     break;
@@ -59,21 +69,31 @@ inline static void handle_arg(char ch, ParsedOpt popt, bstr* output_path, bstr* 
   }
 }
 
-void parse_arg(int argc, char** argv, bstr* output_path, bstr* confpath,
-               ExportOverrideVec* overrides) {
+void parse_arg(
+    int argc,
+    char** argv,
+    bstr* output_path,
+    bstr* confpath,
+    ExportOverrideVec* overrides,
+    CLIDiagEngine* clid) {
   ce_initopt(argc, argv);
-  ce_add_meta("macromancer", "A code generator that adds compile-time and runtime interfaces to C",
-              "./macromancer file.mm -o output.h --export Interface=Implementation");
+  ce_add_meta(
+      "macromancer",
+      "A code generator that adds compile-time and runtime interfaces to C",
+      "./macromancer file.mm -o output.h --export Interface=Implementation");
   ce_addopt("output", 'o', 's', "Output file.h location");
   ce_addopt("help", 'h', 0, "Print help message");
-  ce_addopt("export", 'e', 's',
-            "Export interface=implementation (overrides the exports written in file)");
+  ce_addopt(
+      "export",
+      'e',
+      's',
+      "Export interface=implementation (overrides the exports written in file)");
   char ch;
   ParsedOpt popt;
   while (ce_getopt(&ch, &popt))
-    handle_arg(ch, popt, output_path, confpath, overrides);
+    handle_arg(ch, popt, output_path, confpath, overrides, clid);
   if (!*confpath) {
     vec_destroy(*overrides);
-    clid_throw_diag(CLID_ERROR, MMCLI_ERR_INPUT_FILE_NOT_SPECIFIED, "Input file not specified\n");
+    clid_throw_diag(clid, MM_CLI_INPUT_FILE_NOT_SPECIFIED, "Input file not specified\n");
   }
 }

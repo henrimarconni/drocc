@@ -1,39 +1,43 @@
 #include "core/cli_diag.h"
-#include "core/span.h"
+#include "core/diag_core.h"
+#include <assert.h>
+#include <setjmp.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-static void print_level(CLIDiagLevel level) {
-  switch (level) {
-  case CLID_ERROR:
-    printf(ANSI_RED "Error: " ANSI_RESET);
-    break;
-  case CLID_NOTE:
-    printf(ANSI_BLUE "Note: " ANSI_RESET);
-    break;
-  case CLID_WARN:
-    printf(ANSI_YELLOW "Warning: " ANSI_RESET);
-    break;
-  }
-}
-
-void clid_print_diag(CLIDiagLevel level, bstr msg, ...) {
+void clid_print_diag(CLIDiagEngine* eng, int error, ...) {
   va_list args;
-  va_start(args, msg);
-  print_level(level);
-  vprintf(msg, args);
+  va_start(args, error);
+
+  assert(eng->info_len > (size_t)error);
+  DiagInfo info = eng->infos[error];
+
+  print_diag_intro(info.level);
+  diag_vprintf(info.msg, args);
   putchar('\n');
   va_end(args);
+}
+
+CLIDiagEngine clid_engine_new(const DiagInfo* infos, size_t info_len, jmp_buf* onerror) {
+  CLIDiagEngine engine = {0};
+  engine.infos = infos;
+  engine.info_len = info_len;
+  engine.onerror = onerror;
+  return engine;
 }
 
 [[noreturn]]
-void clid_throw_diag(CLIDiagLevel level, int error_id, bstr msg, ...) {
+void clid_throw_diag(CLIDiagEngine* eng, int error, ...) {
   va_list args;
-  va_start(args, msg);
-  print_level(level);
-  vprintf(msg, args);
+  va_start(args, error);
+
+  assert(eng->info_len > (size_t)error);
+  DiagInfo info = eng->infos[error];
+
+  print_diag_intro(info.level);
+  diag_vprintf(info.msg, args);
   putchar('\n');
   va_end(args);
-  exit(error_id);
+  longjmp(*eng->onerror, 1);
 }

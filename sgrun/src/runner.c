@@ -1,6 +1,5 @@
 #include "core/vmem_arena.h"
 #include "sgrun/loader.h"
-#include "sgrun/process.h"
 #include "sgrun/runner.h"
 #include "sgrun/sg_api.h"
 #include "sgrun/sg_fmt.h"
@@ -14,8 +13,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-/// This is run by the -g option and not directly
-void sg_run_test(SGRunnerOptions* rs, uint32_t id) {
+// Run an individual test using -g option
+static void sg_run_test(SGRunnerOptions* rs, uint32_t id) {
   if (id >= rs->lib.tests_len)
     return;
 
@@ -23,6 +22,7 @@ void sg_run_test(SGRunnerOptions* rs, uint32_t id) {
   test.fn();
 }
 
+// Print summary at the end of the run
 static void print_summary(SGTestLib* lib, size_t failed, size_t passed) {
   putchar('\n');
   print_heading('-', "Summary");
@@ -39,9 +39,9 @@ static void print_summary(SGTestLib* lib, size_t failed, size_t passed) {
   putchar('\n');
 }
 
-/// Run the full test library parallely
-/// Runs child processes underneath for isolation
-int sg_test_lib(SGRunnerOptions* rs) {
+// Run the full test library parallely
+// Runs child processes underneath for isolation
+static void sg_test_lib(SGRunnerOptions* rs) {
   size_t passed = 0;
   size_t failed = 0;
   SGJScheduler sched = sgjs_new(rs->max_jobs);
@@ -66,6 +66,22 @@ int sg_test_lib(SGRunnerOptions* rs) {
   print_summary(&rs->lib, failed, passed);
   vmarena_free(arena);
 
-  // 1 if failed, 0 if passed
-  return failed > 0;
+  rs->success = !rs->success || failed ? false : true;
+}
+
+void execute_args(SGRunnerOptions* rs, CLIDiagEngine* clid) {
+  if (rs->test_ids.n > 0) {
+    for (uint32_t i = 0; i < rs->test_ids.n; i++) {
+      sg_load(rs, rs->test_ids.get[i].name, clid);
+      sg_run_test(rs, rs->test_ids.get[i].id);
+      sg_unload(&rs->lib);
+    }
+    return;
+  }
+
+  for (uint32_t i = 0; i < rs->test_libs.n; i++) {
+    sg_load(rs, rs->test_libs.get[i], clid);
+    sg_test_lib(rs);
+    sg_unload(&rs->lib);
+  }
 }

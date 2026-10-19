@@ -7,13 +7,14 @@
 #include "core/vmem_arena.h"
 #include "saulgood/codegen.h"
 #include "saulgood/parser.h"
+#include "saulgood/sg_diag.h"
 #include <assert.h>
 #include <setjmp.h>
 #include <stdio.h>
 
 typedef enum { SGCLI_INVALID_ARG = -1, SGCLI_FILE_DOESNT_EXIST = -2 } SGCLIError;
 
-static void parse_args(bstr* outfile, InputFiles* files) {
+static void parse_args(bstr* outfile, InputFiles* files, CLIDiagEngine* clid) {
   char ch;
   ParsedOpt popt;
   while (ce_getopt(&ch, &popt)) {
@@ -31,22 +32,21 @@ static void parse_args(bstr* outfile, InputFiles* files) {
       break;
     }
     default:
-      clid_throw_diag(CLID_ERROR, SGCLI_INVALID_ARG, "Invalid argument %c", ch);
+      clid_throw_diag(clid, SGCLI_INVALID_ARG, "Invalid argument %c", ch);
     }
   }
   if (files->n == 0)
     exit(0);
 }
 
-static int emit_output(SGCodegen* c, bstr outfile) {
+static int emit_output(SGCodegen* c, bstr outfile, CLIDiagEngine* clid) {
   if (!outfile) {
     printf("%s\n", c->output.get);
     return 0;
   }
   int res = write_out(outfile, c->output.get);
-  if (res < 0) {
-    clid_print_diag(CLID_ERROR, "Cannot open file: %s for writing", outfile);
-  }
+  if (res < 0)
+    clid_print_diag(clid, SG_CLI_CANNOT_OPEN_FILE_FOR_WRITING, outfile);
   return 0;
 }
 
@@ -56,24 +56,30 @@ int main(int argc, char** argv) {
   ce_addopt("directoy", 'd', 's', "Walks a directory and amalgamates all tests together");
   ce_addopt("help", 'h', 0, "Print help message");
 
+  jmp_buf onerror;
+  if (setjmp(onerror) != 0) {
+    ce_printhelp();
+    return -1;
+  }
+
+  CLIDiagEngine clid = clid_engine_new(sg_diaginfos, __sg_diagtype_len, &onerror);
   InputFiles files = {};
   bstr outfile = NULL;
 
-  parse_args(&outfile, &files);
+  parse_args(&outfile, &files, &clid);
 
   SourceManager* sman = sman_new();
   VMEMArena* arena = vmarena_new(128 * 1024);
   ParserState state = {};
   state.arena = arena;
-  jmp_buf onerror;
 
+  SGCodegen c = {};
   if (setjmp(onerror) == 0) {
     parse_files(&state, sman, files, &onerror);
-    SGCodegen c = {};
     generate_code(&c, &state);
-    emit_output(&c, outfile);
-    codegen_destroy(&c);
+    emit_output(&c, outfile, &clid);
   }
+  codegen_destroy(&c);
   parser_free(&state);
   vmarena_free(arena);
   vec_destroy(files);

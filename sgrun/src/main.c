@@ -1,30 +1,11 @@
 #include "core/ce_getopt.h"
-#include "core/cli_diag.h"
 #include "core/signals.h"
-#include "core/stringdef.h"
-#include "core/strutils.h"
+#include "sgrun/diag.h"
 #include "sgrun/loader.h"
 #include "sgrun/runner.h"
-#include <assert.h>
-#include <stdint.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-static void parse_test_info(bstr str, int* tests_len, bstr* name) {
-  bstr tests_len_str;
-  int res = split_str_inplace(str, ':', name, &tests_len_str);
-
-  if (res < 0)
-    clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
-
-  int res2 = parse_int(tests_len, tests_len_str);
-
-  if (res2 < 0)
-    clid_throw_diag(CLID_ERROR, SGRE_RUN_FN_INVALID_CMD, "Invalid arguments to --run-fn");
-}
-
-#define DEFAULT_MAX_JOBS 2
-#define DEFAULT_MAX_TIMEOUT_MS 10000
 
 static void handler(int sig) {
   printf("sgrun: caught signal %d", sig);
@@ -41,50 +22,19 @@ int main(int argc, char** argv) {
   ce_addopt("show-output", 'p', 0, "Print the test output without capturing it");
   ce_addopt("timeout-ms", 't', 'd', "Set maximum timeout (in milliseconds)");
 
-  char ch;
-  ParsedOpt popt;
-  SGRunnerOptions rs = {0};
-  rs.max_jobs = DEFAULT_MAX_JOBS;
-  rs.show_output = false;
-  rs.runner_exe = argv[0];
-  rs.timeout = DEFAULT_MAX_TIMEOUT_MS;
+  jmp_buf onerror;
+  SGRunnerOptions rs;
 
-  while (ce_getopt(&ch, &popt)) {
-    switch (ch) {
-    case CE_PLAIN_VALUE:
-      sg_load(&rs, popt.s);
-      int res = sg_test_lib(&rs);
-      sg_unload(&rs.lib);
-      return res;
-
-    case 'o':
-      rs.show_output = true;
-      break;
-
-    case 't':
-      rs.timeout = (uint32_t)popt.d;
-      break;
-
-    case 'j':
-      if (popt.d > 0)
-        rs.max_jobs = (uint32_t)popt.d;
-      break;
-
-    case 'h':
-      ce_printhelp();
-      break;
-
-    case 'g': {
-      bstr name;
-      int test_id;
-      parse_test_info(popt.s, &test_id, &name);
-      sg_load(&rs, popt.s);
-      sg_run_test(&rs, (uint32_t)test_id);
-      sg_unload(&rs.lib);
-      return 0;
-    }
-    default:
-      clid_throw_diag(CLID_ERROR, SGRE_INVALID_ARG, "Invalid argument provided.");
-    }
+  if (setjmp(onerror) != 0) {
+    free_sgrun_opts(&rs);
+    ce_printhelp();
+    exit(-1);
   }
+  CLIDiagEngine clid = clid_engine_new(sgr_diaginfos, __sgr_diaginfos_len, &onerror);
+
+  rs = sg_parse_args(argv, &clid);
+  validate_args(&rs, &clid);
+  execute_args(&rs, &clid);
+
+  free_sgrun_opts(&rs);
 }

@@ -1,4 +1,3 @@
-#include "core/diagnostics.h"
 #include "saulgood/sg_diag.h"
 
 const DiagInfo sg_diaginfos[__sg_diagtype_len] = {

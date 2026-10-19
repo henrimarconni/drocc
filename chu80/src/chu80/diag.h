@@ -1,7 +1,8 @@
 #ifndef DIAG_H_
 #define DIAG_H_
 
-#include "core/diagnostics.h"
+#include "core/diag_core.h"
+
 #define C80_ERRORS(X)                                                                              \
   X(C80_ERR_FILE_NOT_FOUND, "File %s not found", DL_ERROR)                                         \
   X(C80_ERR_INVALID_CHAR, "Invalid character: %c", DL_ERROR)                                       \

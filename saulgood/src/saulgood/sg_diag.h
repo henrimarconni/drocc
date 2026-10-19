@@ -1,14 +1,16 @@
 #ifndef SG_DIAG_H
 #define SG_DIAG_H
 
+#include "core/diag_core.h"
 
-#include "core/diagnostics.h"
 #define ERRORS(X)\
 X(SG_ERR_CANT_OPEN_FILE, "Cannot open file: `%s`", DL_ERROR)\
 X(SG_ERR_UNEXPECTED_EOF, "Unexpected End-Of-File", DL_ERROR)\
 X(SG_ERR_UNEXPECTED_TOK, "Expected `%sv`, found `%sv`", DL_ERROR)\
 X(SG_ERR_UNEXPECTED_CHAR, "Unexpected character: `%sv` found", DL_ERROR)\
-X(SG_ERR_UNEXPECTED_KEYW, "Unexpected keyword `%sv`, expected one of `$c` or `$test`", DL_ERROR)
+X(SG_ERR_UNEXPECTED_KEYW, "Unexpected keyword `%sv`, expected one of `$c` or `$test`", DL_ERROR)\
+X(SG_CLI_CANNOT_OPEN_FILE_FOR_WRITING, "Cannot open file %s for writing", DL_ERROR)
+
 
 
 typedef enum {
