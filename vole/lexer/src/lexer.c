@@ -11,7 +11,6 @@
 #include "volecore/diag.h"
 #include <assert.h>
 #include <ctype.h>
-#include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,13 +22,13 @@ TokenStream lexer_new(
     SrcScanner scanner,
     StringInterner* interner,
     VMEMArena* arena,
-    jmp_buf* onerror) {
+    DiagEngine* engine) {
   Lexer* lexer = vmarena_calloc(arena, sizeof(Lexer));
   *lexer = (Lexer){0};
   lexer->sman = sman;
   lexer->scanner = scanner;
   lexer->interner = interner;
-  lexer->engine = new_engine(vole_diaginfos, __vole_diaginfos_len, sman, onerror);
+  lexer->engine = engine;
 
   // 0 id reserved as empty InternID
   // we only cache once
@@ -152,9 +151,9 @@ static Token lex_ident(Lexer* l, int ch) {
 Token lexer_next(void* ctx) {
   Lexer* l = ctx;
   if (l->in_pp_directive)
-    skip_unwanted_except_newline(&l->engine, &l->scanner);
+    skip_unwanted_except_newline(l->engine, &l->scanner);
   else
-    skip_unwanted(&l->engine, &l->scanner);
+    skip_unwanted(l->engine, &l->scanner);
 
   int ch = peekch(&l->scanner);
 
@@ -190,7 +189,7 @@ Token lexer_next(void* ctx) {
     ch = peekch(&l->scanner);
 
     span_end(&span, &l->scanner);
-    return token_new(span, TOK_VAL);
+    return token_new(span, TOK_STR);
   }
 
   if (isdigit(ch)) {
@@ -237,11 +236,11 @@ Token lexer_next(void* ctx) {
     int res = lex_cstr(&l->scanner);
     span_end(&span, &l->scanner);
     if (res < 0)
-      throw_diag(&l->engine, span, CC_LEX_INVALID_STRING);
+      throw_diag(l->engine, span, CC_LEX_INVALID_STRING);
     return token_new(span, TOK_STR);
   }
 
-  throw_diag(&l->engine, span_begin(&l->scanner), CC_LEX_UNEXPECTED_CHAR, ch);
+  throw_diag(l->engine, span_begin(&l->scanner), CC_LEX_UNEXPECTED_CHAR, ch);
   assert(false && "TODO");
 }
 

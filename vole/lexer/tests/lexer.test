@@ -1,5 +1,6 @@
-#include <setjmp.h>
 $c {
+#include <setjmp.h>
+#include <volecore/diag.h>
 #include "lexer/lexer.h"
 #include "lexer/token_stream.h"
 #include "core/srcman.h"
@@ -123,27 +124,16 @@ $test "Lexer test" : vole_lex(lexer) {
     abort();
   }
 
-  TokenStream ts = lexer_new(sman, scanner, interner, arena, &onerror);
+  DiagEngine engine = new_engine(vole_diaginfos, __vole_diaginfos_len, sman, &onerror);
+  TokenStream ts = lexer_new(sman, scanner, interner, arena, &engine);
 
   if (false)
     test_generate_token_str(&ts);
 
-  const char *res =
-      "# ident anglestr \n"
-      "# ident string \n"
-      "# ident ident value \n"
-      "typedef struct { const char * ident ; int ident ; float ident ; } ident ; "
-      "static ident * ident ( int ident ) "
-      "{ ident * ident = ident ( sizeof ( ident ) ) ; if ( ident == ident ) return ident ; "
-      "ident -> ident = ident ; ident -> ident = value ; ident -> ident = string ; "
-      "return ident ; } "
-      "int ident ( int ident , char * * ident ) "
-      "{ int ident = value ; int ident = value << value ; ident <<= value ; ident ^= value ; "
-      "if ( ident == value && ident != value ) "
-      "{ ident ++ ; -- ident ; } "
-      "int ident [ value ] = { value , value , value , value , value , value } ; "
-      "int ident = ( ident [ value ] <= ident [ value ] ) ? ident [ value ] : ident [ value ] ; "
-      "int ident = ( value * value ) + value ; return value ; } ";
+  const char* res = "# ident anglestr \n"
+  "# ident string \n"
+  "# ident ident value \n"
+  "typedef struct { const char * ident ; int ident ; float ident ; } ident ; static ident * ident ( int ident ) { ident * ident = ident ( sizeof ( ident ) ) ; if ( ident == ident ) return ident ; ident -> ident = ident ; ident -> ident = value ; ident -> ident = string ; return ident ; } int ident ( int ident , char * * ident ) { int ident = value ; int ident = value << value ; ident <<= value ; ident ^= value ; if ( ident == value && ident != value ) { ident ++ ; -- ident ; } int ident [ value ] = { value , value , value , value , value , string } ; int ident = ( ident [ value ] <= ident [ value ] ) ? ident [ value ] : ident [ value ] ; int ident = ( value * value ) + value ; return value ; } ";
   size_t reslen = strlen(res);
 
   size_t i = 0;

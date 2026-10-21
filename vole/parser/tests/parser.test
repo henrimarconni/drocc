@@ -1,0 +1,35 @@
+$c {
+  #include "parser/parser.h"
+  #include <setjmp.h>
+  #include "lexer/lexer.h"
+  #include "lexer/token_stream.h"
+  #include "volecore/diag.h"
+  #include "core/srcman.h"
+  #include "core/string_interner.h"
+  #include "core/vmem_arena.h"
+  #include <stdbool.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+}
+
+$test "Parser test" : parser(parser1) {
+  bstr str = "int main () { return 0; }";
+  
+  jmp_buf onerror;
+  VMEMArena *arena = vmarena_new(128 * 1024);
+  StringInterner *interner = interner_new(arena);
+  SourceManager *sman = sman_new();
+  SrcScanner scanner = sman_str(sman, "scratch", str, strlen(str));
+  DiagEngine engine = new_engine(vole_diaginfos, __vole_diaginfos_len, sman, &onerror);
+
+  if (setjmp(onerror) != 0) {
+    fprintf(stderr, "Parser reported an error\n");
+    abort();
+  }
+
+  TokenStream ts = lexer_new(sman, scanner, interner, arena, &engine);
+  Parser p = parse(ts, arena, &engine, interner);  
+}
+
+
